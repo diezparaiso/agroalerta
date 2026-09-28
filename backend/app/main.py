@@ -17,7 +17,7 @@ from app.connectors.source_registry import list_data_sources
 from app.connectors.mapa_catalog import load_catalog
 from app.core.config import settings
 from app.core.storage import Storage
-from app.schemas import Alert, AlertUserState, AlertUserStateUpdate, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, NotificationDelivery, Parcel, WeatherEvidenceSummary, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate, TelemetryQualitySummary, ParcelActivityEvent, CropCampaignCreate, CropCampaignStatusUpdate, CropCampaign, IrrigationEventCreate, IrrigationEvent
+from app.schemas import Alert, AlertUserState, AlertUserStateUpdate, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, NotificationDelivery, Parcel, WeatherEvidenceSummary, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate, TelemetryQualitySummary, ParcelActivityEvent, CropCampaignCreate, CropCampaignStatusUpdate, CropCampaign, IrrigationEventCreate, IrrigationEvent, TreatmentRecordCreate, TreatmentRecord
 from app.core.security import optional_bearer_token
 from app.schemas_push import PushTokenCreate
 
@@ -276,6 +276,41 @@ def weather_evidence_summary(parcel_id: str, _token: str | None = Depends(option
         latest_observed_at=context.get("observed_at"),
         stations=context.get("stations", []),
     )
+
+
+@app.post("/api/v1/parcels/{parcel_id}/treatments", response_model=TreatmentRecord, status_code=201)
+def create_treatment_record(
+    parcel_id: str,
+    payload: TreatmentRecordCreate,
+    _token: str | None = Depends(optional_bearer_token),
+) -> TreatmentRecord:
+    owner_id = _token or "anonymous"
+    get_parcel(parcel_id, owner_id)
+    applied_at = payload.applied_at if payload.applied_at.tzinfo else payload.applied_at.replace(tzinfo=timezone.utc)
+    record = TreatmentRecord(
+        id=str(uuid4()),
+        parcel_id=parcel_id,
+        campaign_id=payload.campaign_id,
+        owner_id=owner_id,
+        applied_at=applied_at,
+        product_name=payload.product_name,
+        active_substance=payload.active_substance,
+        dose=payload.dose,
+        treated_area_ha=payload.treated_area_ha,
+        notes=payload.notes,
+    )
+    return TreatmentRecord(**storage.create_treatment_record(record.model_dump(mode="json")))
+
+
+@app.get("/api/v1/parcels/{parcel_id}/treatments", response_model=list[TreatmentRecord])
+def list_treatment_records(
+    parcel_id: str,
+    limit: int = Query(default=100, ge=1, le=200),
+    _token: str | None = Depends(optional_bearer_token),
+) -> list[TreatmentRecord]:
+    owner_id = _token or "anonymous"
+    get_parcel(parcel_id, owner_id)
+    return [TreatmentRecord(**item) for item in storage.list_treatment_records(parcel_id, owner_id, limit)]
 
 
 @app.post("/api/v1/parcels/{parcel_id}/irrigation", response_model=IrrigationEvent, status_code=201)
