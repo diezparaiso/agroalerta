@@ -15,7 +15,8 @@ from app.domain.agronomic_decision import make_agronomic_decision
 from app.domain.farm_operation_center import build_farm_center
 from app.domain.activity_timeline import build_activity_timeline
 from app.domain.campaign_management import build_campaign_summary
-from app.schemas import AgronomicActivity, AgronomicActivityCreate, CampaignDecisionLink, CampaignStatusUpdate, CropCampaign, CropCampaignCreate, CampaignSummary, AgronomicDecision, Device, DeviceCreate, DiseaseRisk, FarmOperationCenter, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
+from app.domain.campaign_results import build_campaign_result, build_results_summary
+from app.schemas import AgronomicActivity, AgronomicActivityCreate, CampaignDecisionLink, CampaignResult, CampaignResultCreate, CampaignResultsSummary, CampaignStatusUpdate, CropCampaign, CropCampaignCreate, CampaignSummary, AgronomicDecision, Device, DeviceCreate, DiseaseRisk, FarmOperationCenter, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
 from app.schemas_push import PushTokenCreate
 
 
@@ -267,6 +268,46 @@ def agronomic_decision(parcel_id: str, disease_code: Literal["repilo", "mildiu"]
         storage.create_campaign_decision(str(uuid4()), campaign_id, owner_id, decision.model_dump(mode='json'))
     return decision
 
+
+
+
+@app.post('/api/v1/campaigns/{campaign_id}/results', response_model=CampaignResult, status_code=status.HTTP_201_CREATED)
+def create_campaign_result(campaign_id: str, payload: CampaignResultCreate, _token: str | None = Depends(optional_bearer_token)) -> CampaignResult:
+    owner_id = _token or 'anonymous'
+    campaign = storage.get_campaign(campaign_id, owner_id)
+    if campaign is None:
+        raise HTTPException(status_code=404, detail='Campaña no encontrada')
+    if payload.campaign_id != campaign_id:
+        raise HTTPException(status_code=400, detail='El resultado no pertenece a la campaña indicada')
+    if payload.harvested_at < campaign.started_at:
+        raise HTTPException(status_code=400, detail='La cosecha no puede ser anterior al inicio de la campaña')
+    if campaign.ended_at and payload.harvested_at > campaign.ended_at:
+        raise HTTPException(status_code=400, detail='La cosecha queda fuera del periodo de campaña')
+    now = datetime.now(timezone.utc)
+    result = build_campaign_result(campaign, str(uuid4()), owner_id, payload.model_dump(), now)
+    storage.create_campaign_result(result.id, campaign_id, owner_id, {**result.model_dump(), 'created_at': now})
+    return result
+
+
+@app.get('/api/v1/campaigns/{campaign_id}/results', response_model=list[CampaignResult])
+def list_campaign_results(campaign_id: str, _token: str | None = Depends(optional_bearer_token)) -> list[CampaignResult]:
+    owner_id = _token or 'anonymous'
+    campaign = storage.get_campaign(campaign_id, owner_id)
+    if campaign is None:
+        raise HTTPException(status_code=404, detail='Campaña no encontrada')
+    return [CampaignResult(**item) for item in storage.list_campaign_results(campaign_id, owner_id)]
+
+
+@app.get('/api/v1/campaigns/{campaign_id}/results/summary', response_model=CampaignResultsSummary)
+def campaign_results_summary(campaign_id: str, _token: str | None = Depends(optional_bearer_token)) -> CampaignResultsSummary:
+    owner_id = _token or 'anonymous'
+    campaign = storage.get_campaign(campaign_id, owner_id)
+    if campaign is None:
+        raise HTTPException(status_code=404, detail='Campaña no encontrada')
+    results = [CampaignResult(**item) for item in storage.list_campaign_results(campaign_id, owner_id)]
+    activities = storage.list_activities(campaign.parcel_id, owner_id, 300)
+    decisions = storage.list_campaign_decisions(campaign_id, owner_id)
+    return CampaignResultsSummary(**build_results_summary(campaign, results, activities, decisions))
 
 
 @app.get('/api/v1/campaigns/{campaign_id}/decisions', response_model=list[CampaignDecisionLink])
