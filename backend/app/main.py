@@ -17,7 +17,7 @@ from app.connectors.source_registry import list_data_sources
 from app.connectors.mapa_catalog import load_catalog
 from app.core.config import settings
 from app.core.storage import Storage
-from app.schemas import Alert, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, Parcel, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
+from app.schemas import Alert, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, Parcel, WeatherEvidenceSummary, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
 from app.core.security import optional_bearer_token
 from app.schemas_push import PushTokenCreate
 
@@ -255,6 +255,27 @@ def get_weather(parcel_id: str, _token: str | None = Depends(optional_bearer_tok
         "confidence": "no_disponible",
         "stations": [],
     }
+
+
+@app.get("/api/v1/parcels/{parcel_id}/weather-evidence", response_model=WeatherEvidenceSummary)
+def weather_evidence_summary(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> WeatherEvidenceSummary:
+    owner_id = _token or "anonymous"
+    parcel = get_parcel(parcel_id, owner_id)
+    context = build_weather_context(
+        parcel.latitude,
+        parcel.longitude,
+        storage.list_latest_weather_observations(),
+    )
+    return WeatherEvidenceSummary(
+        parcel_id=parcel_id,
+        available=bool(context["available"]),
+        source=str(context["source"]),
+        confidence=str(context["confidence"]),
+        station_count=len(context.get("stations", [])),
+        fresh_window_hours=72,
+        latest_observed_at=context.get("observed_at"),
+        stations=context.get("stations", []),
+    )
 
 
 @app.get("/api/v1/parcels/{parcel_id}/field-reports/summary", response_model=FieldReportSummary)
