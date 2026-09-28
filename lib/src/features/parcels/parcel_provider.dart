@@ -17,7 +17,7 @@ final parcelsProvider = FutureProvider<List<ParcelSummary>>((ref) async {
     await localStore.write(userId, parcels);
     return parcels.isEmpty ? localParcels : parcels;
   } catch (_) {
-    return localParcels.isEmpty ? ParcelSummary.demo : localParcels;
+    return localParcels;
   }
 });
 
@@ -32,16 +32,10 @@ class ParcelSummary {
   final String place;
   final String risk;
 
-  static List<ParcelSummary> get demo => const [
-        ParcelSummary(name: 'Olivar de prueba', crop: 'Olivar', place: 'Campina de Sevilla', risk: 'Medio'),
-        ParcelSummary(name: 'Vinedo norte', crop: 'Vinedo', place: 'Montilla-Moriles', risk: 'Bajo'),
-        ParcelSummary(name: 'Huerta familiar', crop: 'Olivar', place: 'Sierra de Cordoba', risk: 'Bajo'),
-      ];
-
   factory ParcelSummary.fromJson(Map<String, dynamic> json) => ParcelSummary(
       id: json['id'] as String?,
-      latitude: (json['latitude'] as num?)?.toDouble() ?? 37.39,
-      longitude: (json['longitude'] as num?)?.toDouble() ?? -5.99,
+      latitude: (json['latitude'] as num?)?.toDouble() ?? 0,
+      longitude: (json['longitude'] as num?)?.toDouble() ?? 0,
         name: json['label'] as String? ?? 'Parcela sin nombre',
         crop: json['crop_type'] == 'vinedo' ? 'Vinedo' : 'Olivar',
         place: json['comarca'] as String? ?? 'Andalucia',
