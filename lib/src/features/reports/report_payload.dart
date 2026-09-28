@@ -1,3 +1,5 @@
+import 'package:uuid/uuid.dart';
+
 import '../parcels/parcel_provider.dart';
 
 Map<String, dynamic> buildFieldReportPayload({
@@ -12,6 +14,7 @@ Map<String, dynamic> buildFieldReportPayload({
   }
 
   return {
+    'report_id': const Uuid().v4(),
     'parcel_id': parcel.id!,
     'type': type,
     'notes': notes,
