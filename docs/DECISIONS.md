@@ -616,3 +616,21 @@ Se incorpora un histórico de tratamientos fitosanitarios realizados o introduci
 **Motivo:** disponer de historial agronómico verificable para futuras consultas de trazabilidad, informes y métricas por campaña, manteniendo separadas las actuaciones realizadas de las recomendaciones.
 
 **Validación:** prueba de API para creación, persistencia, lectura y aislamiento entre propietarios.
+
+
+## ADR-051: Preferencias de umbral de alertas
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+Se incorpora configuración por propietario para definir el nivel mínimo de riesgo que desea considerar como aviso y si mantiene habilitada la recepción push.
+
+**Decisión:** se persisten dos preferencias: `minimum_risk_level` (`medio` o `alto`) y `push_enabled`. La lectura sin configuración devuelve valores por defecto (`medio`, push habilitado); la escritura reemplaza la configuración completa del propietario.
+
+**Alcance:** este módulo únicamente gestiona preferencias. No recalcula riesgos, no modifica alertas ya generadas y no altera todavía el motor de envío de notificaciones.
+
+**Seguridad:** las preferencias están aisladas por `owner_id` y nunca se comparten entre usuarios.
+
+**Motivo:** preparar una configuración explícita y persistente para futuras políticas de notificación sin acoplarla al cálculo agronómico.
+
+**Validación:** prueba de API para valores por defecto, persistencia y aislamiento entre propietarios.
