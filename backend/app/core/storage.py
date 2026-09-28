@@ -288,6 +288,26 @@ class Storage:
             )
         return event
 
+    def agronomic_report(self, parcel: Parcel, owner_id: str) -> dict[str, object]:
+        agronomic = self.parcel_agronomic_summary(parcel, owner_id)
+        field_reports = self.field_report_summary(parcel.id, owner_id)
+        irrigation = self.irrigation_summary(parcel.id, owner_id)
+        treatments = self.list_treatment_records(parcel.id, owner_id, limit=200)
+        campaigns = self.list_crop_campaigns(parcel.id, owner_id)
+        return {
+            "parcel": {
+                "id": parcel.id,
+                "label": parcel.label,
+                "crop_type": parcel.crop_type,
+                "comarca": parcel.comarca,
+            },
+            "operational": agronomic,
+            "field_reports": field_reports,
+            "irrigation": irrigation,
+            "campaign_count": len(campaigns),
+            "treatment_count": len(treatments),
+        }
+
     def irrigation_summary(self, parcel_id: str, owner_id: str, campaign_id: str | None = None) -> dict[str, object]:
         query = """
             SELECT COUNT(*) AS event_count,
