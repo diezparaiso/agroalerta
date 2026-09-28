@@ -650,3 +650,19 @@ Se incorpora una consulta agregada sobre los eventos de riego registrados para u
 **Seguridad:** la consulta valida la parcela mediante el propietario autenticado y agrega únicamente eventos del mismo propietario.
 
 **Validación:** prueba de API con dos eventos y comprobación de agregación y aislamiento entre propietarios.
+
+
+## ADR-053: Informe agronómico consolidado por parcela
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+Se añade un endpoint de lectura que consolida información agronómica y operativa ya persistida de una parcela.
+
+**Decisión:** el informe reúne identificación de parcela, resumen operativo, partes de campo, resumen de riego y contadores de campañas y tratamientos.
+
+**Alcance:** no crea nuevas fuentes de datos, no calcula recomendaciones y no modifica el motor de riesgo. Es una vista consolidada sobre módulos existentes.
+
+**Seguridad:** la parcela se resuelve mediante el propietario autenticado y todas las agregaciones se ejecutan con ese mismo `owner_id`.
+
+**Validación:** prueba de integración con riego registrado y comprobación de aislamiento entre propietarios.
