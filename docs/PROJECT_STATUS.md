@@ -55,7 +55,7 @@ Implementado: Firebase Auth en cliente y comprobaciones de propietario en recurs
 
 Pendiente: revisión integral de autorización, gestión de secretos, endurecimiento de producción y pruebas de seguridad.
 
-### 3. Parcelas — 70%
+### 3. Parcelas — 75%
 
 Implementado: CRUD, persistencia local, API, asociación por usuario y eliminación de coordenadas ficticias en la interfaz.
 
