@@ -244,3 +244,31 @@ class CampaignResultsSummary(BaseModel):
     treatment_count: int
     irrigation_count: int
     decision_count: int
+
+
+class CampaignTreatmentCreate(BaseModel):
+    campaign_id: str
+    applied_at: datetime
+    product_name: str = Field(min_length=1, max_length=160)
+    active_substance: str | None = Field(default=None, max_length=160)
+    dose: float | None = Field(default=None, ge=0)
+    dose_unit: str | None = Field(default=None, max_length=40)
+    target: str | None = Field(default=None, max_length=120)
+    disease_code: Literal["repilo", "mildiu"] | None = None
+    safety_period_days: int | None = Field(default=None, ge=0)
+    notes: str | None = Field(default=None, max_length=2000)
+
+
+class CampaignTreatment(CampaignTreatmentCreate):
+    id: str
+    owner_id: str
+    created_at: datetime
+
+
+class CampaignTreatmentSummary(BaseModel):
+    campaign: CropCampaign
+    treatment_count: int
+    distinct_product_count: int
+    treatment_days: int
+    linked_decision_count: int
+    latest_treatment_at: datetime | None = None

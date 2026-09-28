@@ -232,3 +232,35 @@ Esta etapa se considera **documentalmente cerrada** cuando:
 - no se presenta como integrado aquello que GitHub aún no haya fusionado.
 
 La siguiente ampliación funcional natural, si se decide continuar, es separar la trazabilidad de tratamientos de la actividad genérica y añadir costes/ingresos para completar el resultado económico de campaña.
+
+
+## 12. PR #11 — trazabilidad específica de tratamientos
+
+Se añade una entidad de tratamiento de campaña separada de la actividad agronómica genérica.
+
+### Datos registrados
+- fecha de aplicación;
+- nombre comercial del producto;
+- materia activa;
+- dosis y unidad;
+- objetivo;
+- enfermedad asociada;
+- plazo de seguridad;
+- notas;
+- propietario y fecha de creación.
+
+### Endpoints
+- `POST /api/v1/campaigns/{campaign_id}/treatments`
+- `GET /api/v1/campaigns/{campaign_id}/treatments`
+- `GET /api/v1/campaigns/{campaign_id}/treatments/summary`
+
+### Reglas
+- El tratamiento debe pertenecer a la campaña indicada.
+- La aplicación debe quedar dentro del periodo de campaña.
+- La enfermedad asociada se limita actualmente a los códigos soportados por el motor: `repilo` y `mildiu`.
+- El resumen cuenta tratamientos, productos distintos, días de plazo de seguridad y enfermedades que tienen una decisión registrada en la misma campaña.
+
+### Persistencia
+Nueva tabla: `campaign_treatments`.
+
+La actividad genérica de tipo `treatment` se conserva para la línea temporal operativa; esta entidad aporta el detalle necesario para trazabilidad específica y futuras validaciones normativas.

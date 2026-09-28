@@ -16,7 +16,8 @@ from app.domain.farm_operation_center import build_farm_center
 from app.domain.activity_timeline import build_activity_timeline
 from app.domain.campaign_management import build_campaign_summary
 from app.domain.campaign_results import build_campaign_result, build_results_summary
-from app.schemas import AgronomicActivity, AgronomicActivityCreate, CampaignDecisionLink, CampaignResult, CampaignResultCreate, CampaignResultsSummary, CampaignStatusUpdate, CropCampaign, CropCampaignCreate, CampaignSummary, AgronomicDecision, Device, DeviceCreate, DiseaseRisk, FarmOperationCenter, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
+from app.domain.campaign_treatments import build_treatment_summary
+from app.schemas import AgronomicActivity, AgronomicActivityCreate, CampaignDecisionLink, CampaignResult, CampaignResultCreate, CampaignResultsSummary, CampaignTreatment, CampaignTreatmentCreate, CampaignTreatmentSummary, CampaignStatusUpdate, CropCampaign, CropCampaignCreate, CampaignSummary, AgronomicDecision, Device, DeviceCreate, DiseaseRisk, FarmOperationCenter, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
 from app.schemas_push import PushTokenCreate
 
 
@@ -269,6 +270,44 @@ def agronomic_decision(parcel_id: str, disease_code: Literal["repilo", "mildiu"]
     return decision
 
 
+
+
+
+@app.post('/api/v1/campaigns/{campaign_id}/treatments', response_model=CampaignTreatment, status_code=status.HTTP_201_CREATED)
+def create_campaign_treatment(campaign_id: str, payload: CampaignTreatmentCreate, _token: str | None = Depends(optional_bearer_token)) -> CampaignTreatment:
+    owner_id = _token or 'anonymous'
+    campaign = storage.get_campaign(campaign_id, owner_id)
+    if campaign is None:
+        raise HTTPException(status_code=404, detail='Campaña no encontrada')
+    if payload.campaign_id != campaign_id:
+        raise HTTPException(status_code=400, detail='El tratamiento no pertenece a la campaña indicada')
+    if payload.applied_at < campaign.started_at or (campaign.ended_at and payload.applied_at > campaign.ended_at):
+        raise HTTPException(status_code=400, detail='La aplicación queda fuera del periodo de campaña')
+    if payload.disease_code and payload.disease_code not in ('repilo', 'mildiu'):
+        raise HTTPException(status_code=400, detail='Enfermedad no soportada')
+    now = datetime.now(timezone.utc)
+    item = CampaignTreatment(id=str(uuid4()), owner_id=owner_id, created_at=now, **payload.model_dump())
+    storage.create_campaign_treatment(item.id, campaign_id, owner_id, item.model_dump())
+    return item
+
+
+@app.get('/api/v1/campaigns/{campaign_id}/treatments', response_model=list[CampaignTreatment])
+def list_campaign_treatments(campaign_id: str, _token: str | None = Depends(optional_bearer_token)) -> list[CampaignTreatment]:
+    owner_id = _token or 'anonymous'
+    if storage.get_campaign(campaign_id, owner_id) is None:
+        raise HTTPException(status_code=404, detail='Campaña no encontrada')
+    return [CampaignTreatment(**item) for item in storage.list_campaign_treatments(campaign_id, owner_id)]
+
+
+@app.get('/api/v1/campaigns/{campaign_id}/treatments/summary', response_model=CampaignTreatmentSummary)
+def campaign_treatment_summary(campaign_id: str, _token: str | None = Depends(optional_bearer_token)) -> CampaignTreatmentSummary:
+    owner_id = _token or 'anonymous'
+    campaign = storage.get_campaign(campaign_id, owner_id)
+    if campaign is None:
+        raise HTTPException(status_code=404, detail='Campaña no encontrada')
+    treatments = [CampaignTreatment(**item) for item in storage.list_campaign_treatments(campaign_id, owner_id)]
+    decisions = storage.list_campaign_decisions(campaign_id, owner_id)
+    return CampaignTreatmentSummary(**build_treatment_summary(campaign, treatments, decisions))
 
 
 @app.post('/api/v1/campaigns/{campaign_id}/results', response_model=CampaignResult, status_code=status.HTTP_201_CREATED)
