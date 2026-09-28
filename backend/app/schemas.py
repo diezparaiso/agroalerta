@@ -114,6 +114,19 @@ class Alert(BaseModel):
     notified_at: datetime | None = None
 
 
+class AlertUserState(BaseModel):
+    alert_id: int
+    read: bool
+    acknowledged: bool
+    read_at: datetime | None = None
+    acknowledged_at: datetime | None = None
+
+
+class AlertUserStateUpdate(BaseModel):
+    read: bool | None = None
+    acknowledged: bool | None = None
+
+
 class NotificationDelivery(BaseModel):
     id: int
     alert_id: int
