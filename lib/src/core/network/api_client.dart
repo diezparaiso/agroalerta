@@ -98,6 +98,69 @@ class ApiClient {
     return response.data!.cast<Map<String, dynamic>>();
   }
 
+  Future<Map<String, dynamic>> getFarmCenter() async {
+    final response = await _dio.get<Map<String, dynamic>>('/api/v1/farm/center');
+    return response.data!;
+  }
+
+  Future<List<Map<String, dynamic>>> getCampaigns(String parcelId) async {
+    final response = await _dio.get<List<dynamic>>('/api/v1/parcels/$parcelId/campaigns');
+    return response.data!.cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> createCampaign({
+    required String parcelId,
+    required String cropType,
+    required String seasonLabel,
+    required DateTime startedAt,
+    String? variety,
+    double? targetYieldTHa,
+    String? notes,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/parcels/$parcelId/campaigns',
+      data: {
+        'parcel_id': parcelId,
+        'crop_type': cropType,
+        'season_label': seasonLabel,
+        'started_at': startedAt.toUtc().toIso8601String(),
+        'variety': variety,
+        'target_yield_t_ha': targetYieldTHa,
+        'notes': notes,
+      },
+    );
+    return response.data!;
+  }
+
+  Future<Map<String, dynamic>> getCampaignSummary(String campaignId) async {
+    final response = await _dio.get<Map<String, dynamic>>('/api/v1/campaigns/$campaignId/summary');
+    return response.data!;
+  }
+
+  Future<void> updateCampaignStatus({
+    required String campaignId,
+    required String status,
+    DateTime? endedAt,
+  }) async {
+    await _dio.patch(
+      '/api/v1/campaigns/$campaignId/status',
+      data: {
+        'status': status,
+        'ended_at': endedAt?.toUtc().toIso8601String(),
+      },
+    );
+  }
+
+  Future<Map<String, dynamic>> getCampaignResultsSummary(String campaignId) async {
+    final response = await _dio.get<Map<String, dynamic>>('/api/v1/campaigns/$campaignId/results/summary');
+    return response.data!;
+  }
+
+  Future<List<Map<String, dynamic>>> getCampaignDecisions(String campaignId) async {
+    final response = await _dio.get<List<dynamic>>('/api/v1/campaigns/$campaignId/decisions');
+    return response.data!.cast<Map<String, dynamic>>();
+  }
+
   Future<Map<String, dynamic>> getIntegrationsHealth() async {
     final response = await _dio.get<Map<String, dynamic>>('/health/integrations');
     return response.data!;
