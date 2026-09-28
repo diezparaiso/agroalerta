@@ -301,6 +301,22 @@ class Storage:
             connection.execute('INSERT OR REPLACE INTO devices (device_id, parcel_id, name, device_type, registered_at, active, owner_id) VALUES (?, ?, ?, ?, ?, ?, ?)', (device.device_id, device.parcel_id, device.name, device.device_type, device.registered_at.isoformat(), int(device.active), device.owner_id or 'anonymous'))
         return device
 
+    def get_device(self, device_id: str, owner_id: str) -> Device | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                'SELECT * FROM devices WHERE device_id = ? AND owner_id = ?',
+                (device_id, owner_id),
+            ).fetchone()
+        return Device(
+            device_id=row['device_id'],
+            parcel_id=row['parcel_id'],
+            name=row['name'],
+            device_type=row['device_type'],
+            registered_at=row['registered_at'],
+            active=bool(row['active']),
+            owner_id=row['owner_id'],
+        ) if row else None
+
     def update_device_active(self, device_id: str, owner_id: str, active: bool) -> Device | None:
         with self._connect() as connection:
             result = connection.execute(
