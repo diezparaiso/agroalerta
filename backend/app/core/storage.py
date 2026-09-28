@@ -311,6 +311,14 @@ class Storage:
             ).fetchone()
         return Alert(**dict(row)) if row else None
 
+    def mark_alert_notified(self, alert_id: int, notified_at: datetime | None = None) -> None:
+        timestamp = notified_at or datetime.now(timezone.utc)
+        with self._connect() as connection:
+            connection.execute(
+                "UPDATE alerts SET notified_at = ? WHERE id = ?",
+                (timestamp.isoformat(), alert_id),
+            )
+
     def list_alerts(
         self,
         parcel_id: str | None = None,
