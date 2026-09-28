@@ -34,6 +34,14 @@ class Storage:
 
     def _initialize(self) -> None:
         with self._connect() as connection:
+            connection.execute(
+                '''
+                CREATE TABLE IF NOT EXISTS schema_migrations (
+                    version INTEGER PRIMARY KEY,
+                    applied_at TEXT NOT NULL
+                )
+                '''
+            )
             connection.executescript(
                 '''
                 CREATE TABLE IF NOT EXISTS parcels (
@@ -150,6 +158,21 @@ class Storage:
                 connection.execute('ALTER TABLE source_records ADD COLUMN latitude REAL')
             if 'longitude' not in source_columns:
                 connection.execute('ALTER TABLE source_records ADD COLUMN longitude REAL')
+            self._record_schema_version(connection, 1)
+
+    @staticmethod
+    def _record_schema_version(connection: sqlite3.Connection, version: int) -> None:
+        connection.execute(
+            'INSERT OR IGNORE INTO schema_migrations (version, applied_at) VALUES (?, ?)',
+            (version, datetime.now(timezone.utc).isoformat()),
+        )
+
+    def schema_version(self) -> int:
+        with self._connect() as connection:
+            row = connection.execute(
+                'SELECT COALESCE(MAX(version), 0) AS version FROM schema_migrations'
+            ).fetchone()
+        return int(row['version'])
 
     def list_parcels(self, owner_id: str | None = None) -> list[Parcel]:
         with self._connect() as connection:
