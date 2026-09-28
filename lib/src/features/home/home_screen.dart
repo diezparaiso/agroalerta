@@ -68,7 +68,7 @@ class _RiskCard extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Riesgo ' + alert.level.toLowerCase() + ' de ' + alert.title,
+                  'Riesgo ${alert.level.toLowerCase()} de ${alert.title}',
                   style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 10),
