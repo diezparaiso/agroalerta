@@ -123,7 +123,9 @@ Implementado: estado visible de la cola, reintentos por informe con backoff expo
 
 Implementado: conflictos de edición de parcelas con versión `updated_at`, HTTP 409 y protección en Flutter.
 
-Pendiente: reconciliación visual de dos versiones y estrategia avanzada de merge.
+Implementado: reconciliación explícita de versión local/remota con elección del usuario y reintento condicionado por versión.
+
+Pendiente: merge por campos y resolución avanzada de conflictos.
 
 ### 14. Privacidad / publicidad — 75%
 
