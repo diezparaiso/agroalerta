@@ -2,6 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:agroalerta_andalucia/src/features/home/telemetry_provider.dart';
 
 void main() {
+  test('telemetry windows compare by duration', () {
+    expect(const TelemetryWindow(24), const TelemetryWindow(24));
+    expect(const TelemetryWindow(24), isNot(const TelemetryWindow(168)));
+  });
   test('telemetrySeries orders real measurements chronologically', () {
     final history = [
       {'temperature_c': 22.0, 'measured_at': '2026-09-28T12:00:00Z'},
