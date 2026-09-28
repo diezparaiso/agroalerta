@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/ads/ad_banner.dart';
 import '../alerts/alerts_provider.dart';
@@ -14,25 +15,57 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppPage(
-      title: 'Buenos dias, agricultor',
-      subtitle: 'Datos disponibles en el sistema',
-      actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none))],
+      title: 'AgroAlerta',
+      subtitle: 'Tu panel agrícola',
+      actions: [
+        IconButton(
+          tooltip: 'Avisos',
+          onPressed: () => context.go('/alerts'),
+          icon: const Icon(Icons.notifications_none_rounded),
+        ),
+      ],
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final columns = constraints.maxWidth >= 1100 ? 3 : constraints.maxWidth >= 650 ? 2 : 1;
-          return GridView.count(
-            crossAxisCount: columns,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: columns == 1 ? 2.1 : 1.45,
-            children: const [
-              _WeatherCard(),
-              _RiskCard(),
-              _ParcelSummaryCard(),
-              _InsightCard(),
-              _MapCard(),
-              _TelemetryCard(),
-            ],
+          final columns = constraints.maxWidth >= 1100
+              ? 3
+              : constraints.maxWidth >= 700
+                  ? 2
+                  : 1;
+
+          return SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const _WelcomeBanner(),
+                const SizedBox(height: 16),
+                _SummaryGrid(columns: columns),
+                const SizedBox(height: 16),
+                if (columns == 1)
+                  const Column(
+                    children: [
+                      _MapCard(),
+                      SizedBox(height: 16),
+                      _AlertsCard(),
+                      SizedBox(height: 16),
+                      _TelemetryCard(),
+                    ],
+                  )
+                else
+                  const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 3, child: _MapCard()),
+                      SizedBox(width: 16),
+                      Expanded(flex: 2, child: _AlertsCard()),
+                    ],
+                  ),
+                if (columns >= 2) ...[
+                  const SizedBox(height: 16),
+                  const _TelemetryCard(),
+                ],
+                const SizedBox(height: 12),
+              ],
+            ),
           );
         },
       ),
@@ -40,120 +73,404 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
+class _WelcomeBanner extends StatelessWidget {
+  const _WelcomeBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [scheme.primary, scheme.primaryContainer],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 22, 24, 22),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 26,
+              backgroundColor: scheme.onPrimary.withOpacity(0.16),
+              child: Icon(Icons.eco_rounded, color: scheme.onPrimary, size: 30),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                'Estado de tus cultivos y avisos fitosanitarios en un solo lugar.',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: scheme.onPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ),
+            if (MediaQuery.sizeOf(context).width >= 700)
+              FilledButton.tonal(
+                onPressed: () => context.go('/parcels'),
+                child: const Text('Ver parcelas'),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SummaryGrid extends StatelessWidget {
+  const _SummaryGrid({required this.columns});
+
+  final int columns;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = (constraints.maxWidth - ((columns - 1) * 16)) / columns;
+        return Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: [
+            SizedBox(width: width, child: const _WeatherCard()),
+            SizedBox(width: width, child: const _RiskCard()),
+            SizedBox(width: width, child: const _ParcelSummaryCard()),
+          ],
+        );
+      },
+    );
+  }
+}
+
 class _WeatherCard extends ConsumerWidget {
   const _WeatherCard();
+
   @override
-    Widget build(BuildContext context, WidgetRef ref) => _Panel(
-        title: 'Condiciones de hoy',
-        icon: Icons.wb_sunny_outlined,
-      child: ref.watch(weatherProvider).when(data: (weather) => Row(children: [Text('${weather['temperature_c'] ?? '--'}°', style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w700)), const SizedBox(width: 18), Text('Humedad ${weather['relative_humidity'] ?? '--'}%\nLluvia ${weather['rainfall_mm_24h'] ?? '--'} mm\nFuente: ${weather['source'] ?? 'estimada'}', style: const TextStyle(height: 1.6))]), loading: () => const Center(child: CircularProgressIndicator()), error: (_, __) => const Text('Clima no disponible')),
-      );
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _Panel(
+      title: 'Meteorología',
+      icon: Icons.cloud_outlined,
+      child: ref.watch(weatherProvider).when(
+        data: (weather) {
+          final temperature = weatherDisplayValue(weather, 'temperature_c');
+          final humidity = weatherDisplayValue(weather, 'relative_humidity');
+          final rain = weatherDisplayValue(weather, 'rainfall_mm_24h');
+          final source = weatherDisplayValue(weather, 'source');
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                temperature == 'No disponible' ? temperature : '$temperature °C',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Text('Humedad: $humidity %'),
+              Text('Lluvia 24 h: $rain mm'),
+              const SizedBox(height: 18),
+              Text(
+                source == 'none' ? 'Datos meteorológicos no disponibles' : 'Fuente: $source',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => const Text('Meteorología no disponible'),
+      ),
+    );
+  }
 }
 
 class _RiskCard extends ConsumerWidget {
   const _RiskCard();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => _Panel(
-        title: 'Aviso prioritario',
-        icon: Icons.warning_amber_rounded,
-        color: Colors.amber.shade100,
-        child: ref.watch(alertsProvider).when(
-          data: (alerts) {
-            if (alerts.isEmpty) {
-              return const Text('No hay avisos de riesgo persistidos.');
-            }
-            final alert = alerts.first;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _Panel(
+      title: 'Avisos activos',
+      icon: Icons.warning_amber_rounded,
+      child: ref.watch(alertsProvider).when(
+        data: (alerts) {
+          final highRisk = alerts.where(
+            (alert) => alert.level.toLowerCase() == 'high' || alert.level.toLowerCase() == 'alto',
+          ).length;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${alerts.length}',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+              Text(alerts.length == 1 ? 'aviso requiere atención' : 'avisos registrados'),
+              const SizedBox(height: 18),
+              if (highRisk > 0)
                 Text(
-                  'Riesgo ${alert.level.toLowerCase()} de ${alert.title}',
-                  style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 10),
-                LinearProgressIndicator(value: alert.value),
-                const SizedBox(height: 10),
-                Text(alert.parcel),
-              ],
-            );
-          },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, __) => const Text('Avisos no disponibles'),
-        ),
-      );
+                  '${highRisk} de nivel alto',
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                )
+              else
+                const Text('Sin avisos de nivel alto'),
+            ],
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => const Text('Avisos no disponibles'),
+      ),
+    );
+  }
 }
 
 class _ParcelSummaryCard extends ConsumerWidget {
   const _ParcelSummaryCard();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => _Panel(
-        title: 'Tus parcelas',
-        icon: Icons.landscape_outlined,
-        child: ref.watch(parcelsProvider).when(
-          data: (parcels) => Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(parcels.length.toString(), style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w700)),
-              const Text('parcelas monitorizadas'),
-              const Spacer(),
-              Text(parcels.isEmpty ? 'Sin parcelas disponibles' : 'Datos sincronizados'),
-            ],
-          ),
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, __) => const Text('Parcelas no disponibles'),
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _Panel(
+      title: 'Tus parcelas',
+      icon: Icons.agriculture_outlined,
+      child: ref.watch(parcelsProvider).when(
+        data: (parcels) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${parcels.length}',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+            const Text('parcelas disponibles'),
+            const SizedBox(height: 18),
+            Text(
+              parcels.isEmpty ? 'Añade tu primera parcela' : 'Datos sincronizados',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
         ),
-      );
-}
-
-class _InsightCard extends StatelessWidget {
-  const _InsightCard();
-
-  @override
-  Widget build(BuildContext context) => _Panel(
-        title: 'Recomendación',
-        icon: Icons.lightbulb_outline,
-        child: const Text(
-          'Las recomendaciones se mostrarán cuando exista una alerta respaldada por datos disponibles.',
-        ),
-      );
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => const Text('Parcelas no disponibles'),
+      ),
+    );
+  }
 }
 
 class _MapCard extends StatelessWidget {
   const _MapCard();
 
   @override
-  Widget build(BuildContext context) => _Panel(title: 'Mapa de parcelas', icon: Icons.map_outlined, child: const ParcelMapPreview());
+  Widget build(BuildContext context) {
+    return _Panel(
+      title: 'Tus parcelas',
+      icon: Icons.map_outlined,
+      action: TextButton(
+        onPressed: () => context.go('/parcels'),
+        child: const Text('Ver todas'),
+      ),
+      child: const SizedBox(height: 300, child: ParcelMapPreview()),
+    );
+  }
+}
+
+class _AlertsCard extends ConsumerWidget {
+  const _AlertsCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _Panel(
+      title: 'Alertas recientes',
+      icon: Icons.notifications_active_outlined,
+      action: TextButton(
+        onPressed: () => context.go('/alerts'),
+        child: const Text('Ver todas'),
+      ),
+      child: ref.watch(alertsProvider).when(
+        data: (alerts) {
+          if (alerts.isEmpty) {
+            return const Center(child: Text('No hay alertas persistidas.'));
+          }
+
+          return ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: alerts.length > 3 ? 3 : alerts.length,
+            separatorBuilder: (_, __) => const Divider(height: 18),
+            itemBuilder: (context, index) {
+              final alert = alerts[index];
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: CircleAvatar(
+                  backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                  child: Icon(
+                    Icons.priority_high_rounded,
+                    color: Theme.of(context).colorScheme.onErrorContainer,
+                  ),
+                ),
+                title: Text(alert.title),
+                subtitle: Text('${alert.parcel} · ${alert.level}'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => context.go('/alerts/${alert.title}?parcelId=${alert.parcel}'),
+              );
+            },
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => const Text('Alertas no disponibles'),
+      ),
+    );
+  }
 }
 
 class _TelemetryCard extends ConsumerWidget {
   const _TelemetryCard();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => _Panel(title: 'Estado del sensor', icon: Icons.sensors_outlined, child: ref.watch(telemetryProvider).when(data: (telemetry) {
-        if (telemetry == null) return const Text('Sin sensores conectados\nLos datos se estimaran con la estación agroclimática más cercana.');
-        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('${telemetry['temperature_c'] ?? '--'} °C', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700)), const SizedBox(height: 8), Text('Humedad ${telemetry['relative_humidity'] ?? '--'}%'), Text('Mojado foliar ${telemetry['leaf_wetness_hours'] ?? '--'} h'), const Spacer(), Row(children: [const Icon(Icons.battery_5_bar, size: 18), const SizedBox(width: 6), Text('${telemetry['battery_percent'] ?? '--'}% de batería')])]);
-      }, loading: () => const Center(child: CircularProgressIndicator()), error: (_, __) => const Text('Telemetría no disponible')));
+  Widget build(BuildContext context, WidgetRef ref) {
+    return _Panel(
+      title: 'Sensores',
+      icon: Icons.sensors_outlined,
+      child: ref.watch(telemetryProvider).when(
+        data: (telemetry) {
+          if (telemetry == null) {
+            return const Text('No hay sensores conectados a la parcela seleccionada.');
+          }
+
+          return Wrap(
+            spacing: 32,
+            runSpacing: 16,
+            children: [
+              _Metric(label: 'Temperatura', value: '${telemetry['temperature_c'] ?? 'No disponible'} °C'),
+              _Metric(label: 'Humedad', value: '${telemetry['relative_humidity'] ?? 'No disponible'} %'),
+              _Metric(label: 'Mojado foliar', value: '${telemetry['leaf_wetness_hours'] ?? 'No disponible'} h'),
+              _Metric(label: 'Batería', value: '${telemetry['battery_percent'] ?? 'No disponible'} %'),
+            ],
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => const Text('Telemetría no disponible'),
+      ),
+    );
+  }
+}
+
+class _Metric extends StatelessWidget {
+  const _Metric({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: Theme.of(context).textTheme.bodySmall),
+        const SizedBox(height: 4),
+        Text(value, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+      ],
+    );
+  }
 }
 
 class AppPage extends StatelessWidget {
-  const AppPage({required this.title, required this.child, this.subtitle, this.actions, this.showAds = true, super.key});
+  const AppPage({
+    required this.title,
+    required this.child,
+    this.subtitle,
+    this.actions,
+    this.showAds = true,
+    super.key,
+  });
+
   final String title;
   final String? subtitle;
   final Widget child;
   final List<Widget>? actions;
   final bool showAds;
+
   @override
-  Widget build(BuildContext context) => Padding(padding: const EdgeInsets.fromLTRB(24, 24, 24, 12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)), if (subtitle != null) Text(subtitle!, style: Theme.of(context).textTheme.bodyMedium)])), ...?actions]), const SizedBox(height: 24), Expanded(child: child), if (showAds) const Padding(padding: EdgeInsets.only(top: 12), child: Center(child: AdBanner()))]));
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    if (subtitle != null)
+                      Text(subtitle!, style: Theme.of(context).textTheme.bodyMedium),
+                  ],
+                ),
+              ),
+              ...?actions,
+            ],
+          ),
+          const SizedBox(height: 18),
+          Expanded(child: child),
+          if (showAds)
+            const Padding(
+              padding: EdgeInsets.only(top: 12),
+              child: Center(child: AdBanner()),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 class _Panel extends StatelessWidget {
-  const _Panel({required this.title, required this.icon, required this.child, this.color});
+  const _Panel({
+    required this.title,
+    required this.icon,
+    required this.child,
+    this.action,
+  });
+
   final String title;
   final IconData icon;
   final Widget child;
-  final Color? color;
+  final Widget? action;
+
   @override
-  Widget build(BuildContext context) => Card(color: color, child: Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [Icon(icon), const SizedBox(width: 10), Text(title, style: const TextStyle(fontWeight: FontWeight.w700))]), const SizedBox(height: 18), Expanded(child: child)])));
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                  ),
+                ),
+                ?action,
+              ],
+            ),
+            const SizedBox(height: 18),
+            child,
+          ],
+        ),
+      ),
+    );
+  }
 }
