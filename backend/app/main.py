@@ -17,7 +17,7 @@ from app.connectors.source_registry import list_data_sources
 from app.connectors.mapa_catalog import load_catalog
 from app.core.config import settings
 from app.core.storage import Storage
-from app.schemas import Alert, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
+from app.schemas import Alert, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, Parcel, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
 from app.core.security import optional_bearer_token
 from app.schemas_push import PushTokenCreate
 
@@ -255,6 +255,13 @@ def get_weather(parcel_id: str, _token: str | None = Depends(optional_bearer_tok
         "confidence": "no_disponible",
         "stations": [],
     }
+
+
+@app.get("/api/v1/parcels/{parcel_id}/agronomic-summary", response_model=ParcelAgronomicSummary)
+def parcel_agronomic_summary(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> ParcelAgronomicSummary:
+    owner_id = _token or "anonymous"
+    parcel = get_parcel(parcel_id, owner_id)
+    return ParcelAgronomicSummary(**storage.parcel_agronomic_summary(parcel, owner_id))
 
 
 @app.get("/api/v1/disease-risk/{parcel_id}", response_model=list[DiseaseRisk])
