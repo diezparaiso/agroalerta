@@ -264,3 +264,36 @@ def test_parcel_agronomic_summary_aggregates_operational_data() -> None:
     assert body["active_device_count"] == 1
     assert body["latest_battery_percent"] == 81
     assert body["recent_alert_count"] == 0
+
+
+def test_field_report_summary_aggregates_recent_reports() -> None:
+    parcel = client.post("/api/v1/parcels", headers={"Authorization": "Bearer user-a"}, json={
+        "label": "Partes", "latitude": 37.39, "longitude": -5.99,
+        "crop_type": "olivar", "comarca": "Sevilla",
+    }).json()
+    parcel_id = parcel["id"]
+    for report_id, report_type, reported_at in (
+        ("report-1", "trampa", "2026-09-27T10:00:00+00:00"),
+        ("report-2", "sintoma", "2026-09-28T10:00:00+00:00"),
+    ):
+        response = client.post("/api/v1/field-reports", headers={"Authorization": "Bearer user-a"}, json={
+            "report_id": report_id, "parcel_id": parcel_id, "type": report_type,
+            "count": 2, "latitude": 37.39, "longitude": -5.99, "reported_at": reported_at,
+        })
+        assert response.status_code == 201
+
+    response = client.get(f"/api/v1/parcels/{parcel_id}/field-reports/summary", headers={"Authorization": "Bearer user-a"})
+    assert response.status_code == 200
+    assert response.json()["total_reports"] == 2
+    assert response.json()["reports_by_type"] == {"trampa": 1, "sintoma": 1}
+    assert response.json()["recent_reports_30d"] == 2
+    assert response.json()["latest_report_type"] == "sintoma"
+
+
+def test_field_report_summary_is_owner_scoped() -> None:
+    parcel = client.post("/api/v1/parcels", headers={"Authorization": "Bearer user-a"}, json={
+        "label": "Privado", "latitude": 37.39, "longitude": -5.99,
+        "crop_type": "olivar", "comarca": "Sevilla",
+    }).json()
+    response = client.get(f"/api/v1/parcels/{parcel['id']}/field-reports/summary", headers={"Authorization": "Bearer user-b"})
+    assert response.status_code == 404
