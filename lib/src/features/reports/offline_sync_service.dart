@@ -11,6 +11,7 @@ class OfflineSyncService {
   final ApiClient _apiClient;
   final OfflineReportStore _store;
   StreamSubscription<List<ConnectivityResult>>? _subscription;
+  bool _syncing = false;
 
   void start() {
     _subscription ??= Connectivity().onConnectivityChanged.listen((results) {
@@ -19,7 +20,10 @@ class OfflineSyncService {
   }
 
   Future<void> sync() async {
-    final pending = await _store.readAll();
+    if (_syncing) return;
+    _syncing = true;
+    try {
+      final pending = await _store.readAll();
     final remaining = <Map<String, dynamic>>[];
     for (final report in pending) {
       try {
@@ -28,7 +32,10 @@ class OfflineSyncService {
         remaining.add(report);
       }
     }
-    await _store.replace(remaining);
+      await _store.replace(remaining);
+    } finally {
+      _syncing = false;
+    }
   }
 
   Future<void> dispose() async => _subscription?.cancel();
