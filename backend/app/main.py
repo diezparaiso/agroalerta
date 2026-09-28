@@ -350,6 +350,16 @@ def agronomic_report(
     return AgronomicReport(**storage.agronomic_report(parcel, owner_id))
 
 
+@app.get("/api/v1/parcels/{parcel_id}/irrigation/intelligence", response_model=IrrigationIntelligence)
+def irrigation_intelligence(parcel_id: str, window_days: int = Query(default=7, ge=1, le=30), _token: str | None = Depends(optional_bearer_token)) -> IrrigationIntelligence:
+    owner_id = _token or "anonymous"
+    get_parcel(parcel_id, owner_id)
+    events = storage.list_irrigation_events(parcel_id, owner_id, 500)
+    telemetry = storage.latest_telemetry(parcel_id, owner_id)
+    payload = telemetry.model_dump(mode="json") if telemetry is not None else None
+    return IrrigationIntelligence(**build_irrigation_intelligence(parcel_id, events, payload, window_days))
+
+
 @app.get("/api/v1/parcels/{parcel_id}/irrigation/summary", response_model=IrrigationSummary)
 def irrigation_summary(
     parcel_id: str,
