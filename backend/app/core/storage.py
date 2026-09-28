@@ -235,6 +235,20 @@ class Storage:
             rows = connection.execute(query + ' ORDER BY name', parameters).fetchall()
         return [Device(device_id=row['device_id'], parcel_id=row['parcel_id'], name=row['name'], device_type=row['device_type'], registered_at=row['registered_at'], active=bool(row['active']), owner_id=row['owner_id']) for row in rows]
 
+    def list_georeferenced_source_records(self, source_code: str) -> list[dict[str, object]]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT source_code, external_id, observed_at, province,
+                       municipality, parcel_reference, latitude, longitude, payload
+                FROM source_records
+                WHERE source_code = ? AND latitude IS NOT NULL AND longitude IS NOT NULL
+                ORDER BY observed_at DESC
+                """,
+                (source_code,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def save_risk_snapshot(self, snapshot: RiskSnapshot) -> None:
         with self._connect() as connection:
             previous = connection.execute('SELECT risk_score, risk_level, calculated_at FROM risk_snapshots WHERE parcel_id = ? AND owner_id = ? AND disease_code = ? ORDER BY calculated_at DESC LIMIT 1', (snapshot.parcel_id, snapshot.owner_id or 'anonymous', snapshot.disease_code)).fetchone()
