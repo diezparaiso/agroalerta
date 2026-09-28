@@ -135,3 +135,16 @@ Reintentos del mismo evento no crean otra alerta, mientras que una nueva transic
 **Consecuencia:** todavía no existe un adaptador PostgreSQL. El fallo explícito evita creer que una URL PostgreSQL está soportada cuando no lo está.
 
 **Validación:** pruebas para URL SQLite y rechazo de drivers no implementados.
+
+
+### ADR-016: Versionado explícito del esquema SQLite
+
+**Estado:** aceptado
+
+**Decisión:** el almacenamiento registra versiones aplicadas en `schema_migrations`. El esquema actual queda identificado como versión 1.
+
+**Motivo:** las modificaciones anteriores eran idempotentes, pero no dejaban trazabilidad de qué versión de esquema estaba instalada. El versionado permite introducir futuras migraciones incrementales sin depender únicamente de `CREATE TABLE IF NOT EXISTS` y comprobaciones de columnas.
+
+**Alcance:** esta primera versión registra el esquema actual; no se inventa una migración histórica destructiva para instalaciones existentes. Las siguientes modificaciones de esquema deberán añadir una versión nueva y una prueba de upgrade.
+
+**Validación:** se comprueba que una base nueva queda en versión 1 y que inicializar varias veces mantiene la misma versión.
