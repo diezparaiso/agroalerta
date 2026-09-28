@@ -562,3 +562,21 @@ Se incorpora `GET /api/v1/parcels/{parcel_id}/activity` como lectura cronológic
 **Motivo:** ofrecer una vista única de actividad agronómica y operativa para futuras pantallas de parcela, auditoría ligera y sincronización, evitando que cada cliente tenga que combinar cuatro endpoints.
 
 **Validación:** prueba de API que comprueba orden cronológico, identidad de eventos y aislamiento entre propietarios.
+
+
+## ADR-048: Ciclo de cultivo explícito por parcela
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+Se incorpora el concepto de campaña/ciclo de cultivo asociado a una parcela mediante `crop_campaigns` y una API específica.
+
+**Decisión:** una campaña conserva nombre, cultivo, inicio, fin opcional y estado (`activa` o `cerrada`). Puede crearse activa y cerrarse posteriormente. La consulta de campañas está limitada a la parcela y propietario autenticados.
+
+**Alcance:** este módulo registra contexto temporal agronómico; no modifica todavía los cálculos de riesgo, telemetría, alertas ni partes existentes. Las fuentes históricas siguen conservando sus propias fechas.
+
+**Integridad:** cuando se proporciona `ended_at` al crear una campaña, debe ser posterior a `started_at`. El cierre asigna la fecha/hora del servidor.
+
+**Motivo:** disponer de una unidad temporal explícita para futuras funciones de trazabilidad por campaña, comparativas entre ciclos, informes agronómicos e histórico de labores.
+
+**Validación:** prueba de API para creación, consulta, cierre y aislamiento entre propietarios.
