@@ -29,9 +29,11 @@ final telemetryHistoryProvider =
   if (parcelId == null || parcelId.isEmpty) return const [];
 
   final window = ref.watch(telemetryWindowProvider);
+  final deviceId = ref.watch(selectedTelemetryDeviceIdProvider);
   return ref.read(apiClientProvider).getTelemetry(
         parcelId,
         sinceHours: window.hours,
+        deviceId: deviceId,
       );
 });
 
