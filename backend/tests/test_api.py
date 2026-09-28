@@ -561,3 +561,35 @@ def test_alert_preferences_are_owner_scoped_and_persisted() -> None:
     assert other.status_code == 200
     assert other.json()["minimum_risk_level"] == "medio"
     assert other.json()["push_enabled"] is True
+
+
+def test_irrigation_summary_aggregates_recorded_events_and_scopes_owner() -> None:
+    parcel = client.post("/api/v1/parcels", headers={"Authorization": "Bearer user-a"}, json={
+        "label": "Riego resumen", "latitude": 37.39, "longitude": -5.99,
+        "crop_type": "olivar", "comarca": "Sevilla",
+    }).json()
+    parcel_id = parcel["id"]
+    headers = {"Authorization": "Bearer user-a"}
+
+    for started_at, minutes, liters in [
+        ("2026-09-27T07:00:00+00:00", 30, 1000),
+        ("2026-09-28T07:00:00+00:00", 45, 1500),
+    ]:
+        response = client.post(
+            f"/api/v1/parcels/{parcel_id}/irrigation",
+            headers=headers,
+            json={"started_at": started_at, "duration_minutes": minutes, "water_liters": liters, "method": "goteo"},
+        )
+        assert response.status_code == 201
+
+    summary = client.get(f"/api/v1/parcels/{parcel_id}/irrigation/summary", headers=headers)
+    assert summary.status_code == 200
+    assert summary.json()["event_count"] == 2
+    assert summary.json()["total_duration_minutes"] == 75
+    assert summary.json()["total_water_liters"] == 2500
+
+    other = client.get(
+        f"/api/v1/parcels/{parcel_id}/irrigation/summary",
+        headers={"Authorization": "Bearer user-b"},
+    )
+    assert other.status_code == 404
