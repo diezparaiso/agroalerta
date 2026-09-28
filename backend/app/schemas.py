@@ -112,3 +112,12 @@ class Alert(BaseModel):
     created_at: datetime
     valid_until: datetime | None = None
     notified_at: datetime | None = None
+
+
+class DeviceHealth(BaseModel):
+    device_id: str
+    parcel_id: str
+    active: bool
+    last_seen_at: datetime | None = None
+    battery_percent: float | None = None
+    telemetry_count: int
