@@ -283,3 +283,16 @@ Reintentos del mismo evento no crean otra alerta, mientras que una nueva transic
 
 **Validación:** `test/features/parcels/parcel_conflict_test.dart` cubre detección de diferencias en el modelo de conflicto.
 
+
+## ADR-027 — Dashboard visual basado únicamente en evidencia disponible
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+**Contexto:** se definió una referencia visual para una pantalla inicial más clara: cabecera, indicadores, mapa, alertas y sensores. Además, persistía un fallback meteorológico con valores sintéticos en Flutter.
+
+**Decisión:** el dashboard será responsive y mostrará únicamente datos procedentes de providers reales. La ausencia de evidencia se representa como `No disponible`. El mapa se centra usando coordenadas reales de parcelas y no utiliza una ubicación ficticia como Sevilla. Se añade una prueba específica para proteger el estado meteorológico sin evidencia.
+
+**Validación:** `test/features/home/weather_provider_test.dart` cubre valores presentes y ausencia de fallback ficticio. CI debe validar análisis y pruebas Flutter.
+
+**Consecuencia:** la interfaz puede verse más vacía cuando no existen datos reales, pero mantiene la trazabilidad agronómica.
