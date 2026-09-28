@@ -389,6 +389,26 @@ class Storage:
                 })
             return result
 
+    def parcel_agronomic_summary(self, parcel: Parcel, owner_id: str) -> dict:
+        devices = self.list_devices(parcel.id, owner_id)
+        health = self.list_device_health(parcel.id, owner_id)
+        telemetry = self.list_latest_telemetry(parcel.id, owner_id, limit=1, since_hours=None)
+        risks = self.list_risk_snapshots(parcel.id, owner_id, limit=10, offset=0)
+        alerts = self.list_alerts(parcel.id, owner_id, limit=10, offset=0)
+        return {
+            "parcel_id": parcel.id,
+            "label": parcel.label,
+            "crop_type": parcel.crop_type,
+            "comarca": parcel.comarca,
+            "device_count": len(devices),
+            "active_device_count": sum(1 for device in devices if device.active),
+            "latest_telemetry_at": telemetry[0]["measured_at"] if telemetry else None,
+            "latest_battery_percent": health[0]["battery_percent"] if health else None,
+            "risk_count": len(risks),
+            "latest_risks": risks,
+            "recent_alert_count": len(alerts),
+        }
+
     def list_georeferenced_source_records(self, source_code: str) -> list[dict[str, object]]:
         with self._connect() as connection:
             rows = connection.execute(
