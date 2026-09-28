@@ -113,3 +113,35 @@ class AgronomicDecision(BaseModel):
     next_steps: list[str]
     evidence: list[AgronomicDecisionEvidence]
     calculated_at: datetime
+
+
+class FarmCenterParcel(BaseModel):
+    parcel_id: str
+    label: str
+    crop_type: Literal["olivar", "vinedo"]
+    comarca: str
+    device_count: int
+    telemetry_available: bool
+    telemetry_measured_at: datetime | None = None
+    soil_moisture: float | None = None
+    active_risk_count: int
+    highest_risk: Literal["ninguno", "bajo", "medio", "alto"]
+    priority: Literal["normal", "vigilar", "revisar"]
+    headline: str
+
+
+class FarmCenterEvent(BaseModel):
+    parcel_id: str
+    event_type: Literal["riesgo", "telemetria", "sensor"]
+    title: str
+    occurred_at: datetime
+    detail: str
+
+
+class FarmOperationCenter(BaseModel):
+    generated_at: datetime
+    parcel_count: int
+    parcel_attention_count: int
+    sensor_count: int
+    parcels: list[FarmCenterParcel]
+    recent_events: list[FarmCenterEvent]
