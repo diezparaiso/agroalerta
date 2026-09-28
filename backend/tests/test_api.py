@@ -250,3 +250,17 @@ def test_device_health_reports_latest_telemetry() -> None:
     assert item["battery_percent"] == 73
     assert item["telemetry_count"] == 1
     assert item["last_seen_at"] == "2026-09-28T10:00:00+00:00"
+
+
+def test_parcel_agronomic_summary_aggregates_operational_data() -> None:
+    parcel = client.post("/api/v1/parcels", headers={"Authorization": "Bearer user-a"}, json={"label": "Resumen", "latitude": 37.39, "longitude": -5.99, "crop_type": "olivar", "comarca": "Sevilla"}).json()
+    client.post("/api/v1/devices", headers={"Authorization": "Bearer user-a"}, json={"parcel_id": parcel["id"], "device_id": "summary-sensor", "name": "Summary", "device_type": "weather_station"})
+    client.post("/api/v1/telemetry", headers={"Authorization": "Bearer user-a"}, json={"telemetry_id": "summary-001", "parcel_id": parcel["id"], "device_id": "summary-sensor", "temperature_c": 21, "relative_humidity": 55, "leaf_wetness_hours": 2, "soil_moisture": 40, "battery_percent": 81, "measured_at": "2026-09-28T10:00:00+00:00"})
+    response = client.get(f"/api/v1/parcels/{parcel['id']}/agronomic-summary", headers={"Authorization": "Bearer user-a"})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["crop_type"] == "olivar"
+    assert body["device_count"] == 1
+    assert body["active_device_count"] == 1
+    assert body["latest_battery_percent"] == 81
+    assert body["recent_alert_count"] == 0
