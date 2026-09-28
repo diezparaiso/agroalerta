@@ -356,6 +356,30 @@ class Storage:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    def list_latest_weather_observations(self, limit: int = 500) -> list[dict[str, object]]:
+        """Devuelve la ultima observacion disponible por estacion meteorologica."""
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT source_code, station_code, observed_at, latitude, longitude,
+                       temperature_c, relative_humidity, rainfall_mm_24h, confidence
+                FROM (
+                    SELECT *,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY source_code, station_code
+                               ORDER BY observed_at DESC
+                           ) AS row_number
+                    FROM weather_observations
+                    WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+                )
+                WHERE row_number = 1
+                ORDER BY observed_at DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def list_georeferenced_source_records(self, source_code: str, limit: int = 1000) -> list[dict[str, object]]:
         with self._connect() as connection:
             rows = connection.execute(
