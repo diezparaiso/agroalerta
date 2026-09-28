@@ -1,4 +1,5 @@
 import pytest
+from datetime import datetime, timezone
 from fastapi.testclient import TestClient
 
 from app.main import app, storage
@@ -350,3 +351,21 @@ def test_notification_delivery_history_is_owner_scoped_and_filterable() -> None:
     )
     assert other.status_code == 200
     assert other.json() == []
+
+
+def test_alert_user_state_tracks_read_and_acknowledgement_by_owner():
+    parcel = client.post('/api/v1/parcels', headers={'Authorization': 'Bearer user-a'}, json={'label': 'Estado alerta', 'latitude': 37.39, 'longitude': -5.99, 'crop_type': 'olivar', 'comarca': 'Sevilla'}).json()
+    alert = storage.save_alert(parcel['id'], 'user-a', 'repilo', 'risk_transition', 'medio', 0.6, 'Riesgo medio', datetime.now(timezone.utc), dedup_key='test-alert-state-1')
+    assert alert is not None
+    initial = client.get('/api/v1/alerts/%s/state' % alert.id, headers={'Authorization': 'Bearer user-a'})
+    assert initial.status_code == 200
+    assert initial.json()['read'] is False
+    assert initial.json()['acknowledged'] is False
+    updated = client.patch('/api/v1/alerts/%s/state' % alert.id, headers={'Authorization': 'Bearer user-a'}, json={'read': True, 'acknowledged': True})
+    assert updated.status_code == 200
+    assert updated.json()['read'] is True
+    assert updated.json()['acknowledged'] is True
+    assert updated.json()['read_at'] is not None
+    assert updated.json()['acknowledged_at'] is not None
+    other = client.get('/api/v1/alerts/%s/state' % alert.id, headers={'Authorization': 'Bearer user-b'})
+    assert other.status_code == 404
