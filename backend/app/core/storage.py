@@ -107,6 +107,19 @@ class Storage:
                     headline TEXT NOT NULL,
                     created_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS campaign_results (
+                    id TEXT PRIMARY KEY,
+                    campaign_id TEXT NOT NULL,
+                    owner_id TEXT NOT NULL,
+                    harvested_at TEXT NOT NULL,
+                    harvested_quantity_kg REAL NOT NULL,
+                    productive_area_ha REAL NOT NULL,
+                    marketable_quantity_kg REAL,
+                    quality_grade TEXT,
+                    destination TEXT,
+                    notes TEXT,
+                    created_at TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS push_tokens (
                     token TEXT PRIMARY KEY,
                     owner_id TEXT NOT NULL,
@@ -252,6 +265,23 @@ class Storage:
         with self._connect() as connection:
             rows = connection.execute(
                 'SELECT id, campaign_id, owner_id, disease_code, decision_score, priority, headline, created_at FROM campaign_decisions WHERE campaign_id = ? AND owner_id = ? ORDER BY created_at DESC',
+                (campaign_id, owner_id),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+
+    def create_campaign_result(self, result_id: str, campaign_id: str, owner_id: str, payload: dict) -> dict:
+        with self._connect() as connection:
+            connection.execute(
+                'INSERT INTO campaign_results (id, campaign_id, owner_id, harvested_at, harvested_quantity_kg, productive_area_ha, marketable_quantity_kg, quality_grade, destination, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                (result_id, campaign_id, owner_id, payload['harvested_at'].isoformat(), payload['harvested_quantity_kg'], payload['productive_area_ha'], payload.get('marketable_quantity_kg'), payload.get('quality_grade'), payload.get('destination'), payload.get('notes'), payload['created_at'].isoformat()),
+            )
+        return {'id': result_id, 'owner_id': owner_id, **payload}
+
+    def list_campaign_results(self, campaign_id: str, owner_id: str) -> list[dict]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                'SELECT * FROM campaign_results WHERE campaign_id = ? AND owner_id = ? ORDER BY harvested_at DESC',
                 (campaign_id, owner_id),
             ).fetchall()
         return [dict(row) for row in rows]
