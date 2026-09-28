@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -332,23 +333,73 @@ class _TelemetryCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final window = ref.watch(telemetryWindowProvider);
     return _Panel(
       title: 'Sensores',
       icon: Icons.sensors_outlined,
-      child: ref.watch(telemetryProvider).when(
-        data: (telemetry) {
-          if (telemetry == null) {
-            return const Text('No hay sensores conectados a la parcela seleccionada.');
+      action: SegmentedButton<TelemetryWindow>(
+        segments: const [
+          ButtonSegment(value: TelemetryWindow(24), label: Text('24 h')),
+          ButtonSegment(value: TelemetryWindow(168), label: Text('7 días')),
+        ],
+        selected: {window},
+        onSelectionChanged: (selection) {
+          ref.read(telemetryWindowProvider.notifier).state = selection.first;
+        },
+      ),
+      child: ref.watch(telemetryHistoryProvider).when(
+        data: (history) {
+          if (history.isEmpty) {
+            return const Text('No hay mediciones reales en el periodo seleccionado.');
           }
+          final temperature = telemetrySeries(history, 'temperature_c');
+          if (temperature.isEmpty) {
+            return const Text('No hay temperatura disponible en el periodo seleccionado.');
+          }
+          final values = temperature.map((item) => (item['temperature_c'] as num).toDouble()).toList();
+          final min = values.reduce((a, b) => a < b ? a : b);
+          final max = values.reduce((a, b) => a > b ? a : b);
+          final range = max - min;
+          final padding = range == 0 ? 1.0 : range * 0.15;
 
-          return Wrap(
-            spacing: 32,
-            runSpacing: 16,
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _Metric(label: 'Temperatura', value: '${telemetry['temperature_c'] ?? 'No disponible'} °C'),
-              _Metric(label: 'Humedad', value: '${telemetry['relative_humidity'] ?? 'No disponible'} %'),
-              _Metric(label: 'Mojado foliar', value: '${telemetry['leaf_wetness_hours'] ?? 'No disponible'} h'),
-              _Metric(label: 'Batería', value: '${telemetry['battery_percent'] ?? 'No disponible'} %'),
+              Text('Temperatura · ${window.label}', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 190,
+                child: LineChart(
+                  LineChartData(
+                    minY: min - padding,
+                    maxY: max + padding,
+                    gridData: const FlGridData(show: true),
+                    titlesData: const FlTitlesData(show: false),
+                    borderData: FlBorderData(show: false),
+                    lineBarsData: [
+                      LineChartBarData(
+                        spots: [
+                          for (var i = 0; i < values.length; i++) FlSpot(i.toDouble(), values[i]),
+                        ],
+                        isCurved: false,
+                        dotData: const FlDotData(show: false),
+                        barWidth: 2,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 24,
+                runSpacing: 8,
+                children: [
+                  _Metric(label: 'Actual', value: '${values.last} °C'),
+                  _Metric(label: 'Mínima', value: '$min °C'),
+                  _Metric(label: 'Máxima', value: '$max °C'),
+                  _Metric(label: 'Mediciones', value: '${values.length}'),
+                ],
+              ),
             ],
           );
         },
