@@ -150,3 +150,52 @@ def test_telemetry_rejects_inactive_device() -> None:
         },
     )
     assert response.status_code == 409
+
+
+def test_device_state_can_be_changed_by_owner() -> None:
+    parcel = client.post(
+        "/api/v1/parcels",
+        headers={"Authorization": "Bearer user-a"},
+        json={"label": "IoT estado", "latitude": 37.39, "longitude": -5.99, "crop_type": "olivar", "comarca": "Sevilla"},
+    ).json()
+    parcel_id = parcel["id"]
+    client.post(
+        "/api/v1/devices",
+        headers={"Authorization": "Bearer user-a"},
+        json={"parcel_id": parcel_id, "device_id": "sensor-state", "name": "Sensor estado", "device_type": "weather_station"},
+    )
+
+    disabled = client.patch(
+        "/api/v1/devices/sensor-state",
+        headers={"Authorization": "Bearer user-a"},
+        json={"active": False},
+    )
+    assert disabled.status_code == 200
+    assert disabled.json()["active"] is False
+
+    enabled = client.patch(
+        "/api/v1/devices/sensor-state",
+        headers={"Authorization": "Bearer user-a"},
+        json={"active": True},
+    )
+    assert enabled.status_code == 200
+    assert enabled.json()["active"] is True
+
+
+def test_device_state_cannot_be_changed_by_other_owner() -> None:
+    parcel = client.post(
+        "/api/v1/parcels",
+        headers={"Authorization": "Bearer user-a"},
+        json={"label": "IoT privado", "latitude": 37.39, "longitude": -5.99, "crop_type": "olivar", "comarca": "Sevilla"},
+    ).json()
+    client.post(
+        "/api/v1/devices",
+        headers={"Authorization": "Bearer user-a"},
+        json={"parcel_id": parcel["id"], "device_id": "sensor-private", "name": "Sensor privado", "device_type": "weather_station"},
+    )
+    response = client.patch(
+        "/api/v1/devices/sensor-private",
+        headers={"Authorization": "Bearer user-b"},
+        json={"active": False},
+    )
+    assert response.status_code == 404
