@@ -18,12 +18,12 @@ class AlertDetailScreen extends ConsumerWidget {
     final alerts = ref.watch(alertsProvider);
 
     return AppPage(
-      title: 'Detalle de ' + disease,
-      subtitle: parcelId == null ? 'Sin parcela seleccionada' : 'Parcela ' + parcelId!,
+      title: 'Detalle de $disease',
+      subtitle: parcelId == null ? 'Sin parcela seleccionada' : 'Parcela $parcelId',
       showAds: false,
       child: alerts.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('No se pudo cargar el aviso: ' + error.toString())),
+        error: (error, _) => Center(child: Text('No se pudo cargar el aviso: $error')),
         data: (records) {
           final matching = records.where(
             (alert) =>
@@ -45,7 +45,7 @@ class AlertDetailScreen extends ConsumerWidget {
                           Icon(Icons.warning_amber_rounded, color: Colors.amber.shade800, size: 32),
                           const SizedBox(width: 12),
                           Text(
-                            alert == null ? 'Riesgo no disponible' : 'Riesgo ' + alert.level.toLowerCase(),
+                            alert == null ? 'Riesgo no disponible' : 'Riesgo ${alert.level.toLowerCase()}',
                             style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700),
                           ),
                         ],
