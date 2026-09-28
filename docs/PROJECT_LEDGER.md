@@ -77,6 +77,19 @@ La persistencia de desarrollo continúa siendo SQLite y los contratos HTTP está
 - La decisión conserva código de enfermedad, puntuación, prioridad y titular.
 - La integración permite que la campaña sea el contexto longitudinal de las decisiones.
 
+### PR #14 — completar inteligencia hídrica
+- Se recupera e integra el módulo de inteligencia hídrica ya definido en PR #4.
+- Se añade persistencia de eventos de riego y contratos HTTP para registrarlos y consultarlos.
+- Se expone la inteligencia hídrica en Flutter.
+- Los umbrales siguen siendo de monitorización; no se convierte el módulo en prescripción de riego.
+
+### PR #13 — completar flujos agronómicos Flutter
+- Se completa la exposición Flutter de la línea temporal agronómica.
+- Se añade interfaz para calcular y consultar la decisión agronómica explicable.
+- Se conecta el registro de resultados productivos a las campañas desde Flutter.
+- Se amplía `ApiClient` con timeline, decisión, inteligencia hídrica y alta de resultados.
+- No se introducen nuevas entidades ni reglas de dominio.
+
 ### PR #12 — módulos Flutter de explotación y campañas
 - Se completa la exposición en Flutter del centro de explotación ya existente en backend.
 - Se añade gestión de campañas por parcela usando los contratos ya definidos.
@@ -177,6 +190,8 @@ Esto permite pasar de un sistema de avisos aislados a un historial de explotaci�
 | Resultado | POST | `/api/v1/campaigns/{campaign_id}/results` |
 | Resultados | GET | `/api/v1/campaigns/{campaign_id}/results` |
 | Resumen resultados | GET | `/api/v1/campaigns/{campaign_id}/results/summary` |
+| Riego | POST | `/api/v1/parcels/{parcel_id}/irrigation/events` |
+| Riegos | GET | `/api/v1/parcels/{parcel_id}/irrigation/events` |
 | Inteligencia hídrica | GET | `/api/v1/parcels/{parcel_id}/irrigation/intelligence?window_days=7` |
 
 ## 8. Calidad y pruebas
@@ -217,6 +232,8 @@ La serie anterior permanece como historial de desarrollo:
 - PR #9 — decisiones en campañas.
 - PR #10 — resultados productivos.
 - PR #12 — módulos Flutter de explotación y campañas.
+- PR #13 — completar flujos agronómicos Flutter.
+- PR #14 — completar inteligencia hídrica.
 
 No se debe interpretar que un PR abierto está integrado en `main` hasta que GitHub confirme su merge.
 

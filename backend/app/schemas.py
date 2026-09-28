@@ -244,3 +244,28 @@ class CampaignResultsSummary(BaseModel):
     treatment_count: int
     irrigation_count: int
     decision_count: int
+
+
+class IrrigationEventCreate(BaseModel):
+    parcel_id: str
+    campaign_id: str | None = None
+    started_at: datetime
+    duration_minutes: int = Field(gt=0, le=1440)
+    water_liters: float | None = Field(default=None, ge=0)
+    method: str = Field(min_length=1, max_length=80)
+    notes: str | None = Field(default=None, max_length=2000)
+    owner_id: str | None = None
+
+class IrrigationIntelligence(BaseModel):
+    parcel_id: str
+    window_days: int
+    event_count: int
+    total_water_liters: float
+    average_daily_water_liters: float
+    latest_irrigation_at: datetime | None = None
+    latest_soil_moisture: float | None = None
+    water_use_level: str
+    soil_status: str
+    action: str
+    explanation: str
+    evidence: list[str]
