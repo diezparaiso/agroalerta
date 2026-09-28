@@ -5,4 +5,5 @@ final activityTimelineProvider = FutureProvider<List<Map<String, dynamic>>>((ref
   final parcelId = ref.watch(selectedTimelineParcelProvider);
   if (parcelId == null) return Future.value(const []);
   return ref.watch(apiClientProvider).getActivityTimeline(parcelId);
-};
+
+final activityTimelineRefreshProvider = StateProvider<int>((ref) => 0);
