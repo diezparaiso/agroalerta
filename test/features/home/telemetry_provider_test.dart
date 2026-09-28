@@ -26,4 +26,16 @@ void main() {
     expect(series, hasLength(1));
     expect(series.single['temperature_c'], 21.0);
   });
+  test('telemetrySeries can isolate a selected sensor', () {
+    final history = [
+      {'device_id': 'sensor-a', 'temperature_c': 20.0, 'measured_at': '2026-09-28T10:00:00Z'},
+      {'device_id': 'sensor-b', 'temperature_c': 30.0, 'measured_at': '2026-09-28T11:00:00Z'},
+    ];
+
+    final series = telemetrySeries(history, 'temperature_c', deviceId: 'sensor-a');
+
+    expect(series, hasLength(1));
+    expect(series.single['temperature_c'], 20.0);
+  });
 }
+
