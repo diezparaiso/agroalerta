@@ -17,7 +17,7 @@ from app.connectors.source_registry import list_data_sources
 from app.connectors.mapa_catalog import load_catalog
 from app.core.config import settings
 from app.core.storage import Storage
-from app.schemas import Alert, Device, DeviceCreate, DiseaseRisk, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
+from app.schemas import Alert, Device, DeviceCreate, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
 from app.core.security import optional_bearer_token
 from app.schemas_push import PushTokenCreate
 
