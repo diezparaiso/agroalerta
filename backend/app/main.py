@@ -10,7 +10,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.domain.disease_rules import evaluate_risk
 from app.domain.geospatial import haversine_km
 from app.domain.raif_evidence import score_raif_evidence
-from app.domain.weather_evidence import normalize_ria_daily
 from app.connectors.source_registry import list_data_sources
 from app.core.config import settings
 from app.core.storage import Storage
@@ -193,9 +192,6 @@ def get_disease_risk(parcel_id: str, _token: str | None = Depends(optional_beare
     parcel = get_parcel(parcel_id, owner_id)
     telemetry = storage.latest_telemetry(parcel_id, owner_id)
     raif_records = storage.list_georeferenced_source_records("raif_fitosanitario")
-    # La meteorología real se conectará mediante la capa de ingestión; mientras
-    # tanto no se mezclan datos externos no persistidos con el cálculo.
-    weather_context: dict[str, object] = {}
     risks = []
     for disease in ("repilo", "mildiu"):
         if not ((disease == "repilo" and parcel.crop_type == "olivar") or (disease == "mildiu" and parcel.crop_type == "vinedo")):
