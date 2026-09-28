@@ -86,3 +86,67 @@ def test_risk_history_accepts_pagination_parameters() -> None:
     history = client.get(f"/api/v1/risk-history/{parcel_id}?limit=1&offset=0")
     assert history.status_code == 200
     assert len(history.json()) <= 1
+
+
+def test_telemetry_requires_registered_active_device() -> None:
+    parcel = client.post(
+        "/api/v1/parcels",
+        headers={"Authorization": "Bearer user-a"},
+        json={"label": "IoT", "latitude": 37.39, "longitude": -5.99, "crop_type": "olivar", "comarca": "Sevilla"},
+    ).json()
+    parcel_id = parcel["id"]
+    payload = {
+        "parcel_id": parcel_id,
+        "device_id": "sensor-1",
+        "temperature_c": 20,
+        "relative_humidity": 70,
+        "leaf_wetness_hours": 2,
+        "soil_moisture": 30,
+        "battery_percent": 90,
+        "measured_at": "2026-09-28T10:00:00Z",
+    }
+
+    unknown = client.post("/api/v1/telemetry", headers={"Authorization": "Bearer user-a"}, json=payload)
+    assert unknown.status_code == 404
+
+    device = client.post(
+        "/api/v1/devices",
+        headers={"Authorization": "Bearer user-a"},
+        json={"parcel_id": parcel_id, "device_id": "sensor-1", "name": "Sensor 1", "device_type": "weather_station"},
+    )
+    assert device.status_code == 201
+
+    accepted = client.post("/api/v1/telemetry", headers={"Authorization": "Bearer user-a"}, json=payload)
+    assert accepted.status_code == 202
+
+
+def test_telemetry_rejects_inactive_device() -> None:
+    parcel = client.post(
+        "/api/v1/parcels",
+        headers={"Authorization": "Bearer user-a"},
+        json={"label": "IoT inactivo", "latitude": 37.39, "longitude": -5.99, "crop_type": "olivar", "comarca": "Sevilla"},
+    ).json()
+    parcel_id = parcel["id"]
+    client.post(
+        "/api/v1/devices",
+        headers={"Authorization": "Bearer user-a"},
+        json={"parcel_id": parcel_id, "device_id": "sensor-off", "name": "Sensor apagado", "device_type": "weather_station"},
+    )
+    with storage._connect() as connection:
+        connection.execute("UPDATE devices SET active = 0 WHERE device_id = ?", ("sensor-off",))
+
+    response = client.post(
+        "/api/v1/telemetry",
+        headers={"Authorization": "Bearer user-a"},
+        json={
+            "parcel_id": parcel_id,
+            "device_id": "sensor-off",
+            "temperature_c": 20,
+            "relative_humidity": 70,
+            "leaf_wetness_hours": 2,
+            "soil_moisture": 30,
+            "battery_percent": 90,
+            "measured_at": "2026-09-28T10:00:00Z",
+        },
+    )
+    assert response.status_code == 409
