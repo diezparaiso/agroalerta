@@ -198,3 +198,8 @@ El módulo de productos autorizados deja de ser una lista básica: la API admite
 Se cerró el contrato inicial de histórico reciente de telemetría por parcela: backend autenticado, consulta limitada y ordenada, y cliente Flutter preparado para consumirlo. No se generan valores sintéticos.
 
 **IoT/telemetría:** 75% → 80%. Queda para una fase posterior la visualización temporal avanzada, gestión completa del ciclo de vida del dispositivo y validación con hardware real.
+
+
+## Actualización 2026-09-28 — Ventanas temporales IoT
+
+El histórico de telemetría ya admite ventanas reales de 24 h hasta 7 días mediante since_hours, con límites de consulta y control de propietario. La visualización avanzada queda preparada para consumir este contrato.
