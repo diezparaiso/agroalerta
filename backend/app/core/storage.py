@@ -95,6 +95,23 @@ class Storage:
                 columns = {row['name'] for row in connection.execute(f'PRAGMA table_info({table})')}
                 if 'owner_id' not in columns:
                     connection.execute(f"ALTER TABLE {table} ADD COLUMN owner_id TEXT NOT NULL DEFAULT 'anonymous'")
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS weather_observations (
+                    source_code TEXT NOT NULL,
+                    station_code TEXT NOT NULL,
+                    observed_at TEXT NOT NULL,
+                    latitude REAL,
+                    longitude REAL,
+                    temperature_c REAL,
+                    relative_humidity REAL,
+                    rainfall_mm_24h REAL,
+                    confidence TEXT NOT NULL,
+                    ingested_at TEXT NOT NULL,
+                    PRIMARY KEY (source_code, station_code, observed_at)
+                )
+                """
+            )
             source_columns = {row['name'] for row in connection.execute('PRAGMA table_info(source_records)')}
             if 'latitude' not in source_columns:
                 connection.execute('ALTER TABLE source_records ADD COLUMN latitude REAL')
