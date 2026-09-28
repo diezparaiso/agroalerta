@@ -1,3 +1,9 @@
+"""Motor de decisión agronómica explicable: combina riesgo, telemetría, clima, reportes de campo y señal RAIF; nunca prescribe dosis/productos.
+
+Este módulo contiene reglas de dominio puras o casi puras. Las rutas HTTP y la persistencia
+se mantienen fuera para que los cálculos puedan probarse de forma aislada.
+"""
+
 from __future__ import annotations
 
 from datetime import datetime, timezone
