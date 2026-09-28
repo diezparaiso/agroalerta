@@ -35,22 +35,37 @@ def _first(mapping: dict[str, Any], *names: str) -> Any:
 
 def normalize_ria_daily(data: Any, station: str | None = None) -> WeatherEvidence | None:
     """Normaliza una observacion diaria RIA sin asumir un esquema único."""
-    rows = data if isinstance(data, list) else data.get("datos", data.get("data", [])) if isinstance(data, dict) else []
+    rows = _extract_rows(data)
     if not isinstance(rows, list) or not rows:
         return None
     row = rows[-1]
     if not isinstance(row, dict):
         return None
     return WeatherEvidence(
-        temperature_c=_number(_first(row, "temperatura_media", "tm", "tmedia", "temperatura")),
-        relative_humidity=_number(_first(row, "humedad_relativa_media", "hr", "humedad")),
-        rainfall_mm_24h=_number(_first(row, "precipitacion", "precipitacion_mm", "lluvia")),
-        observed_at=_parse_datetime(_first(row, "fecha", "date", "fechadato")),
+        temperature_c=_number(_first(row, "temperatura_media", "temperaturamedia", "tm", "tmedia", "temperatura", "temp", "temperature")),
+        relative_humidity=_number(_first(row, "humedad_relativa_media", "humedadrelativamedia", "hr", "humedad", "humedad_relativa", "relativehumidity", "rh")),
+        rainfall_mm_24h=_number(_first(row, "precipitacion", "precipitacion_mm", "precipitacion24h", "lluvia", "rainfall")),
+        observed_at=_parse_datetime(_first(row, "fecha", "date", "fechadato", "fecha_dato", "datetime", "timestamp")),
         source="ria_ifapa",
         station=station,
         confidence="alta",
     )
 
+
+def _extract_rows(data: Any) -> list[Any]:
+    if isinstance(data, list):
+        return data
+    if not isinstance(data, dict):
+        return []
+    for key in ("datos", "data", "results", "result", "items", "registros"):
+        value = data.get(key)
+        if isinstance(value, list):
+            return value
+        if isinstance(value, dict):
+            nested = _extract_rows(value)
+            if nested:
+                return nested
+    return []
 
 def normalize_aemet_daily(data: Any) -> WeatherEvidence | None:
     """Extrae una observacion diaria de la respuesta municipal de AEMET."""
@@ -83,7 +98,7 @@ def _parse_datetime(value: Any) -> datetime | None:
     if not value:
         return None
     text = str(value)
-    for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d", "%d/%m/%Y"):
+    for fmt in ("%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"):
         try:
             return datetime.strptime(text[:19], fmt).replace(tzinfo=timezone.utc)
         except ValueError:
