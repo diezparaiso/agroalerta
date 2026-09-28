@@ -98,6 +98,56 @@ class ApiClient {
     return response.data!.cast<Map<String, dynamic>>();
   }
 
+  Future<List<Map<String, dynamic>>> getActivityTimeline(String parcelId, {int limit = 100}) async {
+    final response = await _dio.get<List<dynamic>>(
+      '/api/v1/parcels/$parcelId/activity-timeline',
+      queryParameters: {'limit': limit},
+    );
+    return response.data!.cast<Map<String, dynamic>>();
+  }
+
+  Future<List<Map<String, dynamic>>> getDecisions(String parcelId, String diseaseCode, {String? campaignId}) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/v1/agronomic-decision/$parcelId/$diseaseCode',
+      queryParameters: campaignId == null ? null : {'campaign_id': campaignId},
+    );
+    return [response.data!];
+  }
+
+  Future<Map<String, dynamic>> getIrrigationIntelligence(String parcelId, {int windowDays = 7}) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/v1/parcels/$parcelId/irrigation/intelligence',
+      queryParameters: {'window_days': windowDays},
+    );
+    return response.data!;
+  }
+
+  Future<Map<String, dynamic>> createCampaignResult({
+    required String campaignId,
+    required DateTime harvestedAt,
+    required double harvestedQuantityKg,
+    required double productiveAreaHa,
+    double? marketableQuantityKg,
+    String? qualityGrade,
+    String? destination,
+    String? notes,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/campaigns/$campaignId/results',
+      data: {
+        'campaign_id': campaignId,
+        'harvested_at': harvestedAt.toUtc().toIso8601String(),
+        'harvested_quantity_kg': harvestedQuantityKg,
+        'productive_area_ha': productiveAreaHa,
+        'marketable_quantity_kg': marketableQuantityKg,
+        'quality_grade': qualityGrade,
+        'destination': destination,
+        'notes': notes,
+      },
+    );
+    return response.data!;
+  }
+
   Future<Map<String, dynamic>> getFarmCenter() async {
     final response = await _dio.get<Map<String, dynamic>>('/api/v1/farm/center');
     return response.data!;
