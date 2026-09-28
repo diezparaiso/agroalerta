@@ -11,13 +11,12 @@ Incluye un vertical slice funcional:
 - Parcelas guardadas localmente por `uid` en el dispositivo para funcionamiento offline.
 - Publicidad AdMob en pantallas generales, nunca dentro de avisos de enfermedad.
 - Navegacion adaptativa: `NavigationBar` en movil y `NavigationRail` en tablet/escritorio.
-- Backend FastAPI con parcelas, clima demo, riesgo de repilo/mildiu, productos y reportes.
+- Backend FastAPI con parcelas, meteorología persistida, riesgo de repilo/mildiu, productos y reportes.
 - Historial de riesgo recuperable desde Flutter para gráficas por parcela.
 - Persistencia SQLite local para parcelas y reportes, con CRUD completo.
 - Conectores aislados para AEMET y RIA/IFAPA, más importador CSV versionado para MAPA.
 - Tarea de ingesta preparada para ejecutarse desde cron, Celery o Cloud Run Jobs.
 - Motor de riesgo MVP determinista con respuesta trazable y nivel de confianza estimado.
-- Modo demo en la interfaz para revisar la experiencia sin credenciales ni backend.
 - Configuracion de VS Code, Docker Compose y pruebas del backend.
 
 ## Ejecutar el backend
@@ -59,7 +58,7 @@ También hay que registrar el `APPLICATION_ID` de AdMob en Android y el `GADAppl
 
 El almacenamiento local del cliente usa `shared_preferences` como adaptador multiplataforma inicial para evitar bloquear Web. La interfaz `OfflineCache` permite sustituirlo por Isar cuando se confirme la estrategia de soporte Web. El backend persiste sus datos de desarrollo en `backend/agroalerta.db` y puede migrarse a PostgreSQL/PostGIS sin cambiar los contratos HTTP.
 
-Los datos meteorológicos y MAPA visibles en el MVP son de demostración. Los conectores ya están aislados, pero la activación productiva requiere credenciales de AEMET y verificación de los contratos públicos de RIA y MAPA.
+La interfaz no presenta datos agronómicos ficticios como si fueran observaciones reales. Cuando falta evidencia meteorológica, se muestra explícitamente como no disponible. Los conectores externos siguen requiriendo validación de contratos, credenciales cuando proceda y configuración productiva.
 
 Las recomendaciones no sustituyen la etiqueta oficial ni el asesoramiento de un técnico agrícola.
 
@@ -79,3 +78,7 @@ La tarea de ingesta meteorologica ya no utiliza una ventana fija 2026/01-12: por
 ## Ingeniería y buenas prácticas
 
 Las decisiones de arquitectura y las reglas que deben acompañar cada cambio están documentadas en docs/DECISIONS.md y docs/ENGINEERING_GUIDELINES.md. Estos documentos forman parte del criterio de terminado del proyecto: los cambios relevantes deben dejar constancia de intención, impacto, validación y decisiones técnicas.
+
+## Estado de ingeniería
+
+La cobertura funcional estimada por módulos, su metodología y los pendientes de producción se mantienen en [`docs/PROJECT_STATUS.md`](docs/PROJECT_STATUS.md). Es una estimación de ingeniería, no una métrica de líneas de código.
