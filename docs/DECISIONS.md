@@ -344,3 +344,13 @@ La decisión se valida mediante `flutter analyze`, `flutter test` y la compilaci
 **Alcance:** no se generan mediciones sintéticas ni se considera conectado un sensor por el mero hecho de estar registrado. La ausencia de registros se presenta como ausencia de evidencia.
 
 **Siguiente evolución:** gráficos temporales, selección de sensor y ventanas de 24 h/7 días.
+
+
+## ADR-032: Ventanas temporales explícitas para telemetría
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+El histórico de telemetría acepta `since_hours` además del límite de registros. El backend restringe la ventana a 1–168 horas y el cliente Flutter expone el mismo contrato. Así, las vistas 24 h y 7 días consultan evidencia real del intervalo solicitado, sin extrapolar ni fabricar puntos.
+
+La consulta continúa ordenada de más reciente a más antigua y limitada a 200 registros. La autorización se aplica al propietario de la parcela.
