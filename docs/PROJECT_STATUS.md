@@ -91,13 +91,13 @@ Implementado: recepción y uso de telemetría en el dominio de riesgo.
 
 Pendiente: robustez de dispositivos, ingestión real continua, validación de calidad y monitorización.
 
-### 9. Informes de campo — 60%
+### 9. Informes de campo — 72%
 
 Implementado: persistencia y CRUD local/backend, fotografías, cola offline y sincronización al recuperar conectividad. Los informes usan las coordenadas reales de la parcela, el sincronizador evita ejecuciones concurrentes y el formulario exige seleccionar explícitamente la parcela antes de registrar la observación.
 
 Pendiente: estado de sincronización visible, reintentos con backoff y explotación agronómica de los informes.
 
-### 10. Productos fitosanitarios / MAPA — 25%
+### 10. Productos fitosanitarios / MAPA — 35%
 
 Existe el conector CSV versionado y ahora el API/cliente no presentan productos ficticios: solo exponen un snapshot configurado mediante `MAPA_CATALOG_PATH`. Pendiente: automatizar/verificar la obtención del registro oficial vigente, persistencia/actualización del catálogo y explotación segura en recomendaciones.
 
@@ -125,7 +125,7 @@ Pendiente: conflictos y consistencia avanzada entre dispositivo y servidor.
 
 ### 14. Privacidad / publicidad — 75%
 
-Publicidad separada de las pantallas de enfermedad y configuración mediante IDs de prueba.
+Publicidad separada de las pantallas de enfermedad y configuración mediante ID de unidad configurable; sin ID configurado, la publicidad permanece desactivada.
 
 Pendiente: configuración productiva, consentimiento cuando corresponda y revisión final de políticas de plataforma.
 
