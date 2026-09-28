@@ -189,3 +189,19 @@ Reintentos del mismo evento no crean otra alerta, mientras que una nueva transic
 **Sincronización:** el servicio offline evita ejecuciones concurrentes de sincronización para no enviar dos veces la misma cola cuando se producen varios eventos de conectividad.
 
 **Pendiente:** selector explícito de parcela en el formulario, estado de sincronización visible y estrategia de reintentos con backoff.
+
+## ADR-020: Selección explícita de parcela en observaciones de campo
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+**Contexto:** el formulario de observaciones ya utilizaba el identificador y coordenadas reales, pero escogía automáticamente la primera parcela disponible. Con varias parcelas, esa heurística podía asociar una observación válida a la parcela equivocada.
+
+**Decisión:** el formulario exige seleccionar una parcela por su identificador persistente. El payload de la observación se construye desde esa parcela y conserva sus coordenadas reales. Si la parcela no tiene identidad persistente o coordenadas válidas, el payload se rechaza antes de enviarse o encolarse.
+
+**Validación:** `test/features/reports/report_payload_test.dart` comprueba tanto el mapeo de identidad/coordenadas como el rechazo de parcelas incompletas.
+
+**Consecuencia:** la observación queda vinculada a la parcela elegida por el usuario y no depende del orden de la lista local o remota.
+
+**Pendiente:** mostrar estado de sincronización y añadir estrategia de reintentos con backoff para la cola offline.
+
