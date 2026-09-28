@@ -20,7 +20,7 @@ La estimación debe actualizarse después de hitos relevantes y no debe interpre
 |---|---:|
 | Backend / API FastAPI | 90% |
 | Autenticación y seguridad | 70% |
-| Parcelas | 70% |
+| Parcelas | 75% |
 | Meteorología RIA / AEMET | 65% |
 | Motor agronómico y riesgo | 70% |
 | Alertas | 75% |
@@ -29,13 +29,13 @@ La estimación debe actualizarse después de hitos relevantes y no debe interpre
 | Informes de campo | 72% |
 | Productos fitosanitarios / MAPA | 35% |
 | GIS / contexto espacial | 45% |
-| Flutter / UI-UX | 78% |
+| Flutter / UI-UX | 82% |
 | Offline / sincronización | 70% |
 | Privacidad / publicidad | 75% |
 | Tests / QA / CI | 65% |
 | Despliegue / producción | 45% |
 
-**Estimación global de desarrollo funcional: ~68%.**
+**Estimación global de desarrollo funcional: ~69%.**
 
 La estimación global es ponderada por importancia funcional de cada módulo; por tanto, no equivale a la media aritmética de la tabla.
 
