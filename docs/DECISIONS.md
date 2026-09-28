@@ -496,3 +496,19 @@ Se incorpora `GET /api/v1/parcels/{parcel_id}/weather-evidence` como módulo de 
 **Trazabilidad:** solo se utilizan observaciones meteorológicas persistidas y la selección espacial existente; no se generan valores sintéticos.
 
 **Validación:** pruebas de API para ausencia de evidencia y aislamiento por propietario.
+
+
+## ADR-044: Historial de entregas de notificaciones
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+Se incorpora una tabla de historial de entregas y `GET /api/v1/notifications/deliveries` para consultar intentos de notificación asociados a alertas.
+
+**Decisión:** cada registro conserva estado, número de tokens objetivo, envíos correctos, fallos y fecha. La consulta admite filtrar por `alert_id`, limita resultados y queda aislada por propietario. Este historial es operativo y no sustituye el estado de la alerta ni confirma por sí mismo que un usuario haya leído la notificación.
+
+**Motivo:** disponer de trazabilidad independiente para diagnóstico de FCM y futuras métricas de entrega.
+
+**Trazabilidad:** se almacenan únicamente resultados explícitos de entrega; no se infiere recepción o lectura del dispositivo.
+
+**Validación:** prueba de API que verifica filtro por alerta y aislamiento entre propietarios.
