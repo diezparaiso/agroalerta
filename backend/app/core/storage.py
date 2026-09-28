@@ -95,6 +95,11 @@ class Storage:
                 columns = {row['name'] for row in connection.execute(f'PRAGMA table_info({table})')}
                 if 'owner_id' not in columns:
                     connection.execute(f"ALTER TABLE {table} ADD COLUMN owner_id TEXT NOT NULL DEFAULT 'anonymous'")
+            source_columns = {row['name'] for row in connection.execute('PRAGMA table_info(source_records)')}
+            if 'latitude' not in source_columns:
+                connection.execute('ALTER TABLE source_records ADD COLUMN latitude REAL')
+            if 'longitude' not in source_columns:
+                connection.execute('ALTER TABLE source_records ADD COLUMN longitude REAL')
 
     def list_parcels(self, owner_id: str | None = None) -> list[Parcel]:
         with self._connect() as connection:
