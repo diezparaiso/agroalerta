@@ -106,8 +106,8 @@ class ApiClient {
     return response.data!.cast<Map<String, dynamic>>();
   }
 
-  Future<void> submitFieldReport({required String parcelId, required String type, required String notes, required int count, required double latitude, required double longitude, String? photoUrl}) async {
-    await _dio.post('/api/v1/field-reports', data: {'parcel_id': parcelId, 'type': type, 'notes': notes, 'count': count, 'latitude': latitude, 'longitude': longitude, 'photo_url': photoUrl, 'reported_at': DateTime.now().toUtc().toIso8601String()});
+  Future<void> submitFieldReport({required String parcelId, required String type, required String notes, required int count, required double latitude, required double longitude, String? photoUrl, String? reportId}) async {
+    await _dio.post('/api/v1/field-reports', data: {'report_id': reportId, 'parcel_id': parcelId, 'type': type, 'notes': notes, 'count': count, 'latitude': latitude, 'longitude': longitude, 'photo_url': photoUrl, 'reported_at': DateTime.now().toUtc().toIso8601String()});
   }
 
   Future<void> submitRawFieldReport(Map<String, dynamic> report) async {
