@@ -422,3 +422,17 @@ La API rechaza telemetría cuya marca `measured_at` esté más de 15 minutos en 
 **Alcance:** no se rechazan por edad las lecturas históricas; pueden ser necesarias para sincronizaciones atrasadas. La vigencia para riesgo debe seguir siendo una regla del cálculo, separada de la aceptación del dato histórico.
 
 **Validación:** prueba de API que verifica HTTP 422 ante una marca temporal futura.
+
+
+## ADR-039: Idempotencia de eventos de telemetría
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+Cada lectura de telemetría debe transportar un `telemetry_id` estable generado por el productor del evento. SQLite aplica unicidad sobre esa identidad y los reintentos devuelven `already_received` sin insertar otra lectura.
+
+**Motivo:** gateways y sensores pueden repetir envíos por timeout o pérdida de confirmación. La identidad del evento debe sobrevivir al reintento; el servidor no genera un identificador nuevo para cada intento.
+
+**Compatibilidad:** la base existente incorpora la columna mediante actualización de esquema. Los históricos conservan sus lecturas y los nuevos eventos pasan a exigir identidad estable.
+
+**Validación:** prueba de API que envía dos veces el mismo evento y comprueba que la segunda respuesta es `already_received`.
