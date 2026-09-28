@@ -17,7 +17,7 @@ from app.connectors.source_registry import list_data_sources
 from app.connectors.mapa_catalog import load_catalog
 from app.core.config import settings
 from app.core.storage import Storage
-from app.schemas import Alert, AlertUserState, AlertUserStateUpdate, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, NotificationDelivery, Parcel, WeatherEvidenceSummary, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate, TelemetryQualitySummary
+from app.schemas import Alert, AlertUserState, AlertUserStateUpdate, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, NotificationDelivery, Parcel, WeatherEvidenceSummary, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate, TelemetryQualitySummary, ParcelActivityEvent
 from app.core.security import optional_bearer_token
 from app.schemas_push import PushTokenCreate
 
@@ -276,6 +276,18 @@ def weather_evidence_summary(parcel_id: str, _token: str | None = Depends(option
         latest_observed_at=context.get("observed_at"),
         stations=context.get("stations", []),
     )
+
+
+@app.get("/api/v1/parcels/{parcel_id}/activity", response_model=list[ParcelActivityEvent])
+def parcel_activity(
+    parcel_id: str,
+    limit: int = Query(default=100, ge=1, le=200),
+    _token: str | None = Depends(optional_bearer_token),
+) -> list[ParcelActivityEvent]:
+    """Devuelve una línea temporal de actividad persistida de la parcela."""
+    owner_id = _token or "anonymous"
+    get_parcel(parcel_id, owner_id)
+    return [ParcelActivityEvent(**item) for item in storage.list_parcel_activity(parcel_id, owner_id, limit)]
 
 
 @app.get("/api/v1/parcels/{parcel_id}/field-reports/summary", response_model=FieldReportSummary)
