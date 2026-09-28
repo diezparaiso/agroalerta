@@ -67,6 +67,7 @@ class TelemetryCreate(BaseModel):
     relative_humidity: float = Field(ge=0, le=100)
     leaf_wetness_hours: float = Field(ge=0, le=24)
     soil_moisture: float = Field(ge=0, le=100)
+    rainfall_mm_24h: float = Field(default=0, ge=0, le=500)
     battery_percent: float = Field(ge=0, le=100)
     measured_at: datetime
     owner_id: str | None = None
