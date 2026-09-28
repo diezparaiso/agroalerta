@@ -173,6 +173,14 @@ class Storage:
             row = connection.execute(query + ' ORDER BY measured_at DESC LIMIT 1', parameters).fetchone()
         return TelemetryCreate(**json.loads(row['payload'])) if row else None
 
+    def list_risk_snapshots_since(self, parcel_id: str, owner_id: str, since: datetime, limit: int = 20) -> list[RiskSnapshot]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                'SELECT parcel_id, owner_id, disease_code, risk_score, risk_level, calculated_at FROM risk_snapshots WHERE parcel_id = ? AND owner_id = ? AND calculated_at >= ? ORDER BY calculated_at DESC LIMIT ?',
+                (parcel_id, owner_id, since.isoformat(), limit),
+            ).fetchall()
+        return [RiskSnapshot(**dict(row)) for row in rows]
+
     def create_device(self, device: Device) -> Device:
         with self._connect() as connection:
             connection.execute('INSERT OR REPLACE INTO devices (device_id, parcel_id, name, device_type, registered_at, active, owner_id) VALUES (?, ?, ?, ?, ?, ?, ?)', (device.device_id, device.parcel_id, device.name, device.device_type, device.registered_at.isoformat(), int(device.active), device.owner_id or 'anonymous'))

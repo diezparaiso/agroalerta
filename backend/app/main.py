@@ -3,6 +3,7 @@ import logging
 import os
 import time
 from uuid import uuid4
+from typing import Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,7 +12,8 @@ from app.core.security import optional_bearer_token
 from app.core.storage import Storage
 from app.domain.disease_rules import evaluate_risk
 from app.domain.agronomic_decision import make_agronomic_decision
-from app.schemas import AgronomicDecision, Device, DeviceCreate, DiseaseRisk, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
+from app.domain.farm_operation_center import build_farm_center
+from app.schemas import AgronomicDecision, Device, DeviceCreate, DiseaseRisk, FarmOperationCenter, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
 from app.schemas_push import PushTokenCreate
 
 
@@ -87,6 +89,19 @@ def integrations_health() -> dict[str, object]:
         'firebase_admin': {'configured': bool(os.getenv('FIREBASE_SERVICE_ACCOUNT_JSON')), 'mode': 'live' if os.getenv('FIREBASE_SERVICE_ACCOUNT_JSON') else 'disabled'},
         'mapa': {'configured': False, 'mode': 'catalog-import'},
     }
+
+
+@app.get('/api/v1/farm/center', response_model=FarmOperationCenter)
+def farm_operation_center(_token: str | None = Depends(optional_bearer_token)) -> FarmOperationCenter:
+    owner_id = _token or 'anonymous'
+    parcels = storage.list_parcels(owner_id)
+    states = []
+    for parcel in parcels:
+        telemetry = storage.latest_telemetry(parcel.id, owner_id)
+        devices = storage.list_devices(parcel.id, owner_id)
+        risks = get_disease_risk(parcel.id, _token)
+        states.append({"parcel": parcel, "telemetry": telemetry, "devices": devices, "risks": risks})
+    return FarmOperationCenter(**build_farm_center(parcels, states))
 
 
 @app.get('/api/v1/parcels', response_model=list[Parcel])
