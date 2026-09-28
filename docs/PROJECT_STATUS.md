@@ -47,7 +47,7 @@ La estimación global es ponderada por importancia funcional de cada módulo; po
 
 Implementado: FastAPI, persistencia SQLite, endpoints de parcelas, clima, riesgo, alertas, informes y fuentes de datos, separación de dominio y conectores.
 
-Pendiente: endurecimiento productivo, migración/operación PostgreSQL/PostGIS, observabilidad completa y validación de carga.
+Implementado: endurecimiento de concurrencia SQLite (WAL, busy timeout y foreign keys). Pendiente: migración/operación PostgreSQL/PostGIS, observabilidad completa y validación de carga.
 
 ### 2. Autenticación y seguridad — 70%
 
