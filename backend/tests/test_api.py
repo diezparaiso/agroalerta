@@ -396,3 +396,43 @@ def test_telemetry_quality_summary_is_owner_scoped_and_reports_window():
         headers={"Authorization": "Bearer user-b"},
     )
     assert other.status_code == 404
+
+
+def test_parcel_activity_timeline_is_owner_scoped_and_ordered() -> None:
+    parcel = client.post("/api/v1/parcels", headers={"Authorization": "Bearer user-a"}, json={
+        "label": "Actividad", "latitude": 37.39, "longitude": -5.99,
+        "crop_type": "olivar", "comarca": "Sevilla",
+    }).json()
+    parcel_id = parcel["id"]
+    client.post(
+        "/api/v1/devices",
+        headers={"Authorization": "Bearer user-a"},
+        json={"parcel_id": parcel_id, "device_id": "activity-sensor", "name": "Actividad", "device_type": "weather_station"},
+    )
+    client.post(
+        "/api/v1/telemetry",
+        headers={"Authorization": "Bearer user-a"},
+        json={
+            "telemetry_id": "activity-telemetry-1", "parcel_id": parcel_id, "device_id": "activity-sensor",
+            "temperature_c": 21, "relative_humidity": 60, "leaf_wetness_hours": 2,
+            "soil_moisture": 35, "battery_percent": 90, "measured_at": "2026-09-28T10:00:00+00:00",
+        },
+    )
+    client.post(
+        "/api/v1/field-reports",
+        headers={"Authorization": "Bearer user-a"},
+        json={
+            "report_id": "activity-report-1", "parcel_id": parcel_id, "type": "trampa",
+            "count": 2, "latitude": 37.39, "longitude": -5.99,
+            "reported_at": "2026-09-28T11:00:00+00:00",
+        },
+    )
+    response = client.get(f"/api/v1/parcels/{parcel_id}/activity?limit=10", headers={"Authorization": "Bearer user-a"})
+    assert response.status_code == 200
+    body = response.json()
+    assert [item["event_type"] for item in body[:2]] == ["field_report", "telemetry"]
+    assert body[0]["event_id"] == "activity-report-1"
+    assert body[1]["event_id"] == "activity-telemetry-1"
+
+    other = client.get(f"/api/v1/parcels/{parcel_id}/activity", headers={"Authorization": "Bearer user-b"})
+    assert other.status_code == 404
