@@ -369,3 +369,30 @@ def test_alert_user_state_tracks_read_and_acknowledgement_by_owner():
     assert updated.json()['acknowledged_at'] is not None
     other = client.get('/api/v1/alerts/%s/state' % alert.id, headers={'Authorization': 'Bearer user-b'})
     assert other.status_code == 404
+
+def test_telemetry_quality_summary_is_owner_scoped_and_reports_window():
+    parcel = client.post("/api/v1/parcels", headers={"Authorization": "Bearer user-a"}, json={
+        "label": "Calidad", "latitude": 37.39, "longitude": -5.99,
+        "crop_type": "olivar", "comarca": "Sevilla",
+    }).json()
+    client.post("/api/v1/devices", headers={"Authorization": "Bearer user-a"}, json={
+        "parcel_id": parcel["id"], "device_id": "quality-sensor",
+        "name": "Quality", "device_type": "weather_station",
+    })
+    response = client.get(
+        f"/api/v1/telemetry/{parcel['id']}/quality?since_hours=24",
+        headers={"Authorization": "Bearer user-a"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["window_hours"] == 24
+    assert body["device_count"] == 1
+    assert body["active_device_count"] == 1
+    assert body["devices"][0]["device_id"] == "quality-sensor"
+    assert body["devices"][0]["sample_count"] == 0
+
+    other = client.get(
+        f"/api/v1/telemetry/{parcel['id']}/quality",
+        headers={"Authorization": "Bearer user-b"},
+    )
+    assert other.status_code == 404
