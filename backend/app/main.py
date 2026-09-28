@@ -173,7 +173,7 @@ def campaign_summary(campaign_id: str, _token: str | None = Depends(optional_bea
         raise HTTPException(status_code=404, detail='Campaña no encontrada')
     activities = storage.list_activities(campaign.parcel_id, owner_id, 300)
     risks = get_disease_risk(campaign.parcel_id, _token)
-    return CampaignSummary(**build_campaign_summary(campaign, activities, risks))
+    return CampaignSummary(**build_campaign_summary(campaign, activities, risks, storage.list_campaign_decisions(campaign_id, owner_id)))
 
 
 @app.post('/api/v1/parcels/{parcel_id}/activities', response_model=AgronomicActivity, status_code=status.HTTP_201_CREATED)
