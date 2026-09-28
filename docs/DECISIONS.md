@@ -68,3 +68,18 @@ La capa Flutter contenía valores de demostración visibles en inicio, detalle d
 
 ### Consecuencia
 La interfaz puede parecer menos completa cuando no existen datos, pero conserva trazabilidad y evita presentar información sintética como si fuera evidencia agronómica.
+
+
+## ADR-011 — Deduplicación estable de transiciones de riesgo
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+### Contexto
+Una alerta no debe duplicarse por volver a ejecutar el mismo ciclo. Usar únicamente la hora del cálculo como clave hacía que la deduplicación dependiera de cuándo se ejecutase el proceso.
+
+### Decisión
+La clave de deduplicación combina parcela, enfermedad, motivo de transición, nivel actual y la instantánea anterior que originó la transición. El primer riesgo usa la identidad estable initial.
+
+### Consecuencia
+Reintentos del mismo evento no crean otra alerta, mientras que una nueva transición posterior sí puede generar un nuevo evento legítimo.
