@@ -11,7 +11,6 @@ from app.domain.disease_rules import evaluate_risk
 from app.domain.geospatial import haversine_km
 from app.domain.raif_evidence import score_raif_evidence
 from app.domain.weather_context import build_weather_context
-from app.jobs.ria_station_catalog_job import sync_ria_station_catalog
 from app.connectors.source_registry import list_data_sources
 from app.core.config import settings
 from app.core.storage import Storage
