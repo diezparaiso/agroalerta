@@ -278,12 +278,23 @@ def get_disease_risk(parcel_id: str, _token: str | None = Depends(optional_beare
     return risks
 
 
-@app.get("/api/v1/alerts", response_model=list[DiseaseRisk])
-def list_alerts(_token: str | None = Depends(optional_bearer_token)) -> list[DiseaseRisk]:
-    alerts: list[DiseaseRisk] = []
-    for parcel in storage.list_parcels(_token or 'anonymous'):
-        alerts.extend(get_disease_risk(parcel.id, _token))
-    return alerts
+@app.get("/api/v1/alerts", response_model=list[Alert])
+def list_alerts(
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    parcel_id: str | None = Query(default=None),
+    _token: str | None = Depends(optional_bearer_token),
+) -> list[Alert]:
+    """Devuelve alertas persistidas; no recalcula riesgos ni crea eventos."""
+    owner_id = _token or "anonymous"
+    if parcel_id is not None:
+        get_parcel(parcel_id, owner_id)
+    return storage.list_alerts(
+        parcel_id=parcel_id,
+        owner_id=owner_id,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @app.get("/api/v1/alerts/history", response_model=list[Alert])
