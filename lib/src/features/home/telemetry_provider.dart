@@ -20,11 +20,12 @@ final telemetryWindowProvider = StateProvider<TelemetryWindow>(
   (ref) => const TelemetryWindow(24),
 );
 
+final selectedTelemetryParcelIdProvider = StateProvider<String?>((ref) => null);
+
 final telemetryHistoryProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
-  final parcels = await ref.watch(parcelsProvider.future);
-  final parcelId = parcels.isEmpty ? null : parcels.first.id;
-  if (parcelId == null) return const [];
+  final parcelId = ref.watch(selectedTelemetryParcelIdProvider);
+  if (parcelId == null || parcelId.isEmpty) return const [];
 
   final window = ref.watch(telemetryWindowProvider);
   return ref.read(apiClientProvider).getTelemetry(
