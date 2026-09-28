@@ -114,6 +114,16 @@ class Alert(BaseModel):
     notified_at: datetime | None = None
 
 
+class NotificationDelivery(BaseModel):
+    id: int
+    alert_id: int
+    status: str
+    token_count: int
+    sent_count: int
+    failed_count: int
+    created_at: datetime
+
+
 class DeviceHealth(BaseModel):
     device_id: str
     parcel_id: str
