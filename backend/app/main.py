@@ -363,8 +363,8 @@ def ingest_telemetry(payload: TelemetryCreate, _token: str | None = Depends(opti
     if not device.active:
         raise HTTPException(status_code=409, detail="Sensor inactivo")
     payload = payload.model_copy(update={'owner_id': owner_id})
-    storage.create_telemetry(payload)
-    return {"status": "accepted", "device_id": payload.device_id}
+    created = storage.create_telemetry(payload)
+    return {"status": "accepted" if created else "already_received", "device_id": payload.device_id, "telemetry_id": payload.telemetry_id}
 
 
 @app.get("/api/v1/telemetry/{parcel_id}", response_model=TelemetryCreate)
