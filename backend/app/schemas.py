@@ -92,3 +92,17 @@ class RiskSnapshot(BaseModel):
     risk_level: str
     calculated_at: datetime
     owner_id: str | None = None
+
+
+class Alert(BaseModel):
+    id: int
+    parcel_id: str
+    owner_id: str
+    disease_code: str
+    alert_type: str
+    risk_level: Literal["bajo", "medio", "alto"]
+    risk_score: float = Field(ge=0, le=1)
+    message: str
+    created_at: datetime
+    valid_until: datetime | None = None
+    notified_at: datetime | None = None

@@ -4,7 +4,7 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from app.schemas import Device, DeviceCreate, FieldReportCreate, Parcel, ParcelCreate, RiskSnapshot, TelemetryCreate
+from app.schemas import Alert, Device, DeviceCreate, FieldReportCreate, Parcel, ParcelCreate, RiskSnapshot, TelemetryCreate
 from app.schemas_push import PushTokenCreate
 
 
@@ -70,6 +70,33 @@ class Storage:
                     risk_level TEXT NOT NULL,
                     calculated_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS alerts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    parcel_id TEXT NOT NULL,
+                    owner_id TEXT NOT NULL,
+                    disease_code TEXT NOT NULL,
+                    alert_type TEXT NOT NULL,
+                    risk_level TEXT NOT NULL,
+                    risk_score REAL NOT NULL,
+                    message TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    valid_until TEXT,
+                    notified_at TEXT,
+                    dedup_key TEXT NOT NULL UNIQUE
+                );
+                CREATE TABLE IF NOT EXISTS source_records (
+                    source_code TEXT NOT NULL,
+                    external_id TEXT NOT NULL,
+                    observed_at TEXT,
+                    province TEXT,
+                    municipality TEXT,
+                    parcel_reference TEXT,
+                    latitude REAL,
+                    longitude REAL,
+                    payload TEXT NOT NULL,
+                    ingested_at TEXT NOT NULL,
+                    PRIMARY KEY (source_code, external_id)
+                );
                 CREATE TABLE IF NOT EXISTS push_tokens (
                     token TEXT PRIMARY KEY,
                     owner_id TEXT NOT NULL,
@@ -82,6 +109,40 @@ class Storage:
                 columns = {row['name'] for row in connection.execute(f'PRAGMA table_info({table})')}
                 if 'owner_id' not in columns:
                     connection.execute(f"ALTER TABLE {table} ADD COLUMN owner_id TEXT NOT NULL DEFAULT 'anonymous'")
+            connection.executescript(
+                """
+                CREATE TABLE IF NOT EXISTS weather_stations (
+                    source_code TEXT NOT NULL,
+                    station_code TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    province TEXT,
+                    latitude REAL NOT NULL,
+                    longitude REAL NOT NULL,
+                    altitude_m REAL,
+                    active INTEGER NOT NULL DEFAULT 1,
+                    updated_at TEXT NOT NULL,
+                    PRIMARY KEY (source_code, station_code)
+                );
+                CREATE TABLE IF NOT EXISTS weather_observations (
+                    source_code TEXT NOT NULL,
+                    station_code TEXT NOT NULL,
+                    observed_at TEXT NOT NULL,
+                    latitude REAL,
+                    longitude REAL,
+                    temperature_c REAL,
+                    relative_humidity REAL,
+                    rainfall_mm_24h REAL,
+                    confidence TEXT NOT NULL,
+                    ingested_at TEXT NOT NULL,
+                    PRIMARY KEY (source_code, station_code, observed_at)
+                )
+                """
+            )
+            source_columns = {row['name'] for row in connection.execute('PRAGMA table_info(source_records)')}
+            if 'latitude' not in source_columns:
+                connection.execute('ALTER TABLE source_records ADD COLUMN latitude REAL')
+            if 'longitude' not in source_columns:
+                connection.execute('ALTER TABLE source_records ADD COLUMN longitude REAL')
 
     def list_parcels(self, owner_id: str | None = None) -> list[Parcel]:
         with self._connect() as connection:
@@ -188,6 +249,20 @@ class Storage:
             rows = connection.execute(query + ' ORDER BY name', parameters).fetchall()
         return [Device(device_id=row['device_id'], parcel_id=row['parcel_id'], name=row['name'], device_type=row['device_type'], registered_at=row['registered_at'], active=bool(row['active']), owner_id=row['owner_id']) for row in rows]
 
+    def list_georeferenced_source_records(self, source_code: str) -> list[dict[str, object]]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT source_code, external_id, observed_at, province,
+                       municipality, parcel_reference, latitude, longitude, payload
+                FROM source_records
+                WHERE source_code = ? AND latitude IS NOT NULL AND longitude IS NOT NULL
+                ORDER BY observed_at DESC
+                """,
+                (source_code,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def save_risk_snapshot(self, snapshot: RiskSnapshot) -> None:
         with self._connect() as connection:
             previous = connection.execute('SELECT risk_score, risk_level, calculated_at FROM risk_snapshots WHERE parcel_id = ? AND owner_id = ? AND disease_code = ? ORDER BY calculated_at DESC LIMIT 1', (snapshot.parcel_id, snapshot.owner_id or 'anonymous', snapshot.disease_code)).fetchone()
@@ -196,6 +271,79 @@ class Storage:
                 if snapshot.calculated_at - previous_time < timedelta(hours=1):
                     return
             connection.execute('INSERT INTO risk_snapshots (parcel_id, owner_id, disease_code, risk_score, risk_level, calculated_at) VALUES (?, ?, ?, ?, ?, ?)', (snapshot.parcel_id, snapshot.owner_id or 'anonymous', snapshot.disease_code, snapshot.risk_score, snapshot.risk_level, snapshot.calculated_at.isoformat()))
+
+    def save_alert(
+        self,
+        parcel_id: str,
+        owner_id: str,
+        disease_code: str,
+        alert_type: str,
+        risk_level: str,
+        risk_score: float,
+        message: str,
+        created_at: datetime,
+        valid_until: datetime | None = None,
+        notified_at: datetime | None = None,
+        dedup_key: str | None = None,
+    ) -> Alert | None:
+        key = dedup_key or f"{parcel_id}:{disease_code}:{alert_type}:{risk_level}:{created_at.isoformat()}"
+        with self._connect() as connection:
+            cursor = connection.execute(
+                """
+                INSERT OR IGNORE INTO alerts
+                (parcel_id, owner_id, disease_code, alert_type, risk_level,
+                 risk_score, message, created_at, valid_until, notified_at, dedup_key)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    parcel_id, owner_id, disease_code, alert_type, risk_level,
+                    risk_score, message, created_at.isoformat(),
+                    valid_until.isoformat() if valid_until else None,
+                    notified_at.isoformat() if notified_at else None,
+                    key,
+                ),
+            )
+            if cursor.rowcount == 0:
+                return None
+            row = connection.execute(
+                "SELECT id, parcel_id, owner_id, disease_code, alert_type, risk_level, risk_score, message, created_at, valid_until, notified_at FROM alerts WHERE id = ?",
+                (cursor.lastrowid,),
+            ).fetchone()
+        return Alert(**dict(row)) if row else None
+
+    def mark_alert_notified(self, alert_id: int, notified_at: datetime | None = None) -> None:
+        timestamp = notified_at or datetime.now(timezone.utc)
+        with self._connect() as connection:
+            connection.execute(
+                "UPDATE alerts SET notified_at = ? WHERE id = ?",
+                (timestamp.isoformat(), alert_id),
+            )
+
+    def list_alerts(
+        self,
+        parcel_id: str | None = None,
+        owner_id: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[Alert]:
+        with self._connect() as connection:
+            query = """
+                SELECT id, parcel_id, owner_id, disease_code, alert_type,
+                       risk_level, risk_score, message, created_at, valid_until, notified_at
+                FROM alerts
+                WHERE 1 = 1
+            """
+            parameters: list[object] = []
+            if parcel_id is not None:
+                query += " AND parcel_id = ?"
+                parameters.append(parcel_id)
+            if owner_id is not None:
+                query += " AND owner_id = ?"
+                parameters.append(owner_id)
+            query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+            parameters.extend((limit, offset))
+            rows = connection.execute(query, tuple(parameters)).fetchall()
+        return [Alert(**dict(row)) for row in rows]
 
     def list_risk_snapshots(self, parcel_id: str, owner_id: str, limit: int = 100, offset: int = 0) -> list[RiskSnapshot]:
         with self._connect() as connection:
@@ -219,3 +367,232 @@ class Storage:
     def delete_push_token(self, token: str, owner_id: str) -> None:
         with self._connect() as connection:
             connection.execute('DELETE FROM push_tokens WHERE token = ? AND owner_id = ?', (token, owner_id))
+
+
+    def save_source_record(
+        self,
+        source_code: str,
+        external_id: str,
+        observed_at: datetime | None,
+        province: str | None,
+        municipality: str | None,
+        parcel_reference: str | None,
+        payload: dict[str, object],
+        latitude: float | None = None,
+        longitude: float | None = None,
+    ) -> bool:
+        with self._connect() as connection:
+            cursor = connection.execute(
+                '''
+                INSERT OR REPLACE INTO source_records
+                (source_code, external_id, observed_at, province, municipality, parcel_reference, latitude, longitude, payload, ingested_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''',
+                (
+                    source_code,
+                    external_id,
+                    observed_at.isoformat() if observed_at else None,
+                    province,
+                    municipality,
+                    parcel_reference,
+                    latitude,
+                    longitude,
+                    json.dumps(payload, ensure_ascii=False, default=str),
+                    datetime.now(timezone.utc).isoformat(),
+                ),
+            )
+        return cursor.rowcount > 0
+
+    def count_source_records(self, source_code: str) -> int:
+        with self._connect() as connection:
+            row = connection.execute(
+                'SELECT COUNT(*) AS count FROM source_records WHERE source_code = ?',
+                (source_code,),
+            ).fetchone()
+        return int(row['count'])
+
+    def save_weather_station(
+        self,
+        source_code: str,
+        station_code: str,
+        name: str,
+        province: str | None,
+        latitude: float,
+        longitude: float,
+        altitude_m: float | None,
+        active: bool,
+    ) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT OR REPLACE INTO weather_stations
+                (source_code, station_code, name, province, latitude, longitude,
+                 altitude_m, active, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    source_code, station_code, name, province, latitude, longitude,
+                    altitude_m, int(active), datetime.now(timezone.utc).isoformat(),
+                ),
+            )
+
+    def list_weather_stations(self, source_code: str = "ria_ifapa") -> list[dict[str, object]]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT source_code, station_code, name, province, latitude,
+                       longitude, altitude_m, active
+                FROM weather_stations
+                WHERE source_code = ? AND active = 1
+                ORDER BY name
+                """,
+                (source_code,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def save_weather_observation(
+        self,
+        source_code: str,
+        station_code: str,
+        observed_at: datetime,
+        latitude: float | None,
+        longitude: float | None,
+        temperature_c: float | None,
+        relative_humidity: float | None,
+        rainfall_mm_24h: float | None,
+        confidence: str,
+    ) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS weather_observations (
+                    source_code TEXT NOT NULL,
+                    station_code TEXT NOT NULL,
+                    observed_at TEXT NOT NULL,
+                    latitude REAL,
+                    longitude REAL,
+                    temperature_c REAL,
+                    relative_humidity REAL,
+                    rainfall_mm_24h REAL,
+                    confidence TEXT NOT NULL,
+                    ingested_at TEXT NOT NULL,
+                    PRIMARY KEY (source_code, station_code, observed_at)
+                )
+                """,
+            )
+            connection.execute(
+                """
+                INSERT OR REPLACE INTO weather_observations
+                (source_code, station_code, observed_at, latitude, longitude,
+                 temperature_c, relative_humidity, rainfall_mm_24h, confidence, ingested_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    source_code, station_code, observed_at.isoformat(), latitude,
+                    longitude, temperature_c, relative_humidity, rainfall_mm_24h,
+                    confidence, datetime.now(timezone.utc).isoformat(),
+                ),
+            )
+
+    def list_weather_stations_with_latest_observation(
+        self,
+        source_code: str = "ria_ifapa",
+        limit: int = 500,
+    ) -> list[dict[str, object]]:
+        """Une el catálogo canónico de estaciones con su última observación."""
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT s.source_code, s.station_code, s.name, s.province,
+                       s.latitude, s.longitude, s.altitude_m, s.active,
+                       o.observed_at, o.temperature_c, o.relative_humidity,
+                       o.rainfall_mm_24h, o.confidence
+                FROM weather_stations s
+                LEFT JOIN (
+                    SELECT *
+                    FROM (
+                        SELECT *,
+                               ROW_NUMBER() OVER (
+                                   PARTITION BY source_code, station_code
+                                   ORDER BY observed_at DESC
+                               ) AS row_number
+                        FROM weather_observations
+                    )
+                    WHERE row_number = 1
+                ) o
+                  ON o.source_code = s.source_code
+                 AND o.station_code = s.station_code
+                WHERE s.source_code = ? AND s.active = 1
+                ORDER BY s.name
+                LIMIT ?
+                """,
+                (source_code, limit),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def get_latest_risk_snapshot(self, parcel_id: str, owner_id: str, disease_code: str) -> RiskSnapshot | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT parcel_id, owner_id, disease_code, risk_score, risk_level, calculated_at
+                FROM risk_snapshots
+                WHERE parcel_id = ? AND owner_id = ? AND disease_code = ?
+                ORDER BY calculated_at DESC
+                LIMIT 1
+                """,
+                (parcel_id, owner_id, disease_code),
+            ).fetchone()
+        return RiskSnapshot(**dict(row)) if row else None
+
+    def list_weather_observations(self, limit: int = 500) -> list[dict[str, object]]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT source_code, station_code, observed_at, latitude, longitude,
+                       temperature_c, relative_humidity, rainfall_mm_24h, confidence
+                FROM weather_observations
+                ORDER BY observed_at DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def list_latest_weather_observations(self, limit: int = 500) -> list[dict[str, object]]:
+        """Devuelve la ultima observacion disponible por estacion meteorologica."""
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT source_code, station_code, observed_at, latitude, longitude,
+                       temperature_c, relative_humidity, rainfall_mm_24h, confidence
+                FROM (
+                    SELECT *,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY source_code, station_code
+                               ORDER BY observed_at DESC
+                           ) AS row_number
+                    FROM weather_observations
+                    WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+                )
+                WHERE row_number = 1
+                ORDER BY observed_at DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def list_georeferenced_source_records(self, source_code: str, limit: int = 1000) -> list[dict[str, object]]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                '''
+                SELECT source_code, external_id, observed_at, province, municipality,
+                       parcel_reference, latitude, longitude, payload
+                FROM source_records
+                WHERE source_code = ? AND latitude IS NOT NULL AND longitude IS NOT NULL
+                ORDER BY observed_at DESC
+                LIMIT ?
+                ''',
+                (source_code, limit),
+            ).fetchall()
+        return [dict(row) for row in rows]

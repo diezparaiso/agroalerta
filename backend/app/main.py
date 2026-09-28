@@ -8,8 +8,15 @@ from uuid import uuid4
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from app.domain.disease_rules import evaluate_risk
+from app.domain.geospatial import haversine_km
+from app.domain.raif_evidence import score_raif_evidence
+from app.domain.weather_context import build_weather_context
+from app.jobs.weather_ingestion_job import ingest_weather_for_parcel
+from app.jobs.weather_refresh_job import refresh_all_parcel_weather
+from app.connectors.source_registry import list_data_sources
+from app.core.config import settings
 from app.core.storage import Storage
-from app.schemas import Device, DeviceCreate, DiseaseRisk, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
+from app.schemas import Alert, Device, DeviceCreate, DiseaseRisk, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
 from app.core.security import optional_bearer_token
 from app.schemas_push import PushTokenCreate
 
@@ -58,6 +65,22 @@ products = [
 ]
 
 
+@app.get("/api/v1/data-sources")
+def data_sources() -> list[dict[str, object]]:
+    """Fuentes externas conocidas por AgroAlerta, sin exponer secretos."""
+    return list_data_sources()
+
+
+@app.get("/api/v1/data-sources/stats")
+def data_source_stats() -> dict[str, object]:
+    return {
+        "raif_fitosanitario": {
+            "records": storage.count_source_records("raif_fitosanitario"),
+            "configured_crops": sorted(settings.raif_crop_urls),
+        }
+    }
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     try:
@@ -92,7 +115,11 @@ def create_parcel(payload: ParcelCreate, _token: str | None = Depends(optional_b
 
 
 @app.get("/api/v1/parcels/{parcel_id}", response_model=Parcel)
-def get_parcel(parcel_id: str, owner_id: str | None = None) -> Parcel:
+def get_parcel(
+    parcel_id: str,
+    _token: str | None = Depends(optional_bearer_token),
+) -> Parcel:
+    owner_id = _token or "anonymous"
     parcel = storage.get_parcel(parcel_id, owner_id)
     if parcel is None:
         raise HTTPException(status_code=404, detail="Parcela no encontrada")
@@ -113,17 +140,107 @@ def delete_parcel(parcel_id: str, _token: str | None = Depends(optional_bearer_t
         raise HTTPException(status_code=404, detail="Parcela no encontrada")
 
 
-@app.get("/api/v1/weather/{parcel_id}")
-def get_weather(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> dict:
-    get_parcel(parcel_id, _token or 'anonymous')
+
+@app.get("/api/v1/spatial-context/{parcel_id}")
+def spatial_context(
+    parcel_id: str,
+    radius_km: float = Query(default=25, ge=1, le=100),
+    _token: str | None = Depends(optional_bearer_token),
+) -> dict[str, object]:
+    """Devuelve evidencias georreferenciadas cercanas a una parcela."""
+    owner_id = _token or 'anonymous'
+    parcel = get_parcel(parcel_id, owner_id)
+    matches: list[dict[str, object]] = []
+
+    for source_code in ("raif_fitosanitario",):
+        for record in storage.list_georeferenced_source_records(source_code):
+            distance = haversine_km(
+                parcel.latitude,
+                parcel.longitude,
+                float(record["latitude"]),
+                float(record["longitude"]),
+            )
+            if distance <= radius_km:
+                matches.append({
+                    "source_code": record["source_code"],
+                    "external_id": record["external_id"],
+                    "distance_km": round(distance, 2),
+                    "observed_at": record["observed_at"],
+                    "province": record["province"],
+                    "municipality": record["municipality"],
+                    "parcel_reference": record["parcel_reference"],
+                })
+
+    matches.sort(key=lambda item: (item["distance_km"], item["observed_at"] or ""),)
     return {
         "parcel_id": parcel_id,
-        "temperature_c": 18.4,
-        "relative_humidity": 87,
-        "rainfall_mm_24h": 12.2,
-        "station_distance_km": 6.4,
-        "observed_at": datetime.now(timezone.utc),
-        "source": "demo-ria-aemet",
+        "radius_km": radius_km,
+        "evidence_count": len(matches),
+        "evidence": matches[:100],
+    }
+
+@app.get("/api/v1/weather-stations")
+def get_weather_stations(_token=Depends(optional_bearer_token)):
+    return {"source": "ria_ifapa", "stations": storage.list_weather_stations()}
+
+
+@app.post("/api/v1/weather/refresh")
+async def refresh_weather(_token: str | None = Depends(optional_bearer_token)) -> dict[str, object]:
+    """Actualiza meteorología, recalcula riesgo y genera alertas del propietario."""
+    owner_id = _token or "anonymous"
+    return await refresh_all_parcel_weather(owner_id)
+
+
+@app.post("/api/v1/weather/ingest/{parcel_id}")
+async def ingest_parcel_weather(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> dict[str, object]:
+    """Actualiza RIA para una parcela usando automáticamente estaciones cercanas."""
+    owner_id = _token or 'anonymous'
+    parcel = get_parcel(parcel_id, owner_id)
+    result = await ingest_weather_for_parcel(parcel.latitude, parcel.longitude)
+    return {"parcel_id": parcel_id, **result}
+
+
+@app.get("/api/v1/weather-context/{parcel_id}")
+def get_weather_context(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> dict[str, object]:
+    owner_id = _token or 'anonymous'
+    parcel = get_parcel(parcel_id, owner_id)
+    context = build_weather_context(
+        parcel.latitude,
+        parcel.longitude,
+        storage.list_latest_weather_observations(),
+    )
+    return {"parcel_id": parcel_id, **context}
+
+
+@app.get("/api/v1/weather/{parcel_id}")
+def get_weather(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> dict:
+    owner_id = _token or 'anonymous'
+    parcel = get_parcel(parcel_id, owner_id)
+    context = build_weather_context(
+        parcel.latitude,
+        parcel.longitude,
+        storage.list_latest_weather_observations(),
+    )
+    if context["available"]:
+        return {
+            "parcel_id": parcel_id,
+            **context["weather"],
+            "station_distance_km": context.get("station_distance_km"),
+            "observed_at": context.get("observed_at"),
+            "source": context.get("source"),
+            "confidence": context.get("confidence"),
+            "stations": context.get("stations", []),
+        }
+    return {
+        "parcel_id": parcel_id,
+        "temperature_c": None,
+        "relative_humidity": None,
+        "rainfall_mm_24h": None,
+        "station_distance_km": None,
+        "observed_at": None,
+        "source": "none",
+        "confidence": "no_disponible",
+        "stations": [],
     }
 
 
@@ -132,18 +249,70 @@ def get_disease_risk(parcel_id: str, _token: str | None = Depends(optional_beare
     owner_id = _token or 'anonymous'
     parcel = get_parcel(parcel_id, owner_id)
     telemetry = storage.latest_telemetry(parcel_id, owner_id)
-    risks = [evaluate_risk(parcel_id, disease, parcel.crop_type, telemetry) for disease in ("repilo", "mildiu") if (disease == "repilo" and parcel.crop_type == "olivar") or (disease == "mildiu" and parcel.crop_type == "vinedo")]
+    raif_records = storage.list_georeferenced_source_records("raif_fitosanitario")
+    weather_context = build_weather_context(
+        parcel.latitude,
+        parcel.longitude,
+        storage.list_latest_weather_observations(),
+    )
+    risks = []
+    for disease in ("repilo", "mildiu"):
+        if not ((disease == "repilo" and parcel.crop_type == "olivar") or (disease == "mildiu" and parcel.crop_type == "vinedo")):
+            continue
+        evidence = score_raif_evidence(
+            parcel.latitude,
+            parcel.longitude,
+            raif_records,
+            disease,
+        )
+        risks.append(evaluate_risk(
+            parcel_id,
+            disease,
+            parcel.crop_type,
+            telemetry,
+            raif_signal=float(evidence["signal"]),
+            weather=weather_context["weather"] if weather_context["available"] else None,
+        ))
     for risk in risks:
         storage.save_risk_snapshot(RiskSnapshot(parcel_id=parcel_id, owner_id=owner_id, disease_code=risk.disease_code, risk_score=risk.risk_score, risk_level=risk.risk_level, calculated_at=risk.calculated_at))
     return risks
 
 
-@app.get("/api/v1/alerts", response_model=list[DiseaseRisk])
-def list_alerts(_token: str | None = Depends(optional_bearer_token)) -> list[DiseaseRisk]:
-    alerts: list[DiseaseRisk] = []
-    for parcel in storage.list_parcels(_token or 'anonymous'):
-        alerts.extend(get_disease_risk(parcel.id, _token))
-    return alerts
+@app.get("/api/v1/alerts", response_model=list[Alert])
+def list_alerts(
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    parcel_id: str | None = Query(default=None),
+    _token: str | None = Depends(optional_bearer_token),
+) -> list[Alert]:
+    """Devuelve alertas persistidas; no recalcula riesgos ni crea eventos."""
+    owner_id = _token or "anonymous"
+    if parcel_id is not None:
+        get_parcel(parcel_id, owner_id)
+    return storage.list_alerts(
+        parcel_id=parcel_id,
+        owner_id=owner_id,
+        limit=limit,
+        offset=offset,
+    )
+
+
+@app.get("/api/v1/alerts/history", response_model=list[Alert])
+def alert_history(
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    parcel_id: str | None = Query(default=None),
+    _token: str | None = Depends(optional_bearer_token),
+) -> list[Alert]:
+    owner_id = _token or "anonymous"
+    if parcel_id is not None:
+        get_parcel(parcel_id, owner_id)
+    return storage.list_alerts(
+        parcel_id=parcel_id,
+        owner_id=owner_id,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @app.get("/api/v1/risk-history/{parcel_id}", response_model=list[RiskSnapshot])
@@ -181,9 +350,13 @@ def ingest_telemetry(payload: TelemetryCreate, _token: str | None = Depends(opti
 
 
 @app.get("/api/v1/telemetry/{parcel_id}", response_model=TelemetryCreate)
-def get_latest_telemetry(parcel_id: str) -> TelemetryCreate:
-    get_parcel(parcel_id)
-    telemetry = storage.latest_telemetry(parcel_id)
+def get_latest_telemetry(
+    parcel_id: str,
+    _token: str | None = Depends(optional_bearer_token),
+) -> TelemetryCreate:
+    owner_id = _token or "anonymous"
+    get_parcel(parcel_id, owner_id)
+    telemetry = storage.latest_telemetry(parcel_id, owner_id)
     if telemetry is None:
         raise HTTPException(status_code=404, detail="Sin telemetria para esta parcela")
     return telemetry

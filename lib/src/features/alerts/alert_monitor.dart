@@ -9,7 +9,7 @@ class AlertMonitor {
   Future<void> notifyRelevantAlerts(List<RiskAlertNotification> alerts) async {
     if (!await PreferencesStore().notificationsEnabled()) return;
     for (final alert in alerts.where((item) => item.level.toLowerCase() == 'alto' || item.level.toLowerCase() == 'medio')) {
-      await _notifications.showRiskAlert(disease: alert.title, parcel: alert.parcel, level: alert.level);
+      await _notifications.showRiskAlert(disease: alert.disease, parcel: alert.parcel, level: alert.level);
     }
   }
 }

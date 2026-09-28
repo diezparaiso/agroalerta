@@ -53,8 +53,15 @@ class ApiClient {
     return response.data!.cast<Map<String, dynamic>>();
   }
 
-  Future<List<Map<String, dynamic>>> getAlerts() async {
-    final response = await _dio.get<List<dynamic>>('/api/v1/alerts');
+  Future<List<Map<String, dynamic>>> getAlerts({int limit = 100, int offset = 0, String? parcelId}) async {
+    final response = await _dio.get<List<dynamic>>(
+      '/api/v1/alerts',
+      queryParameters: {
+        'limit': limit,
+        'offset': offset,
+        if (parcelId != null) 'parcel_id': parcelId,
+      },
+    );
     return response.data!.cast<Map<String, dynamic>>();
   }
 

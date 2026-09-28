@@ -1,19 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../parcels/parcel_provider.dart';
-import 'alert_monitor.dart';
-
 final alertsProvider = FutureProvider<List<AlertSummary>>((ref) async {
-  try {
-    final records = await ref.read(apiClientProvider).getAlerts();
-    final alerts = records.map(AlertSummary.fromJson).toList();
-    await AlertMonitor().notifyRelevantAlerts([for (final alert in alerts) RiskAlertNotification(disease: alert.title, parcel: alert.parcel, level: alert.level)]);
-    return alerts;
-  } catch (_) {
-    const alerts = [AlertSummary(title: 'Repilo', parcel: 'Olivar de prueba', level: 'Medio', value: .58)];
-    await AlertMonitor().notifyRelevantAlerts([for (final alert in alerts) RiskAlertNotification(disease: alert.title, parcel: alert.parcel, level: alert.level)]);
-    return alerts;
-  }
+  final records = await ref.read(apiClientProvider).getAlerts();
+  return records.map(AlertSummary.fromJson).toList();
 });
 
 class AlertSummary {

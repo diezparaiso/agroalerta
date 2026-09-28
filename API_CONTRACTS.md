@@ -98,3 +98,39 @@ Los tokens se guardan por propietario y se eliminan cuando fallan los envíos tr
 - `404`: recurso inexistente o perteneciente a otro usuario.
 - `422`: validación Pydantic fallida.
 - `500`: error interno; revisar métricas y logs sin exponer secretos.
+
+
+## Contexto espacial
+
+### GET /api/v1/spatial-context/{parcel_id}
+
+Devuelve evidencias fitosanitarias georreferenciadas de las fuentes disponibles dentro de un radio configurable.
+
+Query:
+- `radius_km`: 1..100, por defecto 25.
+
+La respuesta conserva la distancia calculada a la parcela y la trazabilidad de la evidencia. Actualmente solo se incluyen registros RAIF que publiquen coordenadas; los registros sin coordenadas no se fuerzan a una posición estimada.
+
+
+## Contexto meteorologico por parcela
+
+### GET /api/v1/weather-context/{parcel_id}
+
+Selecciona hasta 3 estaciones meteorologicas RIA/IFAPA con coordenadas conocidas y proximas a la parcela.
+
+La seleccion:
+- deduplica por fuente y estacion usando la observacion mas reciente;
+- descarta estaciones sin coordenadas validas;
+- limita la busqueda a 80 km;
+- descarta observaciones de mas de 72 horas;
+- combina temperatura, humedad relativa y lluvia mediante ponderacion inversa a la distancia.
+
+La respuesta incluye estaciones seleccionadas, distancia, fecha de observacion, confianza y valores meteorologicos disponibles.
+
+### GET /api/v1/weather/{parcel_id}
+
+Expone el contexto meteorologico seleccionado para la parcela. Si no existe observacion RIA reciente utilizable, devuelve un fallback de desarrollo marcado como `fallback-demo` y `estimada`.
+
+El endpoint de riesgo utiliza este contexto meteorologico cuando esta disponible. La telemetria de la propia parcela mantiene prioridad sobre los valores meteorologicos externos.
+
+AEMET se mantiene como capa de prediccion y no se mezcla silenciosamente con las observaciones RIA.
