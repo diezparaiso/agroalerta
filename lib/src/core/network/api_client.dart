@@ -1,6 +1,14 @@
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+class ParcelConflictException implements Exception {
+  const ParcelConflictException(this.message);
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 class ApiClient {
   ApiClient({String? baseUrl})
       : _dio = Dio(BaseOptions(
@@ -46,6 +54,39 @@ class ApiClient {
       },
     );
     return response.data!;
+  }
+
+
+  Future<Map<String, dynamic>> updateParcel({
+    required String parcelId,
+    required String label,
+    required double latitude,
+    required double longitude,
+    required String cropType,
+    required String comarca,
+    required DateTime expectedUpdatedAt,
+  }) async {
+    try {
+      final response = await _dio.put<Map<String, dynamic>>(
+        '/api/v1/parcels/$parcelId',
+        queryParameters: {'expected_updated_at': expectedUpdatedAt.toUtc().toIso8601String()},
+        data: {
+          'label': label,
+          'latitude': latitude,
+          'longitude': longitude,
+          'crop_type': cropType,
+          'comarca': comarca,
+        },
+      );
+      return response.data!;
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 409) {
+        throw const ParcelConflictException(
+          'La parcela ha cambiado en otro dispositivo. Se ha conservado tu edición local.',
+        );
+      }
+      rethrow;
+    }
   }
 
   Future<List<Map<String, dynamic>>> getProducts() async {
