@@ -6,6 +6,7 @@ from app.connectors.aemet_client import AemetClient
 from app.connectors.ria_ifapa_client import RiaIfapaClient
 from app.core.storage import Storage
 from app.domain.weather_evidence import normalize_ria_daily
+from app.domain.weather_station_selection import rank_weather_stations
 
 logger = logging.getLogger(__name__)
 
@@ -82,4 +83,109 @@ async def ingest_weather(
         return {"status": "stale-data"}
     finally:
         await aemet.client.aclose()
+        await ria.client.aclose()
+
+
+async def ingest_weather_for_parcel(
+    latitude: float,
+    longitude: float,
+    *,
+    year: int | None = None,
+    month_start: int | None = None,
+    month_end: int | None = None,
+    max_stations: int = 3,
+    max_distance_km: float = 80.0,
+) -> dict[str, object]:
+    """Ingresa automáticamente RIA usando las estaciones catalogadas más cercanas.
+
+    No requiere que el llamador conozca el código de estación. La provincia y
+    las coordenadas se obtienen del catálogo persistido.
+    """
+    if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+        raise ValueError("Coordenadas de parcela no válidas")
+
+    storage = Storage()
+    stations = storage.list_weather_stations()
+    candidates = rank_weather_stations(
+        latitude,
+        longitude,
+        stations,
+        max_stations=max_stations,
+        max_distance_km=max_distance_km,
+    )
+    if not candidates:
+        return {
+            "status": "no-station",
+            "stations_considered": 0,
+            "stations_ingested": 0,
+            "observations_persisted": 0,
+        }
+
+    now = datetime.now(timezone.utc)
+    selected_year = year if year is not None else now.year
+    selected_month_start = month_start if month_start is not None else now.month
+    selected_month_end = month_end if month_end is not None else selected_month_start
+
+    ria = RiaIfapaClient()
+    persisted = 0
+    failures = 0
+    try:
+        station_rows = {
+            (str(row["source_code"]), str(row["station_code"])): row
+            for row in stations
+        }
+        async def ingest_one(candidate):
+            nonlocal persisted, failures
+            row = station_rows[(candidate.source_code, candidate.station_code)]
+            province = str(row.get("province") or "").strip()
+            if not province:
+                failures += 1
+                return
+            try:
+                data = await ria.get_daily_data(
+                    province,
+                    candidate.station_code,
+                    selected_year,
+                    selected_month_start,
+                    selected_month_end,
+                )
+                evidence = normalize_ria_daily(data, station=candidate.station_code)
+                if evidence is None or evidence.observed_at is None:
+                    failures += 1
+                    return
+                storage.save_weather_observation(
+                    source_code=evidence.source,
+                    station_code=candidate.station_code,
+                    observed_at=evidence.observed_at,
+                    latitude=candidate.latitude,
+                    longitude=candidate.longitude,
+                    temperature_c=evidence.temperature_c,
+                    relative_humidity=evidence.relative_humidity,
+                    rainfall_mm_24h=evidence.rainfall_mm_24h,
+                    confidence=evidence.confidence,
+                )
+                persisted += 1
+            except Exception:
+                failures += 1
+                logger.exception(
+                    "Error ingiriendo estación RIA %s para parcela",
+                    candidate.station_code,
+                )
+
+        await asyncio.gather(*(ingest_one(candidate) for candidate in candidates))
+        return {
+            "status": "ingested" if persisted else "stale-data",
+            "stations_considered": len(candidates),
+            "stations_ingested": persisted,
+            "observations_persisted": persisted,
+            "failures": failures,
+            "stations": [
+                {
+                    "station_code": candidate.station_code,
+                    "distance_km": candidate.distance_km,
+                }
+                for candidate in candidates
+            ],
+        }
+    finally:
         await ria.client.aclose()
