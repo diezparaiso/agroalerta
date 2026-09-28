@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'src/app.dart';
 import 'src/core/ads/ads_service.dart';
@@ -19,9 +20,24 @@ Future<void> main() async {
   try {
     await initializeAds();
   } catch (_) {}
+  final notificationService = NotificationService();
   try {
-    await NotificationService().initialize();
+    await notificationService.initialize();
   } catch (_) {}
+  if (firebaseAvailable) {
+    FirebaseMessaging.onMessage.listen((message) {
+      final data = message.data;
+      final disease = data['disease_code']?.toString();
+      final parcel = data['parcel_id']?.toString();
+      final level = data['risk_level']?.toString();
+      if (disease == null || parcel == null || level == null) return;
+      notificationService.showRiskAlert(
+        disease: disease,
+        parcel: parcel,
+        level: level,
+      );
+    });
+  }
   if (firebaseAvailable) {
     try {
       await PushTokenService().register();
