@@ -117,7 +117,12 @@ class ApiClient {
     await _dio.post('/api/v1/field-reports', data: report);
   }
 
-  Future<List<Map<String, dynamic>>> getDevices(String parcelId) async {
+    Future<List<Map<String, dynamic>>> getTelemetry(String parcelId, {int limit = 24}) async {
+    final response = await _dio.get<List<dynamic>>('/api/v1/telemetry/$parcelId', queryParameters: {'limit': limit});
+    return response.data!.cast<Map<String, dynamic>>();
+  }
+
+Future<List<Map<String, dynamic>>> getDevices(String parcelId) async {
     final response = await _dio.get<List<dynamic>>('/api/v1/devices/$parcelId');
     return response.data!.cast<Map<String, dynamic>>();
   }
