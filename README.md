@@ -75,3 +75,7 @@ Fuentes priorizadas: RAIF fitosanitario, RAIF clima, RIA/IFAPA, AEMET, SIGPAC, I
 La arquitectura y el estado de validacion de cada fuente quedan documentados en `docs/FUENTES_DATOS_OFICIALES.md`.
 
 La tarea de ingesta meteorologica ya no utiliza una ventana fija 2026/01-12: por defecto trabaja con el mes UTC actual y permite recibir una ventana explicita desde el scheduler.
+
+## Ingeniería y buenas prácticas
+
+Las decisiones de arquitectura y las reglas que deben acompañar cada cambio están documentadas en docs/DECISIONS.md y docs/ENGINEERING_GUIDELINES.md. Estos documentos forman parte del criterio de terminado del proyecto: los cambios relevantes deben dejar constancia de intención, impacto, validación y decisiones técnicas.
