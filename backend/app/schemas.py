@@ -299,3 +299,18 @@ class AgronomicReport(BaseModel):
     irrigation: dict[str, object]
     campaign_count: int
     treatment_count: int
+
+
+class IrrigationIntelligence(BaseModel):
+    parcel_id: str
+    window_days: int
+    event_count: int
+    total_water_liters: float
+    average_daily_water_liters: float
+    latest_irrigation_at: datetime | None = None
+    latest_soil_moisture: float | None = None
+    water_use_level: Literal["bajo", "moderado", "alto", "sin_datos"]
+    soil_status: Literal["seco", "adecuado", "humedo", "sin_datos"]
+    action: Literal["registrar", "vigilar", "revisar"]
+    explanation: str
+    evidence: list[str]

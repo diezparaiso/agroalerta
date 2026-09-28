@@ -11,13 +11,14 @@ from app.domain.disease_rules import evaluate_risk
 from app.domain.geospatial import haversine_km
 from app.domain.raif_evidence import score_raif_evidence
 from app.domain.weather_context import build_weather_context
+from app.domain.irrigation_intelligence import build_irrigation_intelligence
 from app.jobs.weather_ingestion_job import ingest_weather_for_parcel
 from app.jobs.weather_refresh_job import refresh_all_parcel_weather
 from app.connectors.source_registry import list_data_sources
 from app.connectors.mapa_catalog import load_catalog
 from app.core.config import settings
 from app.core.storage import Storage
-from app.schemas import Alert, AlertUserState, AlertUserStateUpdate, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, NotificationDelivery, Parcel, WeatherEvidenceSummary, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate, TelemetryQualitySummary, ParcelActivityEvent, CropCampaignCreate, CropCampaignStatusUpdate, CropCampaign, IrrigationEventCreate, IrrigationEvent, TreatmentRecordCreate, TreatmentRecord, AlertPreferences, AlertPreferencesUpdate, IrrigationSummary, AgronomicReport
+from app.schemas import Alert, AlertUserState, AlertUserStateUpdate, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, NotificationDelivery, Parcel, WeatherEvidenceSummary, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate, TelemetryQualitySummary, ParcelActivityEvent, CropCampaignCreate, CropCampaignStatusUpdate, CropCampaign, IrrigationEventCreate, IrrigationEvent, TreatmentRecordCreate, TreatmentRecord, AlertPreferences, AlertPreferencesUpdate, IrrigationSummary, AgronomicReport, IrrigationIntelligence
 from app.core.security import optional_bearer_token
 from app.schemas_push import PushTokenCreate
 
@@ -347,6 +348,16 @@ def agronomic_report(
     owner_id = _token or "anonymous"
     parcel = get_parcel(parcel_id, owner_id)
     return AgronomicReport(**storage.agronomic_report(parcel, owner_id))
+
+
+@app.get("/api/v1/parcels/{parcel_id}/irrigation/intelligence", response_model=IrrigationIntelligence)
+def irrigation_intelligence(parcel_id: str, window_days: int = Query(default=7, ge=1, le=30), _token: str | None = Depends(optional_bearer_token)) -> IrrigationIntelligence:
+    owner_id = _token or "anonymous"
+    get_parcel(parcel_id, owner_id)
+    events = storage.list_irrigation_events(parcel_id, owner_id, 500)
+    telemetry = storage.latest_telemetry(parcel_id, owner_id)
+    payload = telemetry.model_dump(mode="json") if telemetry is not None else None
+    return IrrigationIntelligence(**build_irrigation_intelligence(parcel_id, events, payload, window_days))
 
 
 @app.get("/api/v1/parcels/{parcel_id}/irrigation/summary", response_model=IrrigationSummary)
