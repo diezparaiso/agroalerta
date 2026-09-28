@@ -25,7 +25,7 @@ La estimación debe actualizarse después de hitos relevantes y no debe interpre
 | Motor agronómico y riesgo | 70% |
 | Alertas | 75% |
 | Notificaciones FCM | 75% |
-| IoT / telemetría | 82% |
+| IoT / telemetría | 84% |
 | Informes de campo | 72% |
 | Productos fitosanitarios / MAPA | 35% |
 | GIS / contexto espacial | 45% |
@@ -87,9 +87,9 @@ Pendiente: verificar extremo a extremo permisos, foreground/background, preferen
 
 ### 8. IoT / telemetría — 82%
 
-Implementado: recepción y uso de telemetría en el dominio de riesgo, histórico temporal 24 h–7 días, selección explícita de parcela y sensor en dashboard, filtro `device_id` en API/SQLite y autorización del sensor por propietario/parcela.
+Implementado: recepción y uso de telemetría en el dominio de riesgo, histórico temporal 24 h–7 días, selección explícita de parcela y sensor en dashboard, filtro `device_id` en API/SQLite, autorización del sensor por propietario/parcela y rechazo de sensores no registrados o inactivos durante la ingestión.
 
-Pendiente: robustez de dispositivos, ingestión real continua, validación de calidad, ciclo de vida completo de dispositivos y monitorización.
+Pendiente: ingestión real continua, validación de calidad, ciclo de vida completo de dispositivos y monitorización.
 
 ### 9. Informes de campo — 72%
 
