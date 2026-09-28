@@ -17,7 +17,7 @@ from app.connectors.source_registry import list_data_sources
 from app.connectors.mapa_catalog import load_catalog
 from app.core.config import settings
 from app.core.storage import Storage
-from app.schemas import Alert, AlertUserState, AlertUserStateUpdate, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, NotificationDelivery, Parcel, WeatherEvidenceSummary, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate, TelemetryQualitySummary, ParcelActivityEvent, CropCampaignCreate, CropCampaignStatusUpdate, CropCampaign, IrrigationEventCreate, IrrigationEvent, TreatmentRecordCreate, TreatmentRecord
+from app.schemas import Alert, AlertUserState, AlertUserStateUpdate, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, NotificationDelivery, Parcel, WeatherEvidenceSummary, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate, TelemetryQualitySummary, ParcelActivityEvent, CropCampaignCreate, CropCampaignStatusUpdate, CropCampaign, IrrigationEventCreate, IrrigationEvent, TreatmentRecordCreate, TreatmentRecord, AlertPreferences, AlertPreferencesUpdate
 from app.core.security import optional_bearer_token
 from app.schemas_push import PushTokenCreate
 
@@ -448,6 +448,33 @@ def get_disease_risk(parcel_id: str, _token: str | None = Depends(optional_beare
     for risk in risks:
         storage.save_risk_snapshot(RiskSnapshot(parcel_id=parcel_id, owner_id=owner_id, disease_code=risk.disease_code, risk_score=risk.risk_score, risk_level=risk.risk_level, calculated_at=risk.calculated_at))
     return risks
+
+
+@app.get("/api/v1/alert-preferences", response_model=AlertPreferences)
+def get_alert_preferences(_token: str | None = Depends(optional_bearer_token)) -> AlertPreferences:
+    owner_id = _token or "anonymous"
+    current = storage.get_alert_preferences(owner_id)
+    if current is None:
+        return AlertPreferences()
+    return AlertPreferences(
+        minimum_risk_level=current["minimum_risk_level"],
+        push_enabled=bool(current["push_enabled"]),
+        updated_at=current["updated_at"],
+    )
+
+
+@app.put("/api/v1/alert-preferences", response_model=AlertPreferences)
+def update_alert_preferences(
+    payload: AlertPreferencesUpdate,
+    _token: str | None = Depends(optional_bearer_token),
+) -> AlertPreferences:
+    owner_id = _token or "anonymous"
+    saved = storage.set_alert_preferences(owner_id, payload.minimum_risk_level, payload.push_enabled)
+    return AlertPreferences(
+        minimum_risk_level=saved["minimum_risk_level"],
+        push_enabled=bool(saved["push_enabled"]),
+        updated_at=saved["updated_at"],
+    )
 
 
 @app.get("/api/v1/alerts", response_model=list[Alert])
