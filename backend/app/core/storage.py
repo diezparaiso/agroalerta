@@ -70,6 +70,17 @@ class Storage:
                     risk_level TEXT NOT NULL,
                     calculated_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS source_records (
+                    source_code TEXT NOT NULL,
+                    external_id TEXT NOT NULL,
+                    observed_at TEXT,
+                    province TEXT,
+                    municipality TEXT,
+                    parcel_reference TEXT,
+                    payload TEXT NOT NULL,
+                    ingested_at TEXT NOT NULL,
+                    PRIMARY KEY (source_code, external_id)
+                );
                 CREATE TABLE IF NOT EXISTS push_tokens (
                     token TEXT PRIMARY KEY,
                     owner_id TEXT NOT NULL,
@@ -219,3 +230,42 @@ class Storage:
     def delete_push_token(self, token: str, owner_id: str) -> None:
         with self._connect() as connection:
             connection.execute('DELETE FROM push_tokens WHERE token = ? AND owner_id = ?', (token, owner_id))
+
+
+    def save_source_record(
+        self,
+        source_code: str,
+        external_id: str,
+        observed_at: datetime | None,
+        province: str | None,
+        municipality: str | None,
+        parcel_reference: str | None,
+        payload: dict[str, object],
+    ) -> bool:
+        with self._connect() as connection:
+            cursor = connection.execute(
+                '''
+                INSERT OR REPLACE INTO source_records
+                (source_code, external_id, observed_at, province, municipality, parcel_reference, payload, ingested_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''',
+                (
+                    source_code,
+                    external_id,
+                    observed_at.isoformat() if observed_at else None,
+                    province,
+                    municipality,
+                    parcel_reference,
+                    json.dumps(payload, ensure_ascii=False, default=str),
+                    datetime.now(timezone.utc).isoformat(),
+                ),
+            )
+        return cursor.rowcount > 0
+
+    def count_source_records(self, source_code: str) -> int:
+        with self._connect() as connection:
+            row = connection.execute(
+                'SELECT COUNT(*) AS count FROM source_records WHERE source_code = ?',
+                (source_code,),
+            ).fetchone()
+        return int(row['count'])
