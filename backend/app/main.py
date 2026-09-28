@@ -325,9 +325,9 @@ def create_report(payload: FieldReportCreate, _token: str | None = Depends(optio
     owner_id = _token or 'anonymous'
     get_parcel(payload.parcel_id, owner_id)
     payload = payload.model_copy(update={'owner_id': owner_id})
-    report_id = str(uuid4())
-    storage.create_report(report_id, payload)
-    return {"id": report_id, "status": "received"}
+    report_id = payload.report_id or str(uuid4())
+    created = storage.create_report(report_id, payload)
+    return {"id": report_id, "status": "received" if created else "already_received"}
 
 
 @app.post("/api/v1/telemetry", status_code=status.HTTP_202_ACCEPTED)
