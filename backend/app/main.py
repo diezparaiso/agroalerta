@@ -17,7 +17,7 @@ from app.connectors.source_registry import list_data_sources
 from app.connectors.mapa_catalog import load_catalog
 from app.core.config import settings
 from app.core.storage import Storage
-from app.schemas import Alert, AlertUserState, AlertUserStateUpdate, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, NotificationDelivery, Parcel, WeatherEvidenceSummary, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate, TelemetryQualitySummary, ParcelActivityEvent, CropCampaignCreate, CropCampaignStatusUpdate, CropCampaign, IrrigationEventCreate, IrrigationEvent, TreatmentRecordCreate, TreatmentRecord, AlertPreferences, AlertPreferencesUpdate
+from app.schemas import Alert, AlertUserState, AlertUserStateUpdate, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, NotificationDelivery, Parcel, WeatherEvidenceSummary, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate, TelemetryQualitySummary, ParcelActivityEvent, CropCampaignCreate, CropCampaignStatusUpdate, CropCampaign, IrrigationEventCreate, IrrigationEvent, TreatmentRecordCreate, TreatmentRecord, AlertPreferences, AlertPreferencesUpdate, IrrigationSummary
 from app.core.security import optional_bearer_token
 from app.schemas_push import PushTokenCreate
 
@@ -337,6 +337,17 @@ def create_irrigation_event(
         notes=payload.notes,
     )
     return IrrigationEvent(**storage.create_irrigation_event(event.model_dump(mode="json")))
+
+
+@app.get("/api/v1/parcels/{parcel_id}/irrigation/summary", response_model=IrrigationSummary)
+def irrigation_summary(
+    parcel_id: str,
+    campaign_id: str | None = Query(default=None),
+    _token: str | None = Depends(optional_bearer_token),
+) -> IrrigationSummary:
+    owner_id = _token or "anonymous"
+    get_parcel(parcel_id, owner_id)
+    return IrrigationSummary(**storage.irrigation_summary(parcel_id, owner_id, campaign_id))
 
 
 @app.get("/api/v1/parcels/{parcel_id}/irrigation", response_model=list[IrrigationEvent])
