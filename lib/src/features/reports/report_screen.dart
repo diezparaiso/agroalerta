@@ -45,14 +45,14 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     }
 
     final photoUrl = photo == null ? null : await uploadPhoto(photo!.path);
+    final payload = buildFieldReportPayload(
+      parcel: parcel,
+      type: type,
+      notes: notesController.text,
+      count: int.tryParse(countController.text) ?? 0,
+      photoUrl: photoUrl,
+    );
     try {
-      final payload = buildFieldReportPayload(
-        parcel: parcel,
-        type: type,
-        notes: notesController.text,
-        count: int.tryParse(countController.text) ?? 0,
-        photoUrl: photoUrl,
-      );
       await ref.read(apiClientProvider).submitFieldReport(
         parcelId: payload['parcel_id'] as String,
         type: payload['type'] as String,
@@ -64,13 +64,6 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
       );
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Observacion enviada')));
     } catch (_) {
-      final payload = buildFieldReportPayload(
-        parcel: parcel,
-        type: type,
-        notes: notesController.text,
-        count: int.tryParse(countController.text) ?? 0,
-        photoUrl: photoUrl,
-      );
       await offlineStore.enqueue(payload);
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Guardada para sincronizar cuando haya conexion')));
     } finally {
