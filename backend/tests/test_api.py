@@ -326,3 +326,27 @@ def test_weather_evidence_summary_is_owner_scoped() -> None:
         headers={"Authorization": "Bearer user-b"},
     )
     assert response.status_code == 404
+
+
+def test_notification_delivery_history_is_owner_scoped_and_filterable() -> None:
+    parcel = client.post("/api/v1/parcels", headers={"Authorization": "Bearer user-a"}, json={
+        "label": "Notificaciones", "latitude": 37.39, "longitude": -5.99,
+        "crop_type": "olivar", "comarca": "Sevilla",
+    }).json()
+    alert_id = 9001
+    storage.save_notification_delivery("user-a", alert_id, "sent", 2, 2, 0)
+    storage.save_notification_delivery("user-a", 9002, "error", 2, 0, 2)
+    response = client.get(
+        "/api/v1/notifications/deliveries?alert_id=9001",
+        headers={"Authorization": "Bearer user-a"},
+    )
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+    assert response.json()[0]["status"] == "sent"
+
+    other = client.get(
+        "/api/v1/notifications/deliveries",
+        headers={"Authorization": "Bearer user-b"},
+    )
+    assert other.status_code == 200
+    assert other.json() == []
