@@ -261,12 +261,13 @@ class Storage:
             )
         return cursor.rowcount > 0
 
-    def create_telemetry(self, payload: TelemetryCreate) -> None:
+    def create_telemetry(self, payload: TelemetryCreate) -> bool:
         with self._connect() as connection:
-            connection.execute(
-                'INSERT INTO telemetry (parcel_id, owner_id, device_id, payload, measured_at) VALUES (?, ?, ?, ?, ?)',
-                (payload.parcel_id, payload.owner_id or 'anonymous', payload.device_id, json.dumps(payload.model_dump(), default=str), payload.measured_at.isoformat()),
+            result = connection.execute(
+                'INSERT OR IGNORE INTO telemetry (parcel_id, owner_id, device_id, payload, measured_at, telemetry_id) VALUES (?, ?, ?, ?, ?, ?)',
+                (payload.parcel_id, payload.owner_id or 'anonymous', payload.device_id, json.dumps(payload.model_dump(), default=str), payload.measured_at.isoformat(), payload.telemetry_id),
             )
+        return result.rowcount > 0
 
     def latest_telemetry(self, parcel_id: str, owner_id: str | None = None) -> TelemetryCreate | None:
         with self._connect() as connection:
