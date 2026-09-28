@@ -91,6 +91,19 @@ def integrations_health() -> dict[str, object]:
     }
 
 
+@app.get('/api/v1/farm/center', response_model=FarmOperationCenter)
+def farm_operation_center(_token: str | None = Depends(optional_bearer_token)) -> FarmOperationCenter:
+    owner_id = _token or 'anonymous'
+    parcels = storage.list_parcels(owner_id)
+    states = []
+    for parcel in parcels:
+        telemetry = storage.latest_telemetry(parcel.id, owner_id)
+        devices = storage.list_devices(parcel.id, owner_id)
+        risks = get_disease_risk(parcel.id, _token)
+        states.append({"parcel": parcel, "telemetry": telemetry, "devices": devices, "risks": risks})
+    return FarmOperationCenter(**build_farm_center(parcels, states))
+
+
 @app.get('/api/v1/parcels', response_model=list[Parcel])
 def list_parcels(_token: str | None = Depends(optional_bearer_token)) -> list[Parcel]:
     return storage.list_parcels(_token or 'anonymous')
