@@ -1,3 +1,9 @@
+"""Constructor de línea temporal agronómica: unifica actividades manuales, riesgos calculados y última telemetría.
+
+Este módulo contiene reglas de dominio puras o casi puras. Las rutas HTTP y la persistencia
+se mantienen fuera para que los cálculos puedan probarse de forma aislada.
+"""
+
 from datetime import datetime, timezone
 from typing import Any
 
