@@ -196,3 +196,11 @@ class TelemetryQualitySummary(BaseModel):
     device_count: int
     active_device_count: int
     devices: list[TelemetryQualityDevice]
+
+
+class ParcelActivityEvent(BaseModel):
+    event_type: Literal["telemetry", "field_report", "alert", "risk_snapshot"]
+    event_id: str
+    event_at: datetime
+    title: str
+    detail: str | None = None
