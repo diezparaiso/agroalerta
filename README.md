@@ -46,7 +46,7 @@ flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8000
 
 Para Android o iOS se mantiene el mismo codigo y se cambia únicamente el dispositivo de ejecución. Hay que añadir los archivos de configuración de Firebase (`google-services.json` y `GoogleService-Info.plist`) y activar los proveedores Google, Apple y correo en Firebase Console.
 
-AdMob utiliza IDs de prueba por defecto. En una compilación de distribución se debe proporcionar el ID real:
+AdMob permanece desactivado si no se proporciona configuración. En una compilación de distribución se debe proporcionar el ID real:
 
 ```bash
 flutter run -d android --dart-define=ADMOB_BANNER_ID=ca-app-pub-xxxxxxxxxxxxxxxx/xxxxxxxxxx
