@@ -332,3 +332,15 @@ La decisión se valida mediante `flutter analyze`, `flutter test` y la compilaci
 **Alcance:** este módulo no recomienda tratamientos ni sustituye la etiqueta oficial. El catálogo es una fuente de trazabilidad de productos autorizados; cualquier lógica agronómica de decisión se mantiene separada.
 
 **Consecuencia:** el módulo deja de ser únicamente una lista visual y queda preparado para consultas contextualizadas por cultivo/enfermedad sin introducir datos ficticios.
+
+
+## ADR-031: Exponer histórico reciente de telemetría por parcela
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+**Decisión:** se añade un endpoint autenticado de histórico reciente de telemetría por parcela, limitado y ordenado por `measured_at`, reutilizando la persistencia existente. Flutter dispone del método cliente para consumirlo. El dashboard conserva la lectura resumida existente y el módulo de sensores puede evolucionar sobre este contrato.
+
+**Alcance:** no se generan mediciones sintéticas ni se considera conectado un sensor por el mero hecho de estar registrado. La ausencia de registros se presenta como ausencia de evidencia.
+
+**Siguiente evolución:** gráficos temporales, selección de sensor y ventanas de 24 h/7 días.
