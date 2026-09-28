@@ -392,3 +392,19 @@ Esta decisión evita mezclar evidencia de parcelas o sensores distintos y mantie
 La API de ingestión de telemetría solo acepta mediciones cuyo device_id esté registrado en la parcela del propietario autenticado y cuyo dispositivo esté activo. Un sensor desconocido devuelve 404 y uno inactivo devuelve 409.
 
 La decisión evita aceptar telemetría huérfana o procedente de dispositivos retirados. La activación/desactivación sigue siendo un estado del dispositivo; la automatización de ese ciclo y la validación física del hardware quedan fuera de este cambio.
+
+
+## ADR-037: Estado de dispositivos IoT gestionado por API
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+**Decisión:** el ciclo mínimo de vida de un sensor se gestiona mediante `PATCH /api/v1/devices/{device_id}` con `active=true|false`. La operación exige que el dispositivo pertenezca al propietario autenticado. El backend persiste el estado y la ingestión de telemetría continúa rechazando sensores inactivos.
+
+**Motivo:** evitar que la operación dependa de escrituras directas sobre SQLite y proporcionar una frontera API estable para la futura gestión de dispositivos desde Flutter, automatizaciones o integraciones hardware.
+
+**Seguridad:** un propietario distinto recibe 404 y no obtiene información sobre la existencia del dispositivo.
+
+**Validación:** pruebas de activación/desactivación y de aislamiento entre propietarios en `backend/tests/test_api.py`.
+
+**Pendiente:** pantalla Flutter de administración de dispositivos y estados adicionales si el hardware real los requiere.
