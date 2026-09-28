@@ -208,3 +208,39 @@ class CampaignDecisionLink(BaseModel):
     priority: Literal["informativa", "vigilar", "revisar"]
     headline: str
     created_at: datetime
+
+
+class CampaignResultCreate(BaseModel):
+    campaign_id: str
+    harvested_at: datetime
+    harvested_quantity_kg: float = Field(gt=0)
+    productive_area_ha: float = Field(gt=0)
+    marketable_quantity_kg: float | None = Field(default=None, ge=0)
+    quality_grade: str | None = Field(default=None, max_length=80)
+    destination: str | None = Field(default=None, max_length=120)
+    notes: str | None = Field(default=None, max_length=2000)
+
+
+class CampaignResult(CampaignResultCreate):
+    id: str
+    owner_id: str
+    created_at: datetime
+    yield_kg_ha: float
+    target_yield_kg_ha: float | None = None
+    target_deviation_pct: float | None = None
+
+
+class CampaignResultsSummary(BaseModel):
+    campaign: CropCampaign
+    result_count: int
+    harvested_quantity_kg: float
+    marketable_quantity_kg: float
+    productive_area_ha: float
+    yield_kg_ha: float | None = None
+    target_yield_kg_ha: float | None = None
+    target_deviation_pct: float | None = None
+    latest_harvest_at: datetime | None = None
+    activity_count: int
+    treatment_count: int
+    irrigation_count: int
+    decision_count: int
