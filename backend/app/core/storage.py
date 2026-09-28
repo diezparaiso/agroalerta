@@ -740,6 +740,59 @@ class Storage:
             devices.append({'device_id': row['device_id'], 'name': row['name'], 'device_type': row['device_type'], 'active': bool(row['active']), 'latest_measured_at': latest, 'minutes_since_last_measurement': age, 'sample_count': int(row['sample_count'])})
         return {'parcel_id': parcel_id, 'window_hours': since_hours, 'device_count': len(devices), 'active_device_count': sum(1 for item in devices if item['active']), 'devices': devices}
 
+    def list_parcel_activity(self, parcel_id: str, owner_id: str, limit: int = 100) -> list[dict[str, object]]:
+        """Construye una línea temporal de eventos persistidos de una parcela."""
+        safe_limit = max(1, min(limit, 200))
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT event_type, event_id, event_at, title, detail
+                FROM (
+                    SELECT 'telemetry' AS event_type,
+                           telemetry_id AS event_id,
+                           measured_at AS event_at,
+                           'Telemetría recibida' AS title,
+                           device_id || ' · ' || measured_at AS detail
+                    FROM telemetry
+                    WHERE parcel_id = ? AND owner_id = ?
+
+                    UNION ALL
+
+                    SELECT 'field_report',
+                           id,
+                           json_extract(payload, '$.reported_at'),
+                           'Parte de campo',
+                           json_extract(payload, '$.type')
+                    FROM field_reports
+                    WHERE parcel_id = ? AND owner_id = ?
+
+                    UNION ALL
+
+                    SELECT 'alert',
+                           CAST(id AS TEXT),
+                           created_at,
+                           'Alerta agronómica',
+                           disease_code || ' · ' || risk_level
+                    FROM alerts
+                    WHERE parcel_id = ? AND owner_id = ?
+
+                    UNION ALL
+
+                    SELECT 'risk_snapshot',
+                           CAST(id AS TEXT),
+                           calculated_at,
+                           'Cálculo de riesgo',
+                           disease_code || ' · ' || risk_level
+                    FROM risk_snapshots
+                    WHERE parcel_id = ? AND owner_id = ?
+                )
+                ORDER BY event_at DESC
+                LIMIT ?
+                """,
+                (parcel_id, owner_id, parcel_id, owner_id, parcel_id, owner_id, parcel_id, owner_id, safe_limit),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def get_alert_user_state(self, owner_id: str, alert_id: int) -> dict[str, object] | None:
         with self._connect() as connection:
             row = connection.execute('SELECT owner_id, alert_id, read_at, acknowledged_at FROM alert_user_states WHERE owner_id = ? AND alert_id = ?', (owner_id, alert_id)).fetchone()
