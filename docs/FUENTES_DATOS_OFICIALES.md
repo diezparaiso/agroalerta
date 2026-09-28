@@ -130,3 +130,24 @@ Combinacion prevista: meteorologia observada + prediccion + observaciones RAIF +
 - SIGPAC 2026.
 
 Las URL y endpoints concretos de descarga/consulta deben permanecer centralizados en los conectores y no repartidos por el dominio.
+
+## Implementacion realizada: RAIF
+
+El conector `backend/app/connectors/raif_client.py` descarga el recurso ZIP configurado para cada cultivo, abre sus XML y normaliza registros a un contrato interno.
+
+La primera fuente configurada es **RAIF Olivar**. El recurso oficial publicado por la Junta se actualiza semanalmente para olivar y relaciona parcelas y muestreos mediante PROVINCIA, MUNICIPIO y PARCELA. citeturn1view0
+
+Las evidencias se almacenan en `source_records`, conservando:
+
+- fuente;
+- identificador externo;
+- fecha de observacion cuando puede interpretarse;
+- provincia;
+- municipio;
+- referencia de parcela;
+- payload original normalizado;
+- fecha de ingesta.
+
+La descarga queda parametrizada mediante `RAIF_OLIVAR_URL`, de modo que si la Junta cambia el recurso no hay que modificar el dominio.
+
+La ingesta se ejecuta como job externo mediante `ingest_raif("olivar")`. No se expone como endpoint publico para evitar que una peticion HTTP pueda disparar descargas masivas.
