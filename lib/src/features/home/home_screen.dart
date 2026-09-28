@@ -335,6 +335,7 @@ class _TelemetryCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final window = ref.watch(telemetryWindowProvider);
     final selectedParcelId = ref.watch(selectedTelemetryParcelIdProvider);
+    final selectedDeviceId = ref.watch(selectedTelemetryDeviceIdProvider);
     return _Panel(
       title: 'Sensores',
       icon: Icons.sensors_outlined,
@@ -374,6 +375,44 @@ class _TelemetryCard extends ConsumerWidget {
           ),
           const SizedBox(height: 16),
           ref.watch(telemetryHistoryProvider).when(
+            data: (history) {
+              final devices = history
+                  .map((item) => item['device_id'])
+                  .whereType<String>()
+                  .toSet()
+                  .toList()
+                ..sort();
+              final effectiveDevice = devices.contains(selectedDeviceId) ? selectedDeviceId : null;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: effectiveDevice,
+                    decoration: const InputDecoration(
+                      labelText: 'Sensor',
+                      helperText: 'Selecciona el dispositivo cuando haya más de uno.',
+                    ),
+                    items: [
+                      for (final deviceId in devices)
+                        DropdownMenuItem(value: deviceId, child: Text(deviceId)),
+                    ],
+                    onChanged: devices.isEmpty
+                        ? null
+                        : (value) => ref.read(selectedTelemetryDeviceIdProvider.notifier).state = value,
+                  ),
+                  const SizedBox(height: 16),
+                  _TelemetryChart(
+                    history: history,
+                    window: window,
+                    deviceId: effectiveDevice,
+                  ),
+                ],
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (_, __) => const Text('Telemetría no disponible'),
+          ),
+
         data: (history) {
           if (history.isEmpty) {
             return const Text('No hay mediciones reales en el periodo seleccionado.');
