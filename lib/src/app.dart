@@ -14,6 +14,8 @@ import 'features/devices/devices_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/operation_center/operation_center_screen.dart';
 import 'features/campaigns/campaigns_screen.dart';
+import 'features/activity_timeline/activity_timeline_screen.dart';
+import 'features/agronomic_decision/agronomic_decision_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final firebaseAvailable = ref.watch(firebaseAvailableProvider);
@@ -33,6 +35,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
           GoRoute(path: '/operation-center', builder: (_, __) => const OperationCenterScreen()),
           GoRoute(path: '/campaigns', builder: (_, __) => const CampaignsScreen()),
+          GoRoute(path: '/timeline', builder: (_, __) => const ActivityTimelineScreen()),
+          GoRoute(path: '/agronomic-decision', builder: (_, __) => const AgronomicDecisionScreen()),
         ],
       ),
     ],
@@ -68,6 +72,8 @@ class AppShell extends StatelessWidget {
     (label: 'Ajustes', icon: Icons.settings_outlined, path: '/settings'),
     (label: 'Explotación', icon: Icons.agriculture_outlined, path: '/operation-center'),
     (label: 'Campañas', icon: Icons.event_note_outlined, path: '/campaigns'),
+    (label: 'Línea temporal', icon: Icons.timeline, path: '/timeline'),
+    (label: 'Decisión', icon: Icons.psychology_outlined, path: '/agronomic-decision'),
   ];
 
   @override
