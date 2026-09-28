@@ -84,7 +84,7 @@ class _CampaignCard extends ConsumerWidget {
         trailing: Wrap(spacing: 4, children: [
           IconButton(
             tooltip: 'Resultados',
-            onPressed: () => _showResults(context, ref, '\${campaign['id']}', '\${campaign['season_label'] ?? 'Campaña'}'),
+            onPressed: () => _showResults(context, ref, '${campaign['id']}', '${campaign['season_label'] ?? 'Campaña'}'),
             icon: const Icon(Icons.analytics_outlined),
           ),
           PopupMenuButton<String>(
