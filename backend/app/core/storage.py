@@ -240,12 +240,13 @@ class Storage:
             result = connection.execute(query, parameters)
         return self.get_parcel(parcel_id, owner_id) if result.rowcount else None
 
-    def create_report(self, report_id: str, payload: FieldReportCreate) -> None:
+    def create_report(self, report_id: str, payload: FieldReportCreate) -> bool:
         with self._connect() as connection:
-            connection.execute(
-                'INSERT INTO field_reports (id, parcel_id, owner_id, payload, created_at) VALUES (?, ?, ?, ?, ?)',
+            cursor = connection.execute(
+                'INSERT OR IGNORE INTO field_reports (id, parcel_id, owner_id, payload, created_at) VALUES (?, ?, ?, ?, ?)',
                 (report_id, payload.parcel_id, payload.owner_id or 'anonymous', json.dumps(payload.model_dump(), default=str), datetime.now(timezone.utc).isoformat()),
             )
+        return cursor.rowcount > 0
 
     def create_telemetry(self, payload: TelemetryCreate) -> None:
         with self._connect() as connection:
