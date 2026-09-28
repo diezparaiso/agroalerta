@@ -536,3 +536,28 @@ def test_treatment_record_is_recorded_and_owner_scoped() -> None:
 
     other = client.get(f"/api/v1/parcels/{parcel_id}/treatments", headers={"Authorization": "Bearer user-b"})
     assert other.status_code == 404
+
+
+def test_alert_preferences_are_owner_scoped_and_persisted() -> None:
+    default = client.get("/api/v1/alert-preferences", headers={"Authorization": "Bearer user-a"})
+    assert default.status_code == 200
+    assert default.json()["minimum_risk_level"] == "medio"
+    assert default.json()["push_enabled"] is True
+
+    updated = client.put(
+        "/api/v1/alert-preferences",
+        headers={"Authorization": "Bearer user-a"},
+        json={"minimum_risk_level": "alto", "push_enabled": False},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["minimum_risk_level"] == "alto"
+    assert updated.json()["push_enabled"] is False
+
+    reread = client.get("/api/v1/alert-preferences", headers={"Authorization": "Bearer user-a"})
+    assert reread.json()["minimum_risk_level"] == "alto"
+    assert reread.json()["push_enabled"] is False
+
+    other = client.get("/api/v1/alert-preferences", headers={"Authorization": "Bearer user-b"})
+    assert other.status_code == 200
+    assert other.json()["minimum_risk_level"] == "medio"
+    assert other.json()["push_enabled"] is True
