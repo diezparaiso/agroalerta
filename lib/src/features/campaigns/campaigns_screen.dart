@@ -81,7 +81,13 @@ class _CampaignCard extends ConsumerWidget {
           'Estado: $status · Inicio: ${campaign['started_at'] ?? ''}',
         ),
         isThreeLine: true,
-        trailing: PopupMenuButton<String>(
+        trailing: Wrap(spacing: 4, children: [
+          IconButton(
+            tooltip: 'Resultados',
+            onPressed: () => _showResults(context, ref, '\${campaign['id']}', '\${campaign['season_label'] ?? 'Campaña'}'),
+            icon: const Icon(Icons.analytics_outlined),
+          ),
+          PopupMenuButton<String>(
           onSelected: (value) async {
             await ref.read(apiClientProvider).updateCampaignStatus(
               campaignId: '${campaign['id']}',
@@ -94,10 +100,33 @@ class _CampaignCard extends ConsumerWidget {
             PopupMenuItem(value: 'closed', child: Text('Cerrar')),
             PopupMenuItem(value: 'cancelled', child: Text('Cancelar')),
           ],
-        ),
+          ),
+        ]),
       ),
     );
   }
+}
+
+Future<void> _showResults(BuildContext context, WidgetRef ref, String campaignId, String seasonLabel) async {
+  final summary = await ref.read(apiClientProvider).getCampaignResultsSummary(campaignId);
+  if (!context.mounted) return;
+  await showDialog<void>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text('Resultados · $seasonLabel'),
+      content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Producción: ${summary['harvested_quantity_kg'] ?? 0} kg'),
+        Text('Superficie productiva: ${summary['productive_area_ha'] ?? 0} ha'),
+        Text('Rendimiento: ${summary['yield_kg_ha'] ?? '--'} kg/ha'),
+        Text('Objetivo: ${summary['target_yield_kg_ha'] ?? '--'} kg/ha'),
+        Text('Desviación: ${summary['target_deviation_pct'] ?? '--'} %'),
+        const SizedBox(height: 10),
+        Text('Decisiones registradas: ${summary['decision_count'] ?? 0}'),
+        Text('Actividades: ${summary['activity_count'] ?? 0}'),
+      ]),
+      actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cerrar'))],
+    ),
+  );
 }
 
 Future<void> _showCreateCampaign(BuildContext context, WidgetRef ref, String parcelId) async {
