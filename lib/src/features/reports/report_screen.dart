@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -24,6 +26,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   bool sending = false;
   XFile? photo;
   final offlineStore = OfflineReportStore();
+  Timer? queueStatusTimer;
 
   Future<void> submit() async {
     setState(() => sending = true);
@@ -72,6 +75,22 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     } finally {
       if (mounted) setState(() => sending = false);
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    queueStatusTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted) ref.invalidate(offlineQueueStatusProvider);
+    });
+  }
+
+  @override
+  void dispose() {
+    queueStatusTimer?.cancel();
+    notesController.dispose();
+    countController.dispose();
+    super.dispose();
   }
 
   @override
