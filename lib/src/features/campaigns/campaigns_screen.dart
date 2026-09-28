@@ -84,6 +84,11 @@ class _CampaignCard extends ConsumerWidget {
         isThreeLine: true,
         trailing: Wrap(spacing: 4, children: [
           IconButton(
+            tooltip: 'Decisiones',
+            onPressed: () => _showDecisions(context, ref, '${campaign['id']}', '${campaign['season_label'] ?? 'Campaña'}'),
+            icon: const Icon(Icons.psychology_outlined),
+          ),
+          IconButton(
             tooltip: 'Resultados',
             onPressed: () => _showResults(context, ref, '${campaign['id']}', '${campaign['season_label'] ?? 'Campaña'}'),
             icon: const Icon(Icons.analytics_outlined),
@@ -109,6 +114,15 @@ class _CampaignCard extends ConsumerWidget {
   }
 }
 
+Future<void> _showDecisions(BuildContext context, WidgetRef ref, String campaignId, String seasonLabel) async {
+  final decisions = await ref.read(apiClientProvider).getCampaignDecisions(campaignId);
+  if (!context.mounted) return;
+  await showDialog<void>(context: context, builder: (dialogContext) => AlertDialog(
+    title: Text('Decisiones · $seasonLabel'),
+    content: SizedBox(width: 520, child: decisions.isEmpty ? const Text('No hay decisiones registradas para esta campaña.') : ListView.separated(shrinkWrap: true, itemCount: decisions.length, separatorBuilder: (_, __) => const Divider(), itemBuilder: (_, index) { final decision = decisions[index]; return ListTile(leading: Icon(decision['priority'] == 'revisar' ? Icons.warning_amber_rounded : decision['priority'] == 'vigilar' ? Icons.visibility_outlined : Icons.info_outline), title: Text('${decision['disease_code'] ?? ''} · ${decision['priority'] ?? ''}'), subtitle: Text('${decision['headline'] ?? ''}\nPuntuación: ${decision['decision_score'] ?? '--'}\n${decision['created_at'] ?? ''}'), isThreeLine: true); })),
+    actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cerrar'))],
+  ));
+}
 Future<void> _showResults(BuildContext context, WidgetRef ref, String campaignId, String seasonLabel) async {
   final summary = await ref.read(apiClientProvider).getCampaignResultsSummary(campaignId);
   if (!context.mounted) return;
