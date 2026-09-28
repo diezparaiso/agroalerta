@@ -10,7 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.security import optional_bearer_token
 from app.core.storage import Storage
 from app.domain.disease_rules import evaluate_risk
-from app.schemas import Device, DeviceCreate, DiseaseRisk, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
+from app.domain.agronomic_decision import make_agronomic_decision
+from app.schemas import AgronomicDecision, Device, DeviceCreate, DiseaseRisk, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
 from app.schemas_push import PushTokenCreate
 
 
@@ -145,6 +146,23 @@ def get_disease_risk(parcel_id: str, _token: str | None = Depends(optional_beare
     for risk in risks:
         storage.save_risk_snapshot(RiskSnapshot(parcel_id=parcel_id, owner_id=owner_id, disease_code=risk.disease_code, risk_score=risk.risk_score, risk_level=risk.risk_level, calculated_at=risk.calculated_at))
     return risks
+
+
+@app.get('/api/v1/agronomic-decision/{parcel_id}/{disease_code}', response_model=AgronomicDecision)
+def agronomic_decision(parcel_id: str, disease_code: Literal["repilo", "mildiu"], _token: str | None = Depends(optional_bearer_token)) -> AgronomicDecision:
+    owner_id = _token or 'anonymous'
+    get_parcel(parcel_id, _token)
+    risks = get_disease_risk(parcel_id, _token)
+    risk = next((item for item in risks if item.disease_code == disease_code), None)
+    if risk is None:
+        raise HTTPException(status_code=404, detail="Riesgo no disponible para el cultivo")
+    telemetry = storage.latest_telemetry(parcel_id, owner_id)
+    return AgronomicDecision(**make_agronomic_decision(
+        parcel_id,
+        disease_code,
+        risk.model_dump(mode='json'),
+        telemetry.model_dump(mode='json') if telemetry else None,
+    ))
 
 
 @app.get('/api/v1/alerts', response_model=list[DiseaseRisk])
