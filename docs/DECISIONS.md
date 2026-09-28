@@ -122,3 +122,16 @@ Reintentos del mismo evento no crean otra alerta, mientras que una nueva transic
 **Límite:** esto no convierte SQLite en una base de datos de producción multi-réplica. La evolución prevista sigue siendo PostgreSQL/PostGIS para producción.
 
 **Validación:** prueba automatizada de los pragmas y CI.
+
+
+### ADR-015: Configuración explícita del almacenamiento
+
+**Estado:** aceptado
+
+**Decisión:** el almacenamiento recibe `AGROALERTA_DB_URL`, manteniendo `AGROALERTA_DB_PATH` como compatibilidad para SQLite. En esta etapa solo se acepta SQLite; una URL de otro motor falla explícitamente.
+
+**Motivo:** separar configuración de persistencia del código permite preparar la migración a PostgreSQL/PostGIS sin introducir una dependencia de driver a medias ni comportamientos ambiguos.
+
+**Consecuencia:** todavía no existe un adaptador PostgreSQL. El fallo explícito evita creer que una URL PostgreSQL está soportada cuando no lo está.
+
+**Validación:** pruebas para URL SQLite y rechazo de drivers no implementados.
