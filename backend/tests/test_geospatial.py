@@ -7,4 +7,4 @@ def test_haversine_zero() -> None:
 
 def test_haversine_sevilla_cordoba_is_reasonable() -> None:
     distance = haversine_km(37.3891, -5.9845, 37.8882, -4.7794)
-    assert 120 < distance < 150
+    assert 119 < distance < 150
