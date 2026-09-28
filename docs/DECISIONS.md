@@ -218,3 +218,16 @@ Reintentos del mismo evento no crean otra alerta, mientras que una nueva transic
 
 **Validación:** `test/features/reports/offline_retry_policy_test.dart` cubre elegibilidad, progresión exponencial, límite máximo y compatibilidad con registros antiguos.
 
+## ADR-022: Estado visible de la cola offline
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+**Contexto:** la cola de observaciones ya podía conservar informes y reintentarlos, pero la interfaz no informaba al agricultor de si existían pendientes ni de cuándo estaba previsto el siguiente intento.
+
+**Decisión:** exponer un resumen de la cola mediante Riverpod y mostrarlo en el formulario de observaciones: número de pendientes, número con fallos previos y hora del siguiente reintento cuando existe. El estado se deriva exclusivamente de la cola persistida; no se inventa conectividad ni confirmación de entrega.
+
+**Consecuencia:** el usuario puede distinguir entre una observación ya enviada y una observación todavía pendiente. El detalle operativo de red sigue perteneciendo al sincronizador y no al formulario.
+
+**Validación:** `test/features/reports/offline_queue_status_test.dart` cubre conteos, reintentos pendientes y cola vacía.
+
