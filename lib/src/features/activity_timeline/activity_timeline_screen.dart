@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../home/home_screen.dart';
 import '../parcels/parcel_provider.dart';
-import '../../core/network/api_client.dart';
 import 'activity_timeline_provider.dart';
 
 class ActivityTimelineScreen extends ConsumerWidget {
@@ -16,9 +15,10 @@ class ActivityTimelineScreen extends ConsumerWidget {
       error: (e, _) => Center(child: Text('No se pudieron cargar las parcelas: ' + e.toString())),
       data: (items) {
         final current = items.where((p) => p.id == selected).firstOrNull;
+            final currentId = current?.id;
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           DropdownButton<String>(
-            value: current?.id,
+            value: currentId,
             hint: const Text('Selecciona una parcela'),
             items: [for (final p in items) DropdownMenuItem(value: p.id, child: Text(p.name))],
             onChanged: (v) => ref.read(selectedTimelineParcelProvider.notifier).state = v,
@@ -26,12 +26,12 @@ class ActivityTimelineScreen extends ConsumerWidget {
           const SizedBox(height: 12),
           Row(children: [
             FilledButton.icon(
-              onPressed: current == null ? null : () => _createActivity(context, ref, current.id),
+              onPressed: currentId == null ? null : () => _createActivity(context, ref, currentId),
               icon: const Icon(Icons.add), label: const Text('Registrar actividad'),
             ),
             const SizedBox(width: 8),
             OutlinedButton.icon(
-              onPressed: current == null ? null : () => ref.invalidate(activityTimelineProvider),
+              onPressed: currentId == null ? null : () => ref.invalidate(activityTimelineProvider),
               icon: const Icon(Icons.refresh), label: const Text('Actualizar'),
             ),
           ]),
