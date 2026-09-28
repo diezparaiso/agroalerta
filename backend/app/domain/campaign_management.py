@@ -1,5 +1,3 @@
-from datetime import datetime, timezone
-
 from app.schemas import CropCampaign
 
 
@@ -7,15 +5,10 @@ _RISK_ORDER = {"ninguno": 0, "bajo": 1, "medio": 2, "alto": 3}
 
 
 def _progress(status: str) -> str:
-    return {
-        "planned": "planificada",
-        "active": "en_curso",
-        "closed": "cerrada",
-        "cancelled": "cancelada",
-    }[status]
+    return {"planned": "planificada", "active": "en_curso", "closed": "cerrada", "cancelled": "cancelada"}[status]
 
 
-def build_campaign_summary(campaign: CropCampaign, activities: list, risks: list) -> dict:
+def build_campaign_summary(campaign: CropCampaign, activities: list, risks: list, decisions: list | None = None) -> dict:
     scoped = [
         activity for activity in activities
         if activity.occurred_at >= campaign.started_at
@@ -25,13 +18,11 @@ def build_campaign_summary(campaign: CropCampaign, activities: list, risks: list
     treatments = [a for a in scoped if a.activity_type == "treatment"]
     observations = [a for a in scoped if a.activity_type == "observation"]
     harvests = [a for a in scoped if a.activity_type == "harvest"]
-
     highest = "ninguno"
     for risk in risks:
         level = getattr(risk, "risk_level", "ninguno")
         if _RISK_ORDER.get(level, 0) > _RISK_ORDER[highest]:
             highest = level
-
     latest = max((a.occurred_at for a in scoped), default=None)
     return {
         "campaign": campaign,
