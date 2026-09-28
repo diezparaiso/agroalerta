@@ -16,7 +16,10 @@ class Storage:
         self._initialize()
 
     def _connect(self) -> sqlite3.Connection:
-        connection = sqlite3.connect(self.path)
+        connection = sqlite3.connect(self.path, timeout=30)
+        connection.execute('PRAGMA busy_timeout = 30000')
+        connection.execute('PRAGMA journal_mode = WAL')
+        connection.execute('PRAGMA foreign_keys = ON')
         connection.row_factory = sqlite3.Row
         return connection
 
