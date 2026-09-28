@@ -226,3 +226,24 @@ class CropCampaign(BaseModel):
     started_at: datetime
     ended_at: datetime | None = None
     status: Literal["activa", "cerrada"]
+
+
+class IrrigationEventCreate(BaseModel):
+    campaign_id: str | None = None
+    started_at: datetime
+    duration_minutes: int = Field(ge=1, le=1440)
+    water_liters: float | None = Field(default=None, ge=0)
+    method: Literal["goteo", "aspersion", "superficie", "otro"]
+    notes: str | None = Field(default=None, max_length=1000)
+
+
+class IrrigationEvent(BaseModel):
+    id: str
+    parcel_id: str
+    campaign_id: str | None = None
+    owner_id: str
+    started_at: datetime
+    duration_minutes: int
+    water_liters: float | None = None
+    method: Literal["goteo", "aspersion", "superficie", "otro"]
+    notes: str | None = None
