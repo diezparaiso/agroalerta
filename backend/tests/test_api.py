@@ -503,3 +503,36 @@ def test_irrigation_event_is_recorded_and_owner_scoped() -> None:
 
     other = client.get(f"/api/v1/parcels/{parcel_id}/irrigation", headers={"Authorization": "Bearer user-b"})
     assert other.status_code == 404
+
+
+def test_treatment_record_is_recorded_and_owner_scoped() -> None:
+    parcel = client.post("/api/v1/parcels", headers={"Authorization": "Bearer user-a"}, json={
+        "label": "Tratamiento", "latitude": 37.39, "longitude": -5.99,
+        "crop_type": "olivar", "comarca": "Sevilla",
+    }).json()
+    parcel_id = parcel["id"]
+
+    created = client.post(
+        f"/api/v1/parcels/{parcel_id}/treatments",
+        headers={"Authorization": "Bearer user-a"},
+        json={
+            "applied_at": "2026-09-28T08:00:00+00:00",
+            "product_name": "Producto registrado por el usuario",
+            "active_substance": "Sustancia activa",
+            "dose": "2 L/ha",
+            "treated_area_ha": 4.5,
+            "notes": "Aplicación registrada",
+        },
+    )
+    assert created.status_code == 201
+    body = created.json()
+    assert body["parcel_id"] == parcel_id
+    assert body["product_name"] == "Producto registrado por el usuario"
+    assert body["treated_area_ha"] == 4.5
+
+    listed = client.get(f"/api/v1/parcels/{parcel_id}/treatments", headers={"Authorization": "Bearer user-a"})
+    assert listed.status_code == 200
+    assert len(listed.json()) == 1
+
+    other = client.get(f"/api/v1/parcels/{parcel_id}/treatments", headers={"Authorization": "Bearer user-b"})
+    assert other.status_code == 404
