@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/ads/ad_banner.dart';
+import '../alerts/alerts_provider.dart';
 import '../parcels/parcel_map_preview.dart';
+import '../parcels/parcel_provider.dart';
 import 'telemetry_provider.dart';
 import 'weather_provider.dart';
 
@@ -13,7 +15,7 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppPage(
       title: 'Buenos dias, agricultor',
-      subtitle: 'Andalucia · datos actualizados hace 12 min',
+      subtitle: 'Datos disponibles en el sistema',
       actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none))],
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -48,27 +50,74 @@ class _WeatherCard extends ConsumerWidget {
       );
 }
 
-class _RiskCard extends StatelessWidget {
+class _RiskCard extends ConsumerWidget {
   const _RiskCard();
+
   @override
-  Widget build(BuildContext context) => _Panel(
+  Widget build(BuildContext context, WidgetRef ref) => _Panel(
         title: 'Aviso prioritario',
         icon: Icons.warning_amber_rounded,
         color: Colors.amber.shade100,
-        child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Riesgo medio de repilo', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700)), SizedBox(height: 10), LinearProgressIndicator(value: .58), SizedBox(height: 10), Text('Olivar de prueba · confianza estimada')]),
+        child: ref.watch(alertsProvider).when(
+          data: (alerts) {
+            if (alerts.isEmpty) {
+              return const Text('No hay avisos de riesgo persistidos.');
+            }
+            final alert = alerts.first;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Riesgo ' + alert.level.toLowerCase() + ' de ' + alert.title,
+                  style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 10),
+                LinearProgressIndicator(value: alert.value),
+                const SizedBox(height: 10),
+                Text(alert.parcel),
+              ],
+            );
+          },
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (_, __) => const Text('Avisos no disponibles'),
+        ),
       );
 }
 
-class _ParcelSummaryCard extends StatelessWidget {
+class _ParcelSummaryCard extends ConsumerWidget {
   const _ParcelSummaryCard();
+
   @override
-  Widget build(BuildContext context) => _Panel(title: 'Tus parcelas', icon: Icons.landscape_outlined, child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('3', style: TextStyle(fontSize: 42, fontWeight: FontWeight.w700)), Text('parcelas monitorizadas'), Spacer(), Text('2 con datos recientes')]));
+  Widget build(BuildContext context, WidgetRef ref) => _Panel(
+        title: 'Tus parcelas',
+        icon: Icons.landscape_outlined,
+        child: ref.watch(parcelsProvider).when(
+          data: (parcels) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(parcels.length.toString(), style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w700)),
+              const Text('parcelas monitorizadas'),
+              const Spacer(),
+              Text(parcels.isEmpty ? 'Sin parcelas disponibles' : 'Datos sincronizados'),
+            ],
+          ),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (_, __) => const Text('Parcelas no disponibles'),
+        ),
+      );
 }
 
 class _InsightCard extends StatelessWidget {
   const _InsightCard();
+
   @override
-  Widget build(BuildContext context) => _Panel(title: 'Recomendacion', icon: Icons.lightbulb_outline, child: const Text('Revisa las hojas bajas del olivar tras el episodio de lluvia. La alerta es orientativa y debe contrastarse con un tecnico.'));
+  Widget build(BuildContext context) => _Panel(
+        title: 'Recomendación',
+        icon: Icons.lightbulb_outline,
+        child: const Text(
+          'Las recomendaciones se mostrarán cuando exista una alerta respaldada por datos disponibles.',
+        ),
+      );
 }
 
 class _MapCard extends StatelessWidget {
