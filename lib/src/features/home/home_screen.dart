@@ -213,7 +213,7 @@ class _RiskCard extends ConsumerWidget {
               const SizedBox(height: 18),
               if (highRisk > 0)
                 Text(
-                  '${highRisk} de nivel alto',
+                  '$highRisk de nivel alto',
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 )
               else
