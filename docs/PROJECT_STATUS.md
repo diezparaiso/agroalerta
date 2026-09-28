@@ -27,7 +27,7 @@ La estimación debe actualizarse después de hitos relevantes y no debe interpre
 | Notificaciones FCM | 75% |
 | IoT / telemetría | 75% |
 | Informes de campo | 60% |
-| Productos fitosanitarios / MAPA | 25% |
+| Productos fitosanitarios / MAPA | 35% |
 | GIS / contexto espacial | 45% |
 | Flutter / UI-UX | 78% |
 | Offline / sincronización | 65% |
@@ -99,7 +99,7 @@ Pendiente: flujo completo con evidencias, sincronización, adjuntos y explotaci�
 
 ### 10. Productos fitosanitarios / MAPA — 25%
 
-Existe la arquitectura de conector y catalogación de fuentes, pero la integración oficial completa y su explotación dentro del flujo de recomendación todavía requieren trabajo.
+Existe el conector CSV versionado y ahora el API/cliente no presentan productos ficticios: solo exponen un snapshot configurado mediante `MAPA_CATALOG_PATH`. Pendiente: automatizar/verificar la obtención del registro oficial vigente, persistencia/actualización del catálogo y explotación segura en recomendaciones.
 
 ### 11. GIS / contexto espacial — 45%
 
@@ -140,7 +140,7 @@ Implementado: ciclo agroclimático explícito y reutilizable con orden catálogo
 ## Bloqueadores actuales
 
 1. CI Flutter debe quedar completamente verde con las nuevas pruebas.
-2. Hay que verificar y cubrir la deduplicación de alertas con pruebas de regresión.
+2. Hay que automatizar y validar la actualización del catálogo oficial MAPA.
 3. Hay que comprobar el flujo de notificaciones foreground/background.
 4. Hay que conectar el ciclo agroclimático a un scheduler productivo con control de concurrencia.
 5. Las integraciones oficiales externas deben validarse con sus contratos vigentes.
