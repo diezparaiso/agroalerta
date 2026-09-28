@@ -66,3 +66,12 @@ Las recomendaciones no sustituyen la etiqueta oficial ni el asesoramiento de un 
 ## Integración continua
 
 Cada push y pull request ejecuta las pruebas FastAPI y el análisis, dependencias y pruebas de Flutter mediante GitHub Actions. Las credenciales se configuran como secretos del entorno de despliegue y nunca se guardan en el repositorio.
+## Capa de datos agronomicos
+
+Se ha añadido un catalogo interno de fuentes en `backend/app/connectors/source_registry.py` y el endpoint `GET /api/v1/data-sources`. El catalogo separa la procedencia de los datos del motor agronomico.
+
+Fuentes priorizadas: RAIF fitosanitario, RAIF clima, RIA/IFAPA, AEMET, SIGPAC, IDEAndalucia/DERA y catalogo oficial de productos fitosanitarios.
+
+La arquitectura y el estado de validacion de cada fuente quedan documentados en `docs/FUENTES_DATOS_OFICIALES.md`.
+
+La tarea de ingesta meteorologica ya no utiliza una ventana fija 2026/01-12: por defecto trabaja con el mes UTC actual y permite recibir una ventana explicita desde el scheduler.
