@@ -281,6 +281,64 @@ class Storage:
             ).fetchone()
         return int(row['count'])
 
+    def save_weather_observation(
+        self,
+        source_code: str,
+        station_code: str,
+        observed_at: datetime,
+        latitude: float | None,
+        longitude: float | None,
+        temperature_c: float | None,
+        relative_humidity: float | None,
+        rainfall_mm_24h: float | None,
+        confidence: str,
+    ) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS weather_observations (
+                    source_code TEXT NOT NULL,
+                    station_code TEXT NOT NULL,
+                    observed_at TEXT NOT NULL,
+                    latitude REAL,
+                    longitude REAL,
+                    temperature_c REAL,
+                    relative_humidity REAL,
+                    rainfall_mm_24h REAL,
+                    confidence TEXT NOT NULL,
+                    ingested_at TEXT NOT NULL,
+                    PRIMARY KEY (source_code, station_code, observed_at)
+                )
+                """,
+            )
+            connection.execute(
+                """
+                INSERT OR REPLACE INTO weather_observations
+                (source_code, station_code, observed_at, latitude, longitude,
+                 temperature_c, relative_humidity, rainfall_mm_24h, confidence, ingested_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    source_code, station_code, observed_at.isoformat(), latitude,
+                    longitude, temperature_c, relative_humidity, rainfall_mm_24h,
+                    confidence, datetime.now(timezone.utc).isoformat(),
+                ),
+            )
+
+    def list_weather_observations(self, limit: int = 500) -> list[dict[str, object]]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT source_code, station_code, observed_at, latitude, longitude,
+                       temperature_c, relative_humidity, rainfall_mm_24h, confidence
+                FROM weather_observations
+                ORDER BY observed_at DESC
+                LIMIT ?
+                """,
+                (limit,),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def list_georeferenced_source_records(self, source_code: str, limit: int = 1000) -> list[dict[str, object]]:
         with self._connect() as connection:
             rows = connection.execute(
