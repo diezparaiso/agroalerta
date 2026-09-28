@@ -13,14 +13,14 @@ from app.schemas import RiskSnapshot
 logger = logging.getLogger(__name__)
 
 
-async def refresh_all_parcel_weather() -> dict[str, int | str]:
+async def refresh_all_parcel_weather(owner_id: str | None = None) -> dict[str, int | str]:
     """Actualiza RIA para todas las parcelas almacenadas.
 
     Es idempotente a nivel de observación: SQLite reemplaza la misma
     combinación estación/fecha si vuelve a recibirse.
     """
     storage = Storage()
-    parcels = storage.list_parcels()
+    parcels = storage.list_parcels(owner_id)
     updated = 0
     failed = 0
     risks_recalculated = 0
