@@ -14,6 +14,7 @@ class Settings:
             'https://www.juntadeandalucia.es/datosabiertos/portal/dataset/cdc8b852-6e4a-4336-9785-606fbbdc2243/resource/74062bbf-8391-460b-97c3-3aec55be5d77/download/raif_olivar_andalucia_2006_2026-14.zip',
         ),
     })
+    mapa_catalog_path: str = os.getenv('MAPA_CATALOG_PATH', '')
     environment: str = os.getenv('ENVIRONMENT', 'development')
     risk_snapshot_retention_days: int = int(os.getenv('RISK_SNAPSHOT_RETENTION_DAYS', '365'))
 
