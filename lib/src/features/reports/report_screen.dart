@@ -25,12 +25,23 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   Future<void> submit() async {
     setState(() => sending = true);
     final parcels = await ref.read(parcelsProvider.future);
+    if (parcels.isEmpty) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Añade una parcela antes de enviar una observación')));
+      if (mounted) setState(() => sending = false);
+      return;
+    }
+    final parcel = parcels.first;
+    if (parcel.id == null || (parcel.latitude == 0 && parcel.longitude == 0)) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La parcela no tiene coordenadas válidas')));
+      if (mounted) setState(() => sending = false);
+      return;
+    }
     final photoUrl = photo == null ? null : await uploadPhoto(photo!.path);
     try {
-      await ref.read(apiClientProvider).submitFieldReport(parcelId: parcels.first.id ?? parcels.first.name, type: type, notes: notesController.text, count: int.tryParse(countController.text) ?? 0, latitude: 37.39, longitude: -5.99, photoUrl: photoUrl);
+      await ref.read(apiClientProvider).submitFieldReport(parcelId: parcel.id!, type: type, notes: notesController.text, count: int.tryParse(countController.text) ?? 0, latitude: parcel.latitude, longitude: parcel.longitude, photoUrl: photoUrl);
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Observacion enviada')));
     } catch (_) {
-      await offlineStore.enqueue({'parcel_id': parcels.first.id ?? parcels.first.name, 'type': type, 'notes': notesController.text, 'count': int.tryParse(countController.text) ?? 0, 'latitude': 37.39, 'longitude': -5.99, 'photo_url': photoUrl, 'reported_at': DateTime.now().toUtc().toIso8601String()});
+      await offlineStore.enqueue({'parcel_id': parcel.id!, 'type': type, 'notes': notesController.text, 'count': int.tryParse(countController.text) ?? 0, 'latitude': parcel.latitude, 'longitude': parcel.longitude, 'photo_url': photoUrl, 'reported_at': DateTime.now().toUtc().toIso8601String()});
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Guardada para sincronizar cuando haya conexion')));
     } finally {
       if (mounted) setState(() => sending = false);
