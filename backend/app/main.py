@@ -9,6 +9,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from app.domain.disease_rules import evaluate_risk
 from app.connectors.source_registry import list_data_sources
+from app.core.config import settings
 from app.core.storage import Storage
 from app.schemas import Device, DeviceCreate, DiseaseRisk, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
 from app.core.security import optional_bearer_token
@@ -63,6 +64,16 @@ products = [
 def data_sources() -> list[dict[str, object]]:
     """Fuentes externas conocidas por AgroAlerta, sin exponer secretos."""
     return list_data_sources()
+
+
+@app.get("/api/v1/data-sources/stats")
+def data_source_stats() -> dict[str, object]:
+    return {
+        "raif_fitosanitario": {
+            "records": storage.count_source_records("raif_fitosanitario"),
+            "configured_crops": sorted(settings.raif_crop_urls),
+        }
+    }
 
 
 @app.get("/health")
