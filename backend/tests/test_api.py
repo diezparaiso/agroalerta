@@ -593,3 +593,38 @@ def test_irrigation_summary_aggregates_recorded_events_and_scopes_owner() -> Non
         headers={"Authorization": "Bearer user-b"},
     )
     assert other.status_code == 404
+
+
+def test_agronomic_report_is_consolidated_and_owner_scoped() -> None:
+    headers = {"Authorization": "Bearer report-owner"}
+    parcel = client.post("/api/v1/parcels", headers=headers, json={
+        "label": "Informe agronómico", "latitude": 37.39, "longitude": -5.99,
+        "crop_type": "olivar", "comarca": "Sevilla",
+    }).json()
+    parcel_id = parcel["id"]
+
+    irrigation = client.post(
+        f"/api/v1/parcels/{parcel_id}/irrigation",
+        headers=headers,
+        json={"started_at": "2026-09-28T07:00:00+00:00", "duration_minutes": 30,
+              "water_liters": 800, "method": "goteo"},
+    )
+    assert irrigation.status_code == 201
+
+    report = client.get(
+        f"/api/v1/parcels/{parcel_id}/agronomic-report",
+        headers=headers,
+    )
+    assert report.status_code == 200
+    data = report.json()
+    assert data["parcel"]["id"] == parcel_id
+    assert data["irrigation"]["event_count"] == 1
+    assert data["irrigation"]["total_water_liters"] == 800
+    assert data["campaign_count"] == 0
+    assert data["treatment_count"] == 0
+
+    other = client.get(
+        f"/api/v1/parcels/{parcel_id}/agronomic-report",
+        headers={"Authorization": "Bearer another-owner"},
+    )
+    assert other.status_code == 404
