@@ -4,7 +4,7 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from app.schemas import Device, DeviceCreate, FieldReportCreate, Parcel, ParcelCreate, RiskSnapshot, TelemetryCreate
+from app.schemas import Alert, Device, DeviceCreate, FieldReportCreate, Parcel, ParcelCreate, RiskSnapshot, TelemetryCreate
 from app.schemas_push import PushTokenCreate
 
 
@@ -69,6 +69,20 @@ class Storage:
                     risk_score REAL NOT NULL,
                     risk_level TEXT NOT NULL,
                     calculated_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS alerts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    parcel_id TEXT NOT NULL,
+                    owner_id TEXT NOT NULL,
+                    disease_code TEXT NOT NULL,
+                    alert_type TEXT NOT NULL,
+                    risk_level TEXT NOT NULL,
+                    risk_score REAL NOT NULL,
+                    message TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    valid_until TEXT,
+                    notified_at TEXT,
+                    dedup_key TEXT NOT NULL UNIQUE
                 );
                 CREATE TABLE IF NOT EXISTS source_records (
                     source_code TEXT NOT NULL,
@@ -257,6 +271,71 @@ class Storage:
                 if snapshot.calculated_at - previous_time < timedelta(hours=1):
                     return
             connection.execute('INSERT INTO risk_snapshots (parcel_id, owner_id, disease_code, risk_score, risk_level, calculated_at) VALUES (?, ?, ?, ?, ?, ?)', (snapshot.parcel_id, snapshot.owner_id or 'anonymous', snapshot.disease_code, snapshot.risk_score, snapshot.risk_level, snapshot.calculated_at.isoformat()))
+
+    def save_alert(
+        self,
+        parcel_id: str,
+        owner_id: str,
+        disease_code: str,
+        alert_type: str,
+        risk_level: str,
+        risk_score: float,
+        message: str,
+        created_at: datetime,
+        valid_until: datetime | None = None,
+        notified_at: datetime | None = None,
+        dedup_key: str | None = None,
+    ) -> Alert | None:
+        key = dedup_key or f"{parcel_id}:{disease_code}:{alert_type}:{risk_level}:{created_at.isoformat()}"
+        with self._connect() as connection:
+            cursor = connection.execute(
+                """
+                INSERT OR IGNORE INTO alerts
+                (parcel_id, owner_id, disease_code, alert_type, risk_level,
+                 risk_score, message, created_at, valid_until, notified_at, dedup_key)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    parcel_id, owner_id, disease_code, alert_type, risk_level,
+                    risk_score, message, created_at.isoformat(),
+                    valid_until.isoformat() if valid_until else None,
+                    notified_at.isoformat() if notified_at else None,
+                    key,
+                ),
+            )
+            if cursor.rowcount == 0:
+                return None
+            row = connection.execute(
+                "SELECT id, parcel_id, owner_id, disease_code, alert_type, risk_level, risk_score, message, created_at, valid_until, notified_at FROM alerts WHERE id = ?",
+                (cursor.lastrowid,),
+            ).fetchone()
+        return Alert(**dict(row)) if row else None
+
+    def list_alerts(
+        self,
+        parcel_id: str | None = None,
+        owner_id: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[Alert]:
+        with self._connect() as connection:
+            query = """
+                SELECT id, parcel_id, owner_id, disease_code, alert_type,
+                       risk_level, risk_score, message, created_at, valid_until, notified_at
+                FROM alerts
+                WHERE 1 = 1
+            """
+            parameters: list[object] = []
+            if parcel_id is not None:
+                query += " AND parcel_id = ?"
+                parameters.append(parcel_id)
+            if owner_id is not None:
+                query += " AND owner_id = ?"
+                parameters.append(owner_id)
+            query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+            parameters.extend((limit, offset))
+            rows = connection.execute(query, tuple(parameters)).fetchall()
+        return [Alert(**dict(row)) for row in rows]
 
     def list_risk_snapshots(self, parcel_id: str, owner_id: str, limit: int = 100, offset: int = 0) -> list[RiskSnapshot]:
         with self._connect() as connection:
