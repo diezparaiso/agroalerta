@@ -69,7 +69,8 @@ def build_weather_context(
             if item[field] is not None
         ]
         if values:
-            weather[field] = round(sum(value * weight for value, weight in values) / total_weight, 3)
+            field_weight = sum(weight for _, weight in values)
+            weather[field] = round(sum(value * weight for value, weight in values) / field_weight, 3)
 
     nearest_distance = float(selected[0]["distance_km"])
     return {
