@@ -464,3 +464,19 @@ Se incorpora `GET /api/v1/parcels/{parcel_id}/agronomic-summary` como lectura ag
 **Motivo:** evitar que cada cliente tenga que ensamblar múltiples llamadas para representar el estado operativo y agronómico de una parcela.
 
 **Validación:** prueba de API con parcela, sensor y telemetría persistida.
+
+
+## ADR-042: Analítica de partes de campo por parcela
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+Se incorpora `GET /api/v1/parcels/{parcel_id}/field-reports/summary` como lectura agregada de los partes de campo persistidos.
+
+**Decisión:** el contrato informa total de partes, distribución por tipo (`trampa`/`sintoma`), partes de los últimos 30 días y el último parte registrado. La consulta queda limitada al propietario autenticado y no modifica los partes originales.
+
+**Motivo:** permitir que dashboard e integraciones visualicen actividad de observación de campo sin descargar y reagrupar todos los eventos en cada cliente.
+
+**Trazabilidad:** los contadores se calculan exclusivamente desde `field_reports`; no se infieren observaciones ni se generan tendencias sintéticas.
+
+**Validación:** pruebas de API para agregación y aislamiento entre propietarios.
