@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/network/api_client.dart';
+import '../parcels/parcel_provider.dart';
 
 final selectedTimelineParcelProvider = StateProvider<String?>((ref) => null);
 
