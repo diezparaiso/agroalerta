@@ -372,3 +372,13 @@ Se utiliza `fl_chart`, ya presente en las dependencias del proyecto. La primera 
 **Fecha:** 2026-09-28
 
 `TelemetryWindow` define igualdad por número de horas, no por identidad de instancia. Esto garantiza que `SegmentedButton` pueda seleccionar correctamente 24 h y 7 días aunque los segmentos y el estado procedan de instancias `const` distintas.
+
+
+## ADR-035: Parcela y sensor explícitos en el dashboard IoT
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+El dashboard no selecciona automáticamente `parcels.first` para representar telemetría. El usuario debe seleccionar la parcela y, cuando existen varios dispositivos, el sensor. Al cambiar de parcela se limpia el sensor seleccionado para evitar reutilizar una identidad de dispositivo de otra parcela.
+
+Esta decisión evita mezclar evidencia de parcelas o sensores distintos y mantiene la trazabilidad del histórico mostrado.
