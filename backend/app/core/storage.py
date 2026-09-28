@@ -443,11 +443,11 @@ class Storage:
             ).fetchall()
         return [dict(row) for row in rows]
 
-    def get_latest_risk_level(self, parcel_id: str, owner_id: str, disease_code: str) -> str | None:
+    def get_latest_risk_snapshot(self, parcel_id: str, owner_id: str, disease_code: str) -> RiskSnapshot | None:
         with self._connect() as connection:
             row = connection.execute(
                 """
-                SELECT risk_level
+                SELECT parcel_id, owner_id, disease_code, risk_score, risk_level, calculated_at
                 FROM risk_snapshots
                 WHERE parcel_id = ? AND owner_id = ? AND disease_code = ?
                 ORDER BY calculated_at DESC
@@ -455,7 +455,7 @@ class Storage:
                 """,
                 (parcel_id, owner_id, disease_code),
             ).fetchone()
-        return str(row["risk_level"]) if row else None
+        return RiskSnapshot(**dict(row)) if row else None
 
     def list_weather_observations(self, limit: int = 500) -> list[dict[str, object]]:
         with self._connect() as connection:
