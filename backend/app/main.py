@@ -373,11 +373,16 @@ def telemetry_history(
     parcel_id: str,
     limit: int = Query(default=200, ge=1, le=200),
     since_hours: int = Query(default=24, ge=1, le=168),
+    device_id: str | None = Query(default=None, min_length=1),
     _token: str | None = Depends(optional_bearer_token),
 ) -> list[dict]:
     owner_id = _token or "anonymous"
     get_parcel(parcel_id, owner_id)
-    return storage.list_latest_telemetry(parcel_id, owner_id, limit, since_hours)
+    if device_id is not None:
+        devices = storage.list_devices(parcel_id, owner_id)
+        if not any(device.device_id == device_id for device in devices):
+            raise HTTPException(status_code=404, detail="Sensor no encontrado")
+    return storage.list_latest_telemetry(parcel_id, owner_id, limit, since_hours, device_id)
 
 
 @app.post("/api/v1/devices", response_model=Device, status_code=status.HTTP_201_CREATED)
