@@ -66,3 +66,22 @@ Las recomendaciones no sustituyen la etiqueta oficial ni el asesoramiento de un 
 ## Integración continua
 
 Cada push y pull request ejecuta las pruebas FastAPI y el análisis, dependencias y pruebas de Flutter mediante GitHub Actions. Las credenciales se configuran como secretos del entorno de despliegue y nunca se guardan en el repositorio.
+
+## Documentación técnica
+
+La fuente de verdad de la evolución agronómica y de sus contratos es docs/PROJECT_LEDGER.md.
+
+Ese documento registra:
+- módulos y responsabilidades;
+- tablas y persistencia;
+- endpoints;
+- reglas de negocio;
+- decisiones de diseño;
+- pruebas existentes;
+- límites conocidos;
+- historial de PR #1 a PR #10;
+- estado de integración y criterio de cierre.
+
+La arquitectura funcional consolidada es:
+
+Parcela → Riesgo → Decisión → Campaña → Actividades → Resultado productivo
