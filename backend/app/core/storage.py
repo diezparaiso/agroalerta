@@ -113,7 +113,17 @@ class Storage:
                     ingested_at TEXT NOT NULL,
                     PRIMARY KEY (source_code, external_id)
                 );
-                CREATE TABLE IF NOT EXISTS push_tokens (
+                CREATE TABLE IF NOT EXISTS notification_deliveries (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    owner_id TEXT NOT NULL,
+                    alert_id INTEGER NOT NULL,
+                    status TEXT NOT NULL,
+                    token_count INTEGER NOT NULL,
+                    sent_count INTEGER NOT NULL,
+                    failed_count INTEGER NOT NULL,
+                    created_at TEXT NOT NULL
+                );
+                                CREATE TABLE IF NOT EXISTS push_tokens (
                     token TEXT PRIMARY KEY,
                     owner_id TEXT NOT NULL,
                     platform TEXT NOT NULL,
@@ -702,6 +712,29 @@ class Storage:
                 """,
                 (source_code, limit),
             ).fetchall()
+        return [dict(row) for row in rows]
+
+    def save_notification_delivery(self, owner_id: str, alert_id: int, status: str, token_count: int, sent_count: int, failed_count: int) -> dict[str, object]:
+        created_at = datetime.now(timezone.utc).isoformat()
+        with self._connect() as connection:
+            cursor = connection.execute(
+                """INSERT INTO notification_deliveries
+                   (owner_id, alert_id, status, token_count, sent_count, failed_count, created_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (owner_id, alert_id, status, token_count, sent_count, failed_count, created_at),
+            )
+            return {"id": cursor.lastrowid, "alert_id": alert_id, "status": status, "token_count": token_count, "sent_count": sent_count, "failed_count": failed_count, "created_at": created_at}
+
+    def list_notification_deliveries(self, owner_id: str, alert_id: int | None = None, limit: int = 100) -> list[dict[str, object]]:
+        with self._connect() as connection:
+            query = "SELECT id, alert_id, status, token_count, sent_count, failed_count, created_at FROM notification_deliveries WHERE owner_id = ?"
+            parameters: list[object] = [owner_id]
+            if alert_id is not None:
+                query += " AND alert_id = ?"
+                parameters.append(alert_id)
+            query += " ORDER BY created_at DESC, id DESC LIMIT ?"
+            parameters.append(limit)
+            rows = connection.execute(query, parameters).fetchall()
         return [dict(row) for row in rows]
 
     def get_latest_risk_snapshot(self, parcel_id: str, owner_id: str, disease_code: str) -> RiskSnapshot | None:
