@@ -62,6 +62,7 @@ class Product(BaseModel):
 
 
 class TelemetryCreate(BaseModel):
+    telemetry_id: str = Field(min_length=1, max_length=120)
     parcel_id: str
     device_id: str = Field(min_length=1, max_length=120)
     temperature_c: float = Field(ge=-30, le=70)
