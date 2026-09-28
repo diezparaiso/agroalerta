@@ -580,3 +580,21 @@ Se incorpora el concepto de campaña/ciclo de cultivo asociado a una parcela med
 **Motivo:** disponer de una unidad temporal explícita para futuras funciones de trazabilidad por campaña, comparativas entre ciclos, informes agronómicos e histórico de labores.
 
 **Validación:** prueba de API para creación, consulta, cierre y aislamiento entre propietarios.
+
+
+## ADR-049: Registro de eventos de riego
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+Se incorpora un registro operativo de riegos asociado opcionalmente a una campaña de cultivo.
+
+**Decisión:** cada evento conserva parcela, campaña opcional, inicio, duración, volumen de agua opcional, método y notas. La API permite registrar y consultar el histórico de riegos de una parcela.
+
+**Alcance:** es un registro de actividad realizada o introducida por el usuario. No calcula necesidades hídricas, no recomienda dosis, no activa equipos y no modifica telemetría.
+
+**Integridad y seguridad:** duración y volumen tienen límites de entrada; la parcela se valida con el propietario autenticado y las consultas quedan filtradas por propietario. Los eventos se ordenan del más reciente al más antiguo.
+
+**Motivo:** proporcionar trazabilidad de labores de riego y una base fiable para futuras métricas de consumo y comparativas por campaña sin mezclar registro histórico con recomendaciones agronómicas.
+
+**Validación:** prueba de API para creación, consulta, valores principales y aislamiento entre propietarios.
