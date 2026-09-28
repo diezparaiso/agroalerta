@@ -36,12 +36,18 @@ async def refresh_all_parcel_weather(owner_id: str | None = None) -> dict[str, i
             if result.get("status") == "ingested":
                 updated += 1
                 weather_context = storage.list_latest_weather_observations()
+                from app.domain.weather_context import build_weather_context
+                context = build_weather_context(parcel.latitude, parcel.longitude, weather_context)
+                if not context["available"]:
+                    logger.warning(
+                        "No se recalcula riesgo por falta de meteorologia reciente: parcela=%s",
+                        parcel.id,
+                    )
+                    continue
                 raif_records = storage.list_georeferenced_source_records("raif_fitosanitario")
                 for disease in ("repilo", "mildiu"):
                     if (disease == "repilo" and parcel.crop_type != "olivar") or (disease == "mildiu" and parcel.crop_type != "vinedo"):
                         continue
-                    from app.domain.weather_context import build_weather_context
-                    context = build_weather_context(parcel.latitude, parcel.longitude, weather_context)
                     evidence = score_raif_evidence(parcel.latitude, parcel.longitude, raif_records, disease)
                     risk = evaluate_risk(
                         parcel.id,
