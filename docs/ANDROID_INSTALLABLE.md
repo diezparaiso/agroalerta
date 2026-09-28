@@ -14,7 +14,7 @@ El workflow `.github/workflows/android-apk.yml`:
 4. ejecuta `flutter analyze`;
 5. ejecuta `flutter test`;
 6. genera `app-debug.apk`;
-7. publica el APK como artefacto descargable de GitHub Actions.
+7. habilita core library desugaring requerido por las notificaciones locales;\n8. publica el APK como artefacto descargable de GitHub Actions.
 
 El APK debug está firmado con la configuración de depuración generada por Android/Gradle y es apropiado para instalar y probar la aplicación en un dispositivo Android.
 
