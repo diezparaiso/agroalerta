@@ -53,12 +53,12 @@ class _ParcelCard extends StatelessWidget {
         const Icon(Icons.landscape_outlined, size: 30),
         const Spacer(),
         Text(parcel.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18)),
-        Text(parcel.crop + ' · ' + parcel.place),
+        Text('${parcel.crop} · ${parcel.place}'),
         const SizedBox(height: 10),
         Row(children: [
           const Icon(Icons.circle, size: 10, color: Colors.amber),
           const SizedBox(width: 8),
-          Text('Riesgo ' + parcel.risk),
+          Text('Riesgo ${parcel.risk}'),
           const Spacer(),
           IconButton(
             tooltip: 'Editar parcela',
@@ -97,7 +97,7 @@ Future<void> _editParcel(BuildContext context, WidgetRef ref, ParcelSummary parc
               } catch (error) {
                 if (dialogContext.mounted) {
                   ScaffoldMessenger.of(dialogContext).showSnackBar(
-                    SnackBar(content: Text('No se pudo actualizar la parcela: ' + error.toString())),
+                    SnackBar(content: Text('No se pudo actualizar la parcela: $error')),
                   );
                 }
               }
@@ -130,10 +130,10 @@ Future<void> _showParcelConflict(
       content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
         const Text('Otro dispositivo modificó esta parcela.'),
         const SizedBox(height: 12),
-        Text('Tu edición: ' + localLabel),
-        Text('Servidor: ' + remote.name),
-        Text('Cultivo servidor: ' + remote.crop),
-        Text('Comarca servidor: ' + remote.place),
+        Text('Tu edición: $localLabel'),
+        Text('Servidor: ${remote.name}'),
+        Text('Cultivo servidor: ${remote.crop}'),
+        Text('Comarca servidor: ${remote.place}'),
       ]),
       actions: [
         TextButton(onPressed: () => Navigator.pop(dialogContext, ParcelConflictChoice.cancel), child: const Text('Cancelar')),
