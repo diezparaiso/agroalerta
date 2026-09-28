@@ -121,3 +121,17 @@ class DeviceHealth(BaseModel):
     last_seen_at: datetime | None = None
     battery_percent: float | None = None
     telemetry_count: int
+
+
+class ParcelAgronomicSummary(BaseModel):
+    parcel_id: str
+    label: str
+    crop_type: str
+    comarca: str
+    device_count: int
+    active_device_count: int
+    latest_telemetry_at: datetime | None = None
+    latest_battery_percent: float | None = None
+    risk_count: int
+    latest_risks: list[RiskSnapshot]
+    recent_alert_count: int
