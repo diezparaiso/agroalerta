@@ -22,7 +22,7 @@ final parcelsProvider = FutureProvider<List<ParcelSummary>>((ref) async {
 });
 
 class ParcelSummary {
-  const ParcelSummary({this.id, this.latitude = 37.39, this.longitude = -5.99, required this.name, required this.crop, required this.place, required this.risk});
+  const ParcelSummary({this.id, this.latitude = 0, this.longitude = 0, required this.name, required this.crop, required this.place, required this.risk});
 
   final String? id;
   final double latitude;
