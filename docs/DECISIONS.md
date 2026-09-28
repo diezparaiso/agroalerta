@@ -354,3 +354,13 @@ La decisión se valida mediante `flutter analyze`, `flutter test` y la compilaci
 El histórico de telemetría acepta `since_hours` además del límite de registros. El backend restringe la ventana a 1–168 horas y el cliente Flutter expone el mismo contrato. Así, las vistas 24 h y 7 días consultan evidencia real del intervalo solicitado, sin extrapolar ni fabricar puntos.
 
 La consulta continúa ordenada de más reciente a más antigua y limitada a 200 registros. La autorización se aplica al propietario de la parcela.
+
+
+## ADR-033: Visualización temporal de telemetría basada en evidencia
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+El dashboard muestra una serie temporal de temperatura para ventanas de 24 horas y 7 días. La gráfica consume exclusivamente el histórico real del endpoint de telemetría; ordena las mediciones por `measured_at` y descarta puntos sin valor numérico. Si no existe evidencia para el periodo, se muestra un estado explícito de ausencia de datos.
+
+Se utiliza `fl_chart`, ya presente en las dependencias del proyecto. La primera versión prioriza trazabilidad y ausencia de datos sintéticos; quedan para una iteración posterior selección de sensor, más variables y agregación de puntos para históricos densos.
