@@ -288,6 +288,30 @@ class Storage:
             )
         return event
 
+    def irrigation_summary(self, parcel_id: str, owner_id: str, campaign_id: str | None = None) -> dict[str, object]:
+        query = """
+            SELECT COUNT(*) AS event_count,
+                   COALESCE(SUM(duration_minutes), 0) AS total_duration_minutes,
+                   COALESCE(SUM(water_liters), 0) AS total_water_liters,
+                   COUNT(water_liters) AS events_with_volume
+            FROM irrigation_events
+            WHERE parcel_id = ? AND owner_id = ?
+        """
+        params: list[object] = [parcel_id, owner_id]
+        if campaign_id is not None:
+            query += " AND campaign_id = ?"
+            params.append(campaign_id)
+        with self._connect() as connection:
+            row = connection.execute(query, params).fetchone()
+        return {
+            "parcel_id": parcel_id,
+            "campaign_id": campaign_id,
+            "event_count": int(row["event_count"]),
+            "total_duration_minutes": int(row["total_duration_minutes"]),
+            "total_water_liters": float(row["total_water_liters"]),
+            "events_with_volume": int(row["events_with_volume"]),
+        }
+
     def list_irrigation_events(self, parcel_id: str, owner_id: str, limit: int = 100) -> list[dict[str, object]]:
         with self._connect() as connection:
             rows = connection.execute(
