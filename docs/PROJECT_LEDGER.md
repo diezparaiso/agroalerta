@@ -77,6 +77,13 @@ La persistencia de desarrollo continúa siendo SQLite y los contratos HTTP está
 - La decisión conserva código de enfermedad, puntuación, prioridad y titular.
 - La integración permite que la campaña sea el contexto longitudinal de las decisiones.
 
+### PR #12 — módulos Flutter de explotación y campañas
+- Se completa la exposición en Flutter del centro de explotación ya existente en backend.
+- Se añade gestión de campañas por parcela usando los contratos ya definidos.
+- Se permite alta y cambio de estado de campañas desde la interfaz.
+- Se muestra el resumen de resultados productivos ya calculado por backend.
+- No se añade ningún nuevo concepto de dominio ni persistencia.
+
 ### PR #10 — ciclo de resultados productivos
 - Persistencia de resultados de cosecha en `campaign_results`.
 - Registro de fecha, kg cosechados, hectáreas productivas, kg comercializables, calidad, destino y notas.
@@ -209,6 +216,7 @@ La serie anterior permanece como historial de desarrollo:
 - PR #8 — campañas.
 - PR #9 — decisiones en campañas.
 - PR #10 — resultados productivos.
+- PR #12 — módulos Flutter de explotación y campañas.
 
 No se debe interpretar que un PR abierto está integrado en `main` hasta que GitHub confirme su merge.
 
