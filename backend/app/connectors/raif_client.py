@@ -70,11 +70,13 @@ class RaifClient:
             province = self._pick(fields, "PROVINCIA")
             municipality = self._pick(fields, "MUNICIPIO", "MUNICIPIO_NOMBRE")
             parcel = self._pick(fields, "PARCELA", "CODIGO_PARCELA")
-            latitude = self._parse_float(self._pick(fields, "LATITUD", "LATITUDE", "LAT"))
-            longitude = self._parse_float(self._pick(fields, "LONGITUD", "LONGITUDE", "LON", "LONG"))
             observed_at = self._parse_date(
                 self._pick(fields, "FECHA", "FECHA_MUESTREO", "FECHA_MUESTREO")
             )
+            if not any((province, municipality, parcel, observed_at)):
+                continue
+            latitude = self._parse_float(self._pick(fields, "LATITUD", "LATITUDE", "LAT"))
+            longitude = self._parse_float(self._pick(fields, "LONGITUD", "LONGITUDE", "LON", "LONG"))
             external_id = "|".join(
                 [crop, province or "", municipality or "", parcel or "", observed_at.isoformat() if observed_at else ""]
             )
