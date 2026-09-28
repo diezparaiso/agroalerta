@@ -80,3 +80,45 @@ def test_production_requires_firebase(monkeypatch: pytest.MonkeyPatch) -> None:
     assert client.get('/api/v1/parcels').status_code == 401
     assert client.get('/api/v1/parcels', headers={'Authorization': 'Bearer dev-token'}).status_code == 503
     monkeypatch.setenv('ENVIRONMENT', 'development')
+
+
+def test_risk_uses_registered_sensor_telemetry() -> None:
+    parcel = client.post(
+        '/api/v1/parcels',
+        headers={'Authorization': 'Bearer agronomo'},
+        json={'label': 'Olivar monitorizado', 'latitude': 37.39, 'longitude': -5.99, 'crop_type': 'olivar', 'comarca': 'Sevilla'},
+    )
+    assert parcel.status_code == 201
+    parcel_id = parcel.json()['id']
+
+    device = client.post(
+        '/api/v1/devices',
+        headers={'Authorization': 'Bearer agronomo'},
+        json={'parcel_id': parcel_id, 'device_id': 'sensor-01', 'name': 'Estacion parcela', 'device_type': 'weather_station'},
+    )
+    assert device.status_code == 201
+
+    telemetry = client.post(
+        '/api/v1/telemetry',
+        headers={'Authorization': 'Bearer agronomo'},
+        json={
+            'parcel_id': parcel_id,
+            'device_id': 'sensor-01',
+            'temperature_c': 20,
+            'relative_humidity': 95,
+            'leaf_wetness_hours': 16,
+            'soil_moisture': 75,
+            'rainfall_mm_24h': 20,
+            'battery_percent': 88,
+            'measured_at': '2026-09-28T10:00:00+00:00',
+        },
+    )
+    assert telemetry.status_code == 202
+
+    risk = client.get(f'/api/v1/disease-risk/{parcel_id}', headers={'Authorization': 'Bearer agronomo'})
+    assert risk.status_code == 200
+    body = risk.json()[0]
+    assert body['confidence_level'] == 'alta'
+    variables = {item['name']: item['value'] for item in body['variables_used']}
+    assert variables['lluvia_24h_mm'] == 20
+    assert variables['humedad_relativa'] == 95
