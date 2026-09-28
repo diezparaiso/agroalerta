@@ -26,7 +26,7 @@ La estimación debe actualizarse después de hitos relevantes y no debe interpre
 | Alertas | 75% |
 | Notificaciones FCM | 75% |
 | IoT / telemetría | 75% |
-| Informes de campo | 60% |
+| Informes de campo | 68% |
 | Productos fitosanitarios / MAPA | 35% |
 | GIS / contexto espacial | 45% |
 | Flutter / UI-UX | 78% |
@@ -93,9 +93,9 @@ Pendiente: robustez de dispositivos, ingestión real continua, validación de ca
 
 ### 9. Informes de campo — 60%
 
-Implementado: persistencia y CRUD local/backend.
+Implementado: persistencia y CRUD local/backend, fotografías, cola offline y sincronización al recuperar conectividad. Los informes ahora usan las coordenadas reales de la parcela y el sincronizador evita ejecuciones concurrentes.
 
-Pendiente: flujo completo con evidencias, sincronización, adjuntos y explotación agronómica de los informes.
+Pendiente: selector explícito de parcela, estado de sincronización visible, reintentos con backoff y explotación agronómica de los informes.
 
 ### 10. Productos fitosanitarios / MAPA — 25%
 
