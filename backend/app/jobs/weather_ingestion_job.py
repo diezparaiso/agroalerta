@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 
 from app.connectors.aemet_client import AemetClient
 from app.connectors.ria_ifapa_client import RiaIfapaClient
+from app.core.storage import Storage
+from app.domain.weather_evidence import normalize_ria_daily
 
 logger = logging.getLogger(__name__)
 
@@ -15,11 +17,13 @@ async def ingest_weather(
     year: int | None = None,
     month_start: int | None = None,
     month_end: int | None = None,
+    station_latitude: float | None = None,
+    station_longitude: float | None = None,
 ) -> dict[str, str]:
-    """Ingresa prediccion AEMET y datos RIA para la ventana solicitada.
+    """Ingresa RIA observada y consulta la prediccion AEMET.
 
-    Si el scheduler no proporciona una ventana, se consulta el mes UTC actual.
-    Asi evitamos que la ingesta quede ligada a un año o periodo fijo.
+    La observacion RIA se persiste cuando puede normalizarse. AEMET se
+    mantiene como capa de prediccion y no se mezcla con observaciones.
     """
     now = datetime.now(timezone.utc)
     selected_year = year if year is not None else now.year
@@ -35,8 +39,9 @@ async def ingest_weather(
 
     aemet = AemetClient()
     ria = RiaIfapaClient()
+    storage = Storage()
     try:
-        await asyncio.gather(
+        aemet_result, ria_result = await asyncio.gather(
             aemet.get_daily_forecast(municipality_code),
             ria.get_daily_data(
                 province,
@@ -46,8 +51,28 @@ async def ingest_weather(
                 selected_month_end,
             ),
         )
+
+        evidence = normalize_ria_daily(ria_result, station=station)
+        if evidence is not None and evidence.observed_at is not None:
+            storage.save_weather_observation(
+                source_code=evidence.source,
+                station_code=station,
+                observed_at=evidence.observed_at,
+                latitude=station_latitude,
+                longitude=station_longitude,
+                temperature_c=evidence.temperature_c,
+                relative_humidity=evidence.relative_humidity,
+                rainfall_mm_24h=evidence.rainfall_mm_24h,
+                confidence=evidence.confidence,
+            )
+            ria_status = "persisted"
+        else:
+            ria_status = "not-normalized"
+
         return {
             "status": "ingested",
+            "ria": ria_status,
+            "aemet": "forecast-fetched" if aemet_result is not None else "empty",
             "year": str(selected_year),
             "month_start": str(selected_month_start),
             "month_end": str(selected_month_end),
@@ -55,3 +80,6 @@ async def ingest_weather(
     except Exception:
         logger.exception("Error ingiriendo datos agroclimaticos")
         return {"status": "stale-data"}
+    finally:
+        await aemet.client.aclose()
+        await ria.client.aclose()
