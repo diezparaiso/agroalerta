@@ -84,8 +84,8 @@ class _Decision extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(data['headline']?.toString() ?? '', style: Theme.of(context).textTheme.titleLarge),
-              Text('Prioridad: \${data['priority']?.toString() ?? ''} · Puntuación: \${data['decision_score']?.toString() ?? ''}'),
-              Text('Confianza: \${data['confidence']?.toString() ?? ''}'),
+              Text('Prioridad: ${data['priority']?.toString() ?? ''} · Puntuación: ${data['decision_score']?.toString() ?? ''}'),
+              Text('Confianza: ${data['confidence']?.toString() ?? ''}'),
               const SizedBox(height: 8),
               Text(data['explanation']?.toString() ?? ''),
             ]),
@@ -95,7 +95,7 @@ class _Decision extends StatelessWidget {
         ...evidence.map((e) => ListTile(
           leading: const Icon(Icons.fact_check_outlined),
           title: Text(e['key']?.toString() ?? ''),
-          subtitle: Text('\${e['value']?.toString() ?? ''} · peso \${e['weight']?.toString() ?? ''}'),
+          subtitle: Text('${e['value']?.toString() ?? ''} · peso ${e['weight']?.toString() ?? ''}'),
         )),
         Text('Siguientes pasos', style: Theme.of(context).textTheme.titleLarge),
         ...steps.map((s) => ListTile(leading: const Icon(Icons.arrow_forward), title: Text(s))),
