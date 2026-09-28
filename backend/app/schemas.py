@@ -20,6 +20,7 @@ class Parcel(ParcelCreate):
 
 
 class FieldReportCreate(BaseModel):
+    report_id: str | None = None
     parcel_id: str
     type: Literal["trampa", "sintoma"]
     notes: str | None = None
