@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:agroalerta_andalucia/src/core/network/api_client.dart';
+
 import 'package:agroalerta_andalucia/src/features/parcels/parcel_provider.dart';
 
 void main() {
@@ -29,7 +31,7 @@ void main() {
 
     expect(
       () => updateParcelWithConflictProtection(
-        apiClient: throw StateError('API should not be called'),
+        apiClient: ApiClient(),
         parcel: parcel,
         label: 'Nueva finca',
       ),
