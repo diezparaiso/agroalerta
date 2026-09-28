@@ -199,3 +199,31 @@ def test_device_state_cannot_be_changed_by_other_owner() -> None:
         json={"active": False},
     )
     assert response.status_code == 404
+
+
+def test_telemetry_rejects_future_timestamp() -> None:
+    parcel = client.post(
+        "/api/v1/parcels",
+        headers={"Authorization": "Bearer user-a"},
+        json={"label": "IoT temporal", "latitude": 37.39, "longitude": -5.99, "crop_type": "olivar", "comarca": "Sevilla"},
+    ).json()
+    client.post(
+        "/api/v1/devices",
+        headers={"Authorization": "Bearer user-a"},
+        json={"parcel_id": parcel["id"], "device_id": "sensor-clock", "name": "Reloj", "device_type": "weather_station"},
+    )
+    response = client.post(
+        "/api/v1/telemetry",
+        headers={"Authorization": "Bearer user-a"},
+        json={
+            "parcel_id": parcel["id"],
+            "device_id": "sensor-clock",
+            "temperature_c": 20,
+            "relative_humidity": 60,
+            "leaf_wetness_hours": 1,
+            "soil_moisture": 30,
+            "battery_percent": 90,
+            "measured_at": "2099-01-01T00:00:00+00:00",
+        },
+    )
+    assert response.status_code == 422
