@@ -10,7 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.security import optional_bearer_token
 from app.core.storage import Storage
 from app.domain.disease_rules import evaluate_risk
-from app.schemas import Device, DeviceCreate, DiseaseRisk, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
+from app.domain.agronomic_decision import make_agronomic_decision
+from app.schemas import AgronomicDecision, Device, DeviceCreate, DiseaseRisk, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
 from app.schemas_push import PushTokenCreate
 
 
