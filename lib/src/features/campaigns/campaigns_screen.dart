@@ -89,7 +89,6 @@ class _CampaignCard extends ConsumerWidget {
             icon: const Icon(Icons.analytics_outlined),
           ),
           IconButton(tooltip: 'Registrar resultado', onPressed: () => showCampaignResultForm(context, ref, '${campaign['id']}'), icon: const Icon(Icons.add_chart_outlined)),
-          ),
           PopupMenuButton<String>(
           onSelected: (value) async {
             await ref.read(apiClientProvider).updateCampaignStatus(
