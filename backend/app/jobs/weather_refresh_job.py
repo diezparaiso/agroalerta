@@ -8,6 +8,7 @@ from app.jobs.weather_ingestion_job import ingest_weather_for_parcel
 from app.domain.disease_rules import evaluate_risk
 from app.domain.raif_evidence import score_raif_evidence
 from app.domain.risk_alert_engine import decide_risk_alert
+from app.domain.push_notifications import send_alert_push
 from app.schemas import RiskSnapshot
 
 logger = logging.getLogger(__name__)
@@ -84,6 +85,20 @@ async def refresh_all_parcel_weather(owner_id: str | None = None) -> dict[str, i
                         )
                         if alert is not None:
                             alerts_created += 1
+                            delivery = send_alert_push(
+                                alert,
+                                storage.list_push_tokens(parcel.owner_id),
+                            )
+                            if delivery.sent > 0:
+                                storage.mark_alert_notified(alert.id)
+                            logger.info(
+                                "alert_push parcel=%s disease=%s status=%s sent=%s failed=%s",
+                                parcel.id,
+                                risk.disease_code,
+                                delivery.status,
+                                delivery.sent,
+                                delivery.failed,
+                            )
                     risks_recalculated += 1
             else:
                 failed += 1
