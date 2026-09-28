@@ -495,23 +495,6 @@ class Storage:
         with self._connect() as connection:
             connection.execute(
                 """
-                CREATE TABLE IF NOT EXISTS weather_observations (
-                    source_code TEXT NOT NULL,
-                    station_code TEXT NOT NULL,
-                    observed_at TEXT NOT NULL,
-                    latitude REAL,
-                    longitude REAL,
-                    temperature_c REAL,
-                    relative_humidity REAL,
-                    rainfall_mm_24h REAL,
-                    confidence TEXT NOT NULL,
-                    ingested_at TEXT NOT NULL,
-                    PRIMARY KEY (source_code, station_code, observed_at)
-                )
-                """,
-            )
-            connection.execute(
-                """
                 INSERT OR REPLACE INTO weather_observations
                 (source_code, station_code, observed_at, latitude, longitude,
                  temperature_c, relative_humidity, rainfall_mm_24h, confidence, ingested_at)
