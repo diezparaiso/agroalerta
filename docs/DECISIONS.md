@@ -109,3 +109,16 @@ Reintentos del mismo evento no crean otra alerta, mientras que una nueva transic
 **Operación:** el módulo es invocable como tarea Python y queda preparado para conectarse a un scheduler externo. No se introduce un scheduler embebido en FastAPI para evitar ejecuciones duplicadas cuando existen varias réplicas del servicio.
 
 **Pendiente:** conectar este ciclo a el mecanismo de scheduling del entorno de producción, con control de concurrencia, timeout, reintentos y observabilidad.
+
+
+### ADR-014: Endurecimiento de SQLite para concurrencia
+
+**Estado:** aceptado
+
+**Decisión:** mientras SQLite siga siendo el almacenamiento de desarrollo, todas las conexiones usarán timeout de 30 s, `busy_timeout`, WAL y foreign keys.
+
+**Motivo:** el API y el ciclo agroclimático pueden ejecutarse en procesos separados. La configuración por defecto de SQLite aumenta el riesgo de errores de bloqueo y no aplica explícitamente integridad referencial.
+
+**Límite:** esto no convierte SQLite en una base de datos de producción multi-réplica. La evolución prevista sigue siendo PostgreSQL/PostGIS para producción.
+
+**Validación:** prueba automatizada de los pragmas y CI.
