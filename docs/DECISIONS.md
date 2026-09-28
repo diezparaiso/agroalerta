@@ -436,3 +436,17 @@ Cada lectura de telemetría debe transportar un `telemetry_id` estable generado 
 **Compatibilidad:** la base existente incorpora la columna mediante actualización de esquema. Los históricos conservan sus lecturas y los nuevos eventos pasan a exigir identidad estable.
 
 **Validación:** prueba de API que envía dos veces el mismo evento y comprueba que la segunda respuesta es `already_received`.
+
+
+## ADR-040: Salud operativa de dispositivos IoT
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+AgroAlerta expone un resumen operativo por parcela mediante `GET /api/v1/devices/{parcel_id}/health`. El contrato informa estado activo, última telemetría, batería de la última lectura y número de lecturas recibidas.
+
+**Motivo:** el riesgo agronómico y la telemetría necesitan una señal operativa separada. Un sensor sin lecturas recientes debe poder detectarse aunque la lógica de riesgo no cambie.
+
+**Decisión:** calcular la salud desde el histórico persistido, respetando propietario y parcela. No se infiere conectividad real más allá de la última lectura recibida.
+
+**Validación:** prueba de API con un dispositivo y una lectura, comprobando batería, última lectura y contador.
