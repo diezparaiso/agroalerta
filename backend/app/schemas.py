@@ -80,6 +80,10 @@ class DeviceCreate(BaseModel):
     device_type: Literal['weather_station', 'leaf_sensor', 'soil_sensor']
 
 
+class DeviceStateUpdate(BaseModel):
+    active: bool
+
+
 class Device(DeviceCreate):
     registered_at: datetime
     active: bool = True
