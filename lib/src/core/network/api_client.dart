@@ -89,8 +89,11 @@ class ApiClient {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getProducts() async {
-    final response = await _dio.get<List<dynamic>>('/api/v1/products');
+  Future<List<Map<String, dynamic>>> getProducts({String? cropType, String? diseaseCode}) async {
+    final response = await _dio.get<List<dynamic>>('/api/v1/products', queryParameters: {
+      if (cropType != null) 'crop_type': cropType,
+      if (diseaseCode != null) 'disease_code': diseaseCode,
+    });
     return response.data!.cast<Map<String, dynamic>>();
   }
 
