@@ -247,3 +247,26 @@ class IrrigationEvent(BaseModel):
     water_liters: float | None = None
     method: Literal["goteo", "aspersion", "superficie", "otro"]
     notes: str | None = None
+
+
+class TreatmentRecordCreate(BaseModel):
+    campaign_id: str | None = None
+    applied_at: datetime
+    product_name: str = Field(min_length=1, max_length=200)
+    active_substance: str | None = Field(default=None, max_length=200)
+    dose: str | None = Field(default=None, max_length=120)
+    treated_area_ha: float | None = Field(default=None, ge=0)
+    notes: str | None = Field(default=None, max_length=1000)
+
+
+class TreatmentRecord(BaseModel):
+    id: str
+    parcel_id: str
+    campaign_id: str | None = None
+    owner_id: str
+    applied_at: datetime
+    product_name: str
+    active_substance: str | None = None
+    dose: str | None = None
+    treated_area_ha: float | None = None
+    notes: str | None = None
