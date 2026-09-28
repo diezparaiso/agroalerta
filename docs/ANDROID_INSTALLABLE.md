@@ -43,3 +43,16 @@ En un dispositivo Android de pruebas puede instalarse después de permitir la in
 ## Criterio de terminado
 
 No consideramos "Android listo para producción" hasta disponer de una build release firmada, configuración nativa de Firebase/AdMob, pruebas en dispositivo y un proceso de distribución reproducible.
+
+
+## Última validación exitosa
+
+- Workflow: `AgroAlerta Android APK`
+- Run: `36442541725`
+- Commit: `2a0e2c4422648e4706653bf4972d23096ca46a07`
+- Artefacto: `agroalerta-debug-apk`
+- APK generado: `app-debug.apk`
+- SHA-256 del artefacto de Actions: `8cfb1a6719eac81bd34c237b1adb65374834c19bef9fc99f23fe04f283cf7ee6`
+- El artefacto de Actions tiene caducidad configurada a 14 días.
+
+Esta validación demuestra que la aplicación compila y empaqueta como APK Android instalable de depuración. No equivale a una release firmada para distribución pública.
