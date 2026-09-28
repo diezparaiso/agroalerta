@@ -528,3 +528,19 @@ Se incorpora un estado de usuario independiente para cada alerta, con marcas de 
 **Motivo:** separar entrega técnica de notificación, lectura humana y acuse operativo, sin interpretar una entrega FCM como lectura o atención del usuario.
 
 **Validación:** prueba de API para estado inicial, lectura/acuse y aislamiento entre propietarios. El esquema registra la nueva estructura como versión 3.
+
+
+## ADR-046: Resumen de calidad operativa de telemetría
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+Se añade un módulo de consulta de calidad operativa de telemetría por parcela mediante `GET /api/v1/telemetry/{parcel_id}/quality`. Informa de sensores registrados, activos, número de muestras recibidas dentro de una ventana configurable y antigüedad de la última medición.
+
+**Decisión:** este módulo es observacional. No altera datos de telemetría, no descarta muestras y no modifica el motor de riesgo. La ausencia de muestras se representa explícitamente mediante `sample_count = 0` y `latest_measured_at = null`.
+
+**Seguridad:** la consulta reutiliza el control de propietario de la parcela.
+
+**Motivo:** proporcionar una señal operativa independiente para detectar sensores sin datos recientes antes de interpretar los resultados agronómicos.
+
+**Validación:** prueba API para ventana de 24 horas, sensor sin muestras y aislamiento entre propietarios.
