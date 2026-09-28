@@ -86,7 +86,8 @@ async def refresh_all_parcel_weather(owner_id: str | None = None) -> dict[str, i
                             valid_until=risk.valid_until,
                             dedup_key=(
                                 f"{parcel.id}:{risk.disease_code}:"
-                                f"{decision.reason_code}:{risk.calculated_at.isoformat()}"
+                                f"{decision.reason_code}:{risk.risk_level}:"
+                                f"{previous_snapshot.calculated_at.isoformat() if previous_snapshot else 'initial'}"
                             ),
                         )
                         if alert is not None:
