@@ -244,3 +244,16 @@ Reintentos del mismo evento no crean otra alerta, mientras que una nueva transic
 
 **Validación:** `backend/tests/test_field_report_idempotency.py` verifica que dos inserciones con el mismo identificador dejan un único registro; el test Flutter de payload verifica la generación del identificador.
 
+## ADR-024: Control de concurrencia optimista para parcelas
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+**Contexto:** una parcela puede ser leída en un dispositivo y modificada posteriormente desde otro contexto. Una actualización basada en una copia antigua no debe sobrescribir silenciosamente la versión más reciente.
+
+**Decisión:** `updated_at` actúa como versión de la parcela. Las actualizaciones pueden enviar `expected_updated_at`; el backend solo modifica la fila si esa versión sigue siendo la actual. Si no coincide, responde HTTP 409 y no aplica cambios.
+
+**Consecuencia:** los clientes pueden detectar un conflicto y volver a cargar la parcela antes de decidir cómo reconciliarla. Las llamadas antiguas que no envíen versión siguen funcionando por compatibilidad, pero los flujos offline nuevos deben usar control de versión.
+
+**Validación:** `backend/tests/test_parcel_concurrency.py` cubre rechazo de versión obsoleta y aceptación de la versión actual.
+
