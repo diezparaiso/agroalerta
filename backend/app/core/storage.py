@@ -274,13 +274,16 @@ class Storage:
             row = connection.execute(query + ' ORDER BY measured_at DESC LIMIT 1', parameters).fetchone()
         return TelemetryCreate(**json.loads(row['payload'])) if row else None
 
-    def list_latest_telemetry(self, parcel_id: str, owner_id: str | None = None, limit: int = 24, since_hours: int | None = None) -> list[dict]:
+    def list_latest_telemetry(self, parcel_id: str, owner_id: str | None = None, limit: int = 24, since_hours: int | None = None, device_id: str | None = None) -> list[dict]:
         with self._connect() as connection:
             query = 'SELECT id, device_id, payload, measured_at FROM telemetry WHERE parcel_id = ?'
             parameters: tuple[object, ...] = (parcel_id,)
             if owner_id is not None:
                 query += ' AND owner_id = ?'
                 parameters += (owner_id,)
+            if device_id is not None:
+                query += ' AND device_id = ?'
+                parameters += (device_id,)
             if since_hours is not None:
                 cutoff = datetime.now(timezone.utc) - timedelta(hours=since_hours)
                 query += ' AND measured_at >= ?'
