@@ -14,7 +14,8 @@ from app.domain.disease_rules import evaluate_risk
 from app.domain.agronomic_decision import make_agronomic_decision
 from app.domain.farm_operation_center import build_farm_center
 from app.domain.activity_timeline import build_activity_timeline
-from app.schemas import AgronomicActivity, AgronomicActivityCreate, AgronomicDecision, Device, DeviceCreate, DiseaseRisk, FarmOperationCenter, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
+from app.domain.campaign_management import build_campaign_summary
+from app.schemas import AgronomicActivity, AgronomicActivityCreate, CampaignStatusUpdate, CropCampaign, CropCampaignCreate, CampaignSummary, AgronomicDecision, Device, DeviceCreate, DiseaseRisk, FarmOperationCenter, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
 from app.schemas_push import PushTokenCreate
 
 
@@ -34,7 +35,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins(),
     allow_credentials=True,
-    allow_methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allow_methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allow_headers=['Authorization', 'Content-Type'],
 )
 
@@ -115,6 +116,64 @@ def create_parcel(payload: ParcelCreate, _token: str | None = Depends(optional_b
     now = datetime.now(timezone.utc)
     parcel = Parcel(id=str(uuid4()), owner_id=_token or 'anonymous', created_at=now, updated_at=now, **payload.model_dump())
     return storage.create_parcel(parcel)
+
+
+
+@app.post('/api/v1/parcels/{parcel_id}/campaigns', response_model=CropCampaign, status_code=status.HTTP_201_CREATED)
+def create_campaign(parcel_id: str, payload: CropCampaignCreate, _token: str | None = Depends(optional_bearer_token)) -> CropCampaign:
+    owner_id = _token or 'anonymous'
+    parcel = get_parcel(parcel_id, owner_id)
+    if payload.parcel_id != parcel_id:
+        raise HTTPException(status_code=400, detail='La campaña no pertenece a la parcela indicada')
+    if payload.crop_type != parcel.crop_type:
+        raise HTTPException(status_code=400, detail='El cultivo de la campaña no coincide con la parcela')
+    if payload.ended_at and payload.ended_at < payload.started_at:
+        raise HTTPException(status_code=400, detail='La fecha de fin no puede ser anterior al inicio')
+    if payload.status == 'active':
+        active = [item for item in storage.list_campaigns(parcel_id, owner_id) if item.status == 'active']
+        if active:
+            raise HTTPException(status_code=409, detail='La parcela ya tiene una campaña activa')
+    payload = payload.model_copy(update={'owner_id': owner_id})
+    return storage.create_campaign(str(uuid4()), payload)
+
+
+@app.get('/api/v1/parcels/{parcel_id}/campaigns', response_model=list[CropCampaign])
+def list_campaigns(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> list[CropCampaign]:
+    owner_id = _token or 'anonymous'
+    get_parcel(parcel_id, owner_id)
+    return storage.list_campaigns(parcel_id, owner_id)
+
+
+@app.patch('/api/v1/campaigns/{campaign_id}/status', response_model=CropCampaign)
+def update_campaign_status(campaign_id: str, payload: CampaignStatusUpdate, _token: str | None = Depends(optional_bearer_token)) -> CropCampaign:
+    owner_id = _token or 'anonymous'
+    campaign = storage.get_campaign(campaign_id, owner_id)
+    if campaign is None:
+        raise HTTPException(status_code=404, detail='Campaña no encontrada')
+    ended_at = payload.ended_at
+    if payload.status == 'closed' and ended_at is None:
+        ended_at = datetime.now(timezone.utc)
+    if ended_at and ended_at < campaign.started_at:
+        raise HTTPException(status_code=400, detail='La fecha de fin no puede ser anterior al inicio')
+    if payload.status == 'active':
+        active = [item for item in storage.list_campaigns(campaign.parcel_id, owner_id) if item.status == 'active' and item.id != campaign_id]
+        if active:
+            raise HTTPException(status_code=409, detail='La parcela ya tiene otra campaña activa')
+    updated = storage.update_campaign_status(campaign_id, owner_id, payload.status, ended_at)
+    if updated is None:
+        raise HTTPException(status_code=404, detail='Campaña no encontrada')
+    return updated
+
+
+@app.get('/api/v1/campaigns/{campaign_id}/summary', response_model=CampaignSummary)
+def campaign_summary(campaign_id: str, _token: str | None = Depends(optional_bearer_token)) -> CampaignSummary:
+    owner_id = _token or 'anonymous'
+    campaign = storage.get_campaign(campaign_id, owner_id)
+    if campaign is None:
+        raise HTTPException(status_code=404, detail='Campaña no encontrada')
+    activities = storage.list_activities(campaign.parcel_id, owner_id, 300)
+    risks = get_disease_risk(campaign.parcel_id, _token)
+    return CampaignSummary(**build_campaign_summary(campaign, activities, risks))
 
 
 @app.post('/api/v1/parcels/{parcel_id}/activities', response_model=AgronomicActivity, status_code=status.HTTP_201_CREATED)
