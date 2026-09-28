@@ -17,7 +17,7 @@ from app.connectors.source_registry import list_data_sources
 from app.connectors.mapa_catalog import load_catalog
 from app.core.config import settings
 from app.core.storage import Storage
-from app.schemas import Alert, AlertUserState, AlertUserStateUpdate, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, NotificationDelivery, Parcel, WeatherEvidenceSummary, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate, TelemetryQualitySummary, ParcelActivityEvent
+from app.schemas import Alert, AlertUserState, AlertUserStateUpdate, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, NotificationDelivery, Parcel, WeatherEvidenceSummary, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate, TelemetryQualitySummary, ParcelActivityEvent, CropCampaignCreate, CropCampaignStatusUpdate, CropCampaign
 from app.core.security import optional_bearer_token
 from app.schemas_push import PushTokenCreate
 
@@ -276,6 +276,46 @@ def weather_evidence_summary(parcel_id: str, _token: str | None = Depends(option
         latest_observed_at=context.get("observed_at"),
         stations=context.get("stations", []),
     )
+
+
+@app.post("/api/v1/parcels/{parcel_id}/campaigns", response_model=CropCampaign, status_code=201)
+def create_crop_campaign(parcel_id: str, payload: CropCampaignCreate, _token: str | None = Depends(optional_bearer_token)) -> CropCampaign:
+    owner_id = _token or "anonymous"
+    parcel = get_parcel(parcel_id, owner_id)
+    if payload.ended_at is not None and payload.ended_at <= payload.started_at:
+        raise HTTPException(status_code=422, detail="ended_at must be after started_at")
+    campaign = CropCampaign(
+        id=str(uuid4()),
+        parcel_id=parcel.id,
+        owner_id=owner_id,
+        name=payload.name,
+        crop_type=payload.crop_type,
+        started_at=payload.started_at,
+        ended_at=payload.ended_at,
+        status="cerrada" if payload.ended_at is not None else "activa",
+    )
+    return CropCampaign(**storage.create_crop_campaign(campaign.model_dump(mode="json")))
+
+
+@app.get("/api/v1/parcels/{parcel_id}/campaigns", response_model=list[CropCampaign])
+def list_crop_campaigns(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> list[CropCampaign]:
+    owner_id = _token or "anonymous"
+    get_parcel(parcel_id, owner_id)
+    return [CropCampaign(**item) for item in storage.list_crop_campaigns(parcel_id, owner_id)]
+
+
+@app.patch("/api/v1/campaigns/{campaign_id}/status", response_model=CropCampaign)
+def update_crop_campaign_status(
+    campaign_id: str,
+    payload: CropCampaignStatusUpdate,
+    _token: str | None = Depends(optional_bearer_token),
+) -> CropCampaign:
+    owner_id = _token or "anonymous"
+    ended_at = datetime.now(timezone.utc).isoformat() if payload.status == "cerrada" else None
+    campaign = storage.update_crop_campaign_status(campaign_id, owner_id, payload.status, ended_at)
+    if campaign is None:
+        raise HTTPException(status_code=404, detail="Campaign not found")
+    return CropCampaign(**campaign)
 
 
 @app.get("/api/v1/parcels/{parcel_id}/activity", response_model=list[ParcelActivityEvent])
