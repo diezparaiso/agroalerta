@@ -356,6 +356,39 @@ class Storage:
             rows = connection.execute(query + ' ORDER BY name', parameters).fetchall()
         return [Device(device_id=row['device_id'], parcel_id=row['parcel_id'], name=row['name'], device_type=row['device_type'], registered_at=row['registered_at'], active=bool(row['active']), owner_id=row['owner_id']) for row in rows]
 
+    def list_device_health(self, parcel_id: str, owner_id: str | None = None) -> list[dict]:
+        with self._connect() as connection:
+            query = """
+                SELECT d.device_id, d.parcel_id, d.active,
+                       MAX(t.measured_at) AS last_seen_at,
+                       COUNT(t.id) AS telemetry_count
+                FROM devices d
+                LEFT JOIN telemetry t ON t.device_id = d.device_id AND t.parcel_id = d.parcel_id
+                WHERE d.parcel_id = ?
+            """
+            parameters: tuple[object, ...] = (parcel_id,)
+            if owner_id is not None:
+                query += " AND d.owner_id = ?"
+                parameters += (owner_id,)
+            query += " GROUP BY d.device_id, d.parcel_id, d.active ORDER BY d.device_id"
+            rows = connection.execute(query, parameters).fetchall()
+            result = []
+            for row in rows:
+                battery = connection.execute(
+                    "SELECT payload FROM telemetry WHERE device_id = ? AND parcel_id = ? ORDER BY measured_at DESC LIMIT 1",
+                    (row["device_id"], parcel_id),
+                ).fetchone()
+                battery_percent = json.loads(battery["payload"]).get("battery_percent") if battery else None
+                result.append({
+                    "device_id": row["device_id"],
+                    "parcel_id": row["parcel_id"],
+                    "active": bool(row["active"]),
+                    "last_seen_at": row["last_seen_at"],
+                    "battery_percent": battery_percent,
+                    "telemetry_count": row["telemetry_count"],
+                })
+            return result
+
     def list_georeferenced_source_records(self, source_code: str) -> list[dict[str, object]]:
         with self._connect() as connection:
             rows = connection.execute(
