@@ -33,7 +33,7 @@ La estimación debe actualizarse después de hitos relevantes y no debe interpre
 | Offline / sincronización | 65% |
 | Privacidad / publicidad | 75% |
 | Tests / QA / CI | 65% |
-| Despliegue / producción | 40% |
+| Despliegue / producción | 45% |
 
 **Estimación global de desarrollo funcional: ~68%.**
 
