@@ -320,3 +320,15 @@ La decisión se valida mediante `flutter analyze`, `flutter test` y la compilaci
 **Consecuencia:** la identidad del evento es única desde la creación de la observación y se conserva tanto en el camino online como en la cola offline. Un reintento por conectividad o por respuesta ambigua no necesita inventar otra identidad.
 
 **Validación:** se conserva la prueba backend de deduplicación por `report_id` y la prueba Flutter que exige que el payload contenga un identificador persistente. El cambio de integración queda cubierto por el análisis y las pruebas Flutter de CI.
+
+
+## ADR-030: Cerrar el módulo de catálogo MAPA con filtros y metadatos de uso
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+**Decisión:** el catálogo de productos oficiales se expone desde la API con filtros por cultivo y enfermedad, y Flutter conserva además dosis y plazo de seguridad procedentes del snapshot MAPA. La interfaz presenta estos datos como información del registro y mantiene la indicación de comprobar la autorización y etiqueta vigentes.
+
+**Alcance:** este módulo no recomienda tratamientos ni sustituye la etiqueta oficial. El catálogo es una fuente de trazabilidad de productos autorizados; cualquier lógica agronómica de decisión se mantiene separada.
+
+**Consecuencia:** el módulo deja de ser únicamente una lista visual y queda preparado para consultas contextualizadas por cultivo/enfermedad sin introducir datos ficticios.
