@@ -32,3 +32,7 @@ Las decisiones arquitectónicas y de comportamiento se registran en `docs/DECISI
 
 Las operaciones móviles que puedan repetirse por reconexión o respuesta perdida deben transportar una identidad estable del evento. El servidor debe tratar esa identidad como clave de idempotencia y devolver un resultado explícito cuando el evento ya fue recibido. No se debe generar un identificador nuevo por cada intento de red.
 
+### Concurrencia de datos de parcela
+
+Las actualizaciones offline o desde múltiples clientes deben transportar la versión conocida (`updated_at`). El backend debe rechazar una escritura basada en una versión obsoleta con conflicto explícito, nunca sobrescribir silenciosamente cambios más recientes. La reconciliación debe ocurrir después de volver a cargar el estado actual.
+
