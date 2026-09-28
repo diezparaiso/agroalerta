@@ -257,3 +257,16 @@ Reintentos del mismo evento no crean otra alerta, mientras que una nueva transic
 
 **Validación:** `backend/tests/test_parcel_concurrency.py` cubre rechazo de versión obsoleta y aceptación de la versión actual.
 
+## ADR-025: Resolución segura de conflictos en Flutter
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+**Contexto:** el backend ya rechaza una actualización de parcela basada en una versión obsoleta mediante HTTP 409. El cliente no debe convertir ese conflicto en un error genérico ni generar una versión nueva por su cuenta.
+
+**Decisión:** `ParcelSummary` conserva `updated_at` del servidor. El cliente envía esa versión como `expected_updated_at` al actualizar. Un 409 se transforma en `ParcelConflictException` y la edición local no se sobrescribe automáticamente. Una parcela sin versión conocida no puede entrar en un flujo de actualización seguro.
+
+**Consecuencia:** el usuario puede conservar su edición y volver a cargar la versión actual antes de reconciliarla. La resolución automática de conflictos queda fuera de esta fase para evitar sobrescrituras silenciosas.
+
+**Validación:** `test/features/parcels/parcel_concurrency_test.dart` verifica conservación de la versión y bloqueo de actualizaciones sin versión.
+
