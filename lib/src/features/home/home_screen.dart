@@ -95,7 +95,7 @@ class _WelcomeBanner extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 26,
-              backgroundColor: scheme.onPrimary.withOpacity(0.16),
+              backgroundColor: scheme.onPrimary.withValues(alpha: 0.16),
               child: Icon(Icons.eco_rounded, color: scheme.onPrimary, size: 30),
             ),
             const SizedBox(width: 16),
@@ -416,7 +416,7 @@ class AppPage extends StatelessWidget {
                   ],
                 ),
               ),
-              ...?actions,
+              if (actions != null) ...actions,
             ],
           ),
           const SizedBox(height: 18),
@@ -463,7 +463,7 @@ class _Panel extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
                   ),
                 ),
-                ?action,
+                if (action != null) action,
               ],
             ),
             const SizedBox(height: 18),
