@@ -274,6 +274,26 @@ class Storage:
             row = connection.execute(query + ' ORDER BY measured_at DESC LIMIT 1', parameters).fetchone()
         return TelemetryCreate(**json.loads(row['payload'])) if row else None
 
+    def list_latest_telemetry(self, parcel_id: str, owner_id: str | None = None, limit: int = 24) -> list[dict]:
+        with self._connect() as connection:
+            query = 'SELECT id, device_id, payload, measured_at FROM telemetry WHERE parcel_id = ?'
+            parameters: tuple[object, ...] = (parcel_id,)
+            if owner_id is not None:
+                query += ' AND EXISTS (SELECT 1 FROM devices d WHERE d.device_id = telemetry.device_id AND d.owner_id = ?)'
+                parameters += (owner_id,)
+            query += ' ORDER BY measured_at DESC LIMIT ?'
+            parameters += (max(1, min(limit, 200)),)
+            rows = connection.execute(query, parameters).fetchall()
+        return [
+            {
+                'id': row['id'],
+                'device_id': row['device_id'],
+                **json.loads(row['payload']),
+                'measured_at': row['measured_at'],
+            }
+            for row in rows
+        ]
+
     def create_device(self, device: Device) -> Device:
         with self._connect() as connection:
             connection.execute('INSERT OR REPLACE INTO devices (device_id, parcel_id, name, device_type, registered_at, active, owner_id) VALUES (?, ?, ?, ?, ?, ?, ?)', (device.device_id, device.parcel_id, device.name, device.device_type, device.registered_at.isoformat(), int(device.active), device.owner_id or 'anonymous'))
