@@ -436,3 +436,37 @@ def test_parcel_activity_timeline_is_owner_scoped_and_ordered() -> None:
 
     other = client.get(f"/api/v1/parcels/{parcel_id}/activity", headers={"Authorization": "Bearer user-b"})
     assert other.status_code == 404
+
+
+def test_crop_campaign_lifecycle_is_owner_scoped() -> None:
+    parcel = client.post("/api/v1/parcels", headers={"Authorization": "Bearer user-a"}, json={
+        "label": "Campaña", "latitude": 37.39, "longitude": -5.99,
+        "crop_type": "olivar", "comarca": "Sevilla",
+    }).json()
+    parcel_id = parcel["id"]
+
+    created = client.post(
+        f"/api/v1/parcels/{parcel_id}/campaigns",
+        headers={"Authorization": "Bearer user-a"},
+        json={"name": "Campaña 2026", "crop_type": "olivar", "started_at": "2026-09-01T00:00:00+00:00"},
+    )
+    assert created.status_code == 201
+    campaign = created.json()
+    assert campaign["status"] == "activa"
+    assert campaign["crop_type"] == "olivar"
+
+    listed = client.get(f"/api/v1/parcels/{parcel_id}/campaigns", headers={"Authorization": "Bearer user-a"})
+    assert listed.status_code == 200
+    assert len(listed.json()) == 1
+
+    closed = client.patch(
+        f"/api/v1/campaigns/{campaign['id']}/status",
+        headers={"Authorization": "Bearer user-a"},
+        json={"status": "cerrada"},
+    )
+    assert closed.status_code == 200
+    assert closed.json()["status"] == "cerrada"
+    assert closed.json()["ended_at"] is not None
+
+    other = client.get(f"/api/v1/parcels/{parcel_id}/campaigns", headers={"Authorization": "Bearer user-b"})
+    assert other.status_code == 404
