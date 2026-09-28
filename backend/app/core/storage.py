@@ -66,7 +66,8 @@ class Storage:
                     parcel_id TEXT NOT NULL,
                     device_id TEXT NOT NULL,
                     payload TEXT NOT NULL,
-                    measured_at TEXT NOT NULL
+                    measured_at TEXT NOT NULL,
+                    telemetry_id TEXT UNIQUE
                 );
                 CREATE TABLE IF NOT EXISTS devices (
                     device_id TEXT PRIMARY KEY,
@@ -158,7 +159,10 @@ class Storage:
                 connection.execute('ALTER TABLE source_records ADD COLUMN latitude REAL')
             if 'longitude' not in source_columns:
                 connection.execute('ALTER TABLE source_records ADD COLUMN longitude REAL')
-            self._record_schema_version(connection, 1)
+            columns = {row['name'] for row in connection.execute('PRAGMA table_info(telemetry)')}
+            if 'telemetry_id' not in columns:
+                connection.execute('ALTER TABLE telemetry ADD COLUMN telemetry_id TEXT')
+            self._record_schema_version(connection, 2)
 
     @staticmethod
     def _record_schema_version(connection: sqlite3.Connection, version: int) -> None:
