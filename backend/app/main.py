@@ -16,7 +16,7 @@ from app.jobs.weather_refresh_job import refresh_all_parcel_weather
 from app.connectors.source_registry import list_data_sources
 from app.core.config import settings
 from app.core.storage import Storage
-from app.schemas import Device, DeviceCreate, DiseaseRisk, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
+from app.schemas import Alert, Device, DeviceCreate, DiseaseRisk, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
 from app.core.security import optional_bearer_token
 from app.schemas_push import PushTokenCreate
 
@@ -294,6 +294,24 @@ def list_alerts(_token: str | None = Depends(optional_bearer_token)) -> list[Dis
     for parcel in storage.list_parcels(_token or 'anonymous'):
         alerts.extend(get_disease_risk(parcel.id, _token))
     return alerts
+
+
+@app.get("/api/v1/alerts/history", response_model=list[Alert])
+def alert_history(
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    parcel_id: str | None = Query(default=None),
+    _token: str | None = Depends(optional_bearer_token),
+) -> list[Alert]:
+    owner_id = _token or "anonymous"
+    if parcel_id is not None:
+        get_parcel(parcel_id, owner_id)
+    return storage.list_alerts(
+        parcel_id=parcel_id,
+        owner_id=owner_id,
+        limit=limit,
+        offset=offset,
+    )
 
 
 @app.get("/api/v1/risk-history/{parcel_id}", response_model=list[RiskSnapshot])
