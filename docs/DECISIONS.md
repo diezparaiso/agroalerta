@@ -512,3 +512,19 @@ Se incorpora una tabla de historial de entregas y `GET /api/v1/notifications/del
 **Trazabilidad:** se almacenan únicamente resultados explícitos de entrega; no se infiere recepción o lectura del dispositivo.
 
 **Validación:** prueba de API que verifica filtro por alerta y aislamiento entre propietarios.
+
+
+## ADR-045: Estado de lectura y acuse de alertas por propietario
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+Se incorpora un estado de usuario independiente para cada alerta, con marcas de lectura y de acuse. El estado se persiste por propietario y alerta mediante `alert_user_states`, y se consulta o modifica mediante `GET/PATCH /api/v1/alerts/{alert_id}/state`.
+
+**Decisión:** leer o acusar una alerta no modifica `alerts.notified_at`, el nivel de riesgo ni el evento de alerta. La ausencia de estado significa que sigue sin leerse y sin acusarse. Cada marca conserva su timestamp y puede desactivarse enviando `false`.
+
+**Seguridad:** antes de exponer o modificar el estado, la API verifica que la alerta pertenezca al propietario autenticado.
+
+**Motivo:** separar entrega técnica de notificación, lectura humana y acuse operativo, sin interpretar una entrega FCM como lectura o atención del usuario.
+
+**Validación:** prueba de API para estado inicial, lectura/acuse y aislamiento entre propietarios. El esquema registra la nueva estructura como versión 3.
