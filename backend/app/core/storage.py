@@ -393,6 +393,42 @@ class Storage:
                 ),
             )
 
+    def list_weather_stations_with_latest_observation(
+        self,
+        source_code: str = "ria_ifapa",
+        limit: int = 500,
+    ) -> list[dict[str, object]]:
+        """Une el catálogo canónico de estaciones con su última observación."""
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT s.source_code, s.station_code, s.name, s.province,
+                       s.latitude, s.longitude, s.altitude_m, s.active,
+                       o.observed_at, o.temperature_c, o.relative_humidity,
+                       o.rainfall_mm_24h, o.confidence
+                FROM weather_stations s
+                LEFT JOIN (
+                    SELECT *
+                    FROM (
+                        SELECT *,
+                               ROW_NUMBER() OVER (
+                                   PARTITION BY source_code, station_code
+                                   ORDER BY observed_at DESC
+                               ) AS row_number
+                        FROM weather_observations
+                    )
+                    WHERE row_number = 1
+                ) o
+                  ON o.source_code = s.source_code
+                 AND o.station_code = s.station_code
+                WHERE s.source_code = ? AND s.active = 1
+                ORDER BY s.name
+                LIMIT ?
+                """,
+                (source_code, limit),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def list_weather_observations(self, limit: int = 500) -> list[dict[str, object]]:
         with self._connect() as connection:
             rows = connection.execute(
