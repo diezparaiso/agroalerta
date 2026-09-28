@@ -118,7 +118,7 @@ class ApiClient {
   }
 
     Future<List<Map<String, dynamic>>> getTelemetry(String parcelId, {int limit = 24}) async {
-    final response = await _dio.get<List<dynamic>>('/api/v1/telemetry/$parcelId', queryParameters: {'limit': limit});
+    final response = await _dio.get<List<dynamic>>('/api/v1/telemetry/$parcelId/history', queryParameters: {'limit': limit});
     return response.data!.cast<Map<String, dynamic>>();
   }
 
