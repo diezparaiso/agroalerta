@@ -1,1 +1,14 @@
-.dart_tool/\n.flutter-plugins\n.flutter-plugins-dependencies\n.packages\n.pub-cache/\nbuild/\ncoverage/\n*.iml\n.idea/\nbackend/.venv/\nbackend/agroalerta.db\n__pycache__/\n.pytest_cache/\n.env\n
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+build/
+coverage/
+*.iml
+.idea/
+backend/.venv/
+backend/agroalerta.db
+__pycache__/
+.pytest_cache/
+.env
