@@ -8,6 +8,7 @@ from uuid import uuid4
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from app.domain.disease_rules import evaluate_risk
+from app.connectors.source_registry import list_data_sources
 from app.core.storage import Storage
 from app.schemas import Device, DeviceCreate, DiseaseRisk, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
 from app.core.security import optional_bearer_token
@@ -56,6 +57,12 @@ products = [
         mapa_snapshot_date=datetime.now(timezone.utc),
     )
 ]
+
+
+@app.get("/api/v1/data-sources")
+def data_sources() -> list[dict[str, object]]:
+    """Fuentes externas conocidas por AgroAlerta, sin exponer secretos."""
+    return list_data_sources()
 
 
 @app.get("/health")
