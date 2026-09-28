@@ -450,3 +450,17 @@ AgroAlerta expone un resumen operativo por parcela mediante `GET /api/v1/devices
 **Decisión:** calcular la salud desde el histórico persistido, respetando propietario y parcela. No se infiere conectividad real más allá de la última lectura recibida.
 
 **Validación:** prueba de API con un dispositivo y una lectura, comprobando batería, última lectura y contador.
+
+
+## ADR-041: Resumen agronómico consolidado de parcela
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+Se incorpora `GET /api/v1/parcels/{parcel_id}/agronomic-summary` como lectura agregada para dashboard e integraciones. Consolida identidad de parcela, cultivo, sensores activos, última telemetría, batería, riesgos persistidos y alertas recientes.
+
+**Decisión:** el endpoint es una vista de lectura; no recalcula riesgo, no ingiere datos y no crea alertas. Todas las fuentes quedan limitadas al propietario autenticado.
+
+**Motivo:** evitar que cada cliente tenga que ensamblar múltiples llamadas para representar el estado operativo y agronómico de una parcela.
+
+**Validación:** prueba de API con parcela, sensor y telemetría persistida.
