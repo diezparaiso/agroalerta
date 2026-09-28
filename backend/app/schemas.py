@@ -93,3 +93,23 @@ class RiskSnapshot(BaseModel):
     risk_level: str
     calculated_at: datetime
     owner_id: str | None = None
+
+
+class AgronomicDecisionEvidence(BaseModel):
+    source: Literal["disease_risk", "telemetry", "weather", "field_report", "raif"]
+    key: str
+    value: str
+    weight: float = Field(ge=0, le=1)
+
+
+class AgronomicDecision(BaseModel):
+    parcel_id: str
+    disease_code: Literal["repilo", "mildiu"]
+    priority: Literal["informativa", "vigilar", "revisar"]
+    decision_score: float = Field(ge=0, le=1)
+    confidence: Literal["baja", "media", "alta"]
+    headline: str
+    explanation: str
+    next_steps: list[str]
+    evidence: list[AgronomicDecisionEvidence]
+    calculated_at: datetime
