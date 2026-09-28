@@ -131,18 +131,18 @@ Backend validado por CI y Flutter con análisis estático. Se han añadido prueb
 
 Pendiente: ampliar cobertura de dominio, integración, widgets, notificaciones y pruebas end-to-end.
 
-### 16. Despliegue / producción — 40%
+### 16. Despliegue / producción — 45%
 
 Existe configuración de desarrollo, Docker y CI.
 
-Pendiente: entorno productivo, base de datos gestionada, secretos, observabilidad, jobs programados, backups, migraciones y procedimiento de rollback.
+Implementado: ciclo agroclimático explícito y reutilizable con orden catálogo RIA → RAIF → meteorología → riesgo/alertas, preparado para ejecución externa. Pendiente: scheduler productivo, base de datos gestionada, secretos, observabilidad, backups, migraciones y procedimiento de rollback.
 
 ## Bloqueadores actuales
 
 1. CI Flutter debe quedar completamente verde con las nuevas pruebas.
 2. Hay que verificar y cubrir la deduplicación de alertas con pruebas de regresión.
 3. Hay que comprobar el flujo de notificaciones foreground/background.
-4. Hay que identificar el mecanismo de scheduling/orquestación de ingestas y riesgo.
+4. Hay que conectar el ciclo agroclimático a un scheduler productivo con control de concurrencia.
 5. Las integraciones oficiales externas deben validarse con sus contratos vigentes.
 6. El README y documentación histórica deben mantenerse alineados con el estado real.
 
