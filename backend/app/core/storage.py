@@ -176,6 +176,21 @@ class Storage:
             connection.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_telemetry_telemetry_id ON telemetry(telemetry_id) WHERE telemetry_id IS NOT NULL')
             self._record_schema_version(connection, 2)
             self._record_schema_version(connection, 3)
+            connection.execute(
+                '''
+                CREATE TABLE IF NOT EXISTS crop_campaigns (
+                    id TEXT PRIMARY KEY,
+                    parcel_id TEXT NOT NULL,
+                    owner_id TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    crop_type TEXT NOT NULL,
+                    started_at TEXT NOT NULL,
+                    ended_at TEXT,
+                    status TEXT NOT NULL
+                )
+                '''
+            )
+            self._record_schema_version(connection, 4)
 
     @staticmethod
     def _record_schema_version(connection: sqlite3.Connection, version: int) -> None:
@@ -190,6 +205,36 @@ class Storage:
                 'SELECT COALESCE(MAX(version), 0) AS version FROM schema_migrations'
             ).fetchone()
         return int(row['version'])
+
+    def create_crop_campaign(self, campaign: dict[str, object]) -> dict[str, object]:
+        with self._connect() as connection:
+            connection.execute(
+                "INSERT INTO crop_campaigns (id, parcel_id, owner_id, name, crop_type, started_at, ended_at, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (campaign["id"], campaign["parcel_id"], campaign["owner_id"], campaign["name"], campaign["crop_type"], campaign["started_at"], campaign["ended_at"], campaign["status"]),
+            )
+        return campaign
+
+    def list_crop_campaigns(self, parcel_id: str, owner_id: str) -> list[dict[str, object]]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT * FROM crop_campaigns WHERE parcel_id = ? AND owner_id = ? ORDER BY started_at DESC",
+                (parcel_id, owner_id),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def update_crop_campaign_status(self, campaign_id: str, owner_id: str, status: str, ended_at: str | None = None) -> dict[str, object] | None:
+        with self._connect() as connection:
+            result = connection.execute(
+                "UPDATE crop_campaigns SET status = ?, ended_at = ? WHERE id = ? AND owner_id = ?",
+                (status, ended_at, campaign_id, owner_id),
+            )
+            if result.rowcount == 0:
+                return None
+            row = connection.execute(
+                "SELECT * FROM crop_campaigns WHERE id = ? AND owner_id = ?",
+                (campaign_id, owner_id),
+            ).fetchone()
+        return dict(row) if row else None
 
     def list_parcels(self, owner_id: str | None = None) -> list[Parcel]:
         with self._connect() as connection:
