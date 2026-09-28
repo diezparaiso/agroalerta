@@ -270,3 +270,16 @@ Reintentos del mismo evento no crean otra alerta, mientras que una nueva transic
 
 **Validación:** `test/features/parcels/parcel_concurrency_test.dart` verifica conservación de la versión y bloqueo de actualizaciones sin versión.
 
+## ADR-026: Reconciliación explícita de conflictos de parcelas
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+**Contexto:** un HTTP 409 evita sobrescrituras, pero un error técnico aislado deja al usuario sin una vía clara para resolver el conflicto.
+
+**Decisión:** Flutter vuelve a cargar la versión remota y presenta al usuario una comparación mínima entre su edición y el estado del servidor. Puede cancelar, aceptar la versión remota o conservar su edición. Conservarla vuelve a intentar contra la nueva versión remota mediante control optimista; si vuelve a cambiar, se mantiene el conflicto y no se fuerza una escritura.
+
+**Consecuencia:** la aplicación nunca decide silenciosamente qué versión debe prevalecer. La reconciliación automática de campos queda fuera de esta fase.
+
+**Validación:** `test/features/parcels/parcel_conflict_test.dart` cubre detección de diferencias en el modelo de conflicto.
+
