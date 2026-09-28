@@ -1,3 +1,9 @@
+"""Reglas de agregación y estado de campañas: actividades, riegos y progreso del ciclo.
+
+Este módulo contiene reglas de dominio puras o casi puras. Las rutas HTTP y la persistencia
+se mantienen fuera para que los cálculos puedan probarse de forma aislada.
+"""
+
 from app.schemas import CropCampaign
 
 
