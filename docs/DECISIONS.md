@@ -83,3 +83,16 @@ La clave de deduplicación combina parcela, enfermedad, motivo de transición, n
 
 ### Consecuencia
 Reintentos del mismo evento no crean otra alerta, mientras que una nueva transición posterior sí puede generar un nuevo evento legítimo.
+
+
+### ADR-012: Notificación local de FCM en foreground
+
+**Estado:** aceptado
+
+**Contexto:** Firebase Cloud Messaging entrega correctamente el evento al dispositivo, pero los mensajes con payload de notificación no deben depender del comportamiento del sistema cuando la aplicación está abierta.
+
+**Decisión:** registrar `FirebaseMessaging.onMessage` cuando Firebase esté disponible y convertir únicamente los mensajes recibidos en foreground con los campos `disease_code`, `parcel_id` y `risk_level` en una notificación local mediante `NotificationService`.
+
+**Consecuencia:** las alertas permanecen visibles cuando AgroAlerta está abierta. En background/terminada se mantiene el comportamiento nativo de FCM para el payload de notificación. No se crea una segunda alerta de dominio: la notificación local es únicamente presentación del evento persistido.
+
+**Validación pendiente:** prueba en dispositivos Android/iOS reales con permisos concedidos y revocados.
