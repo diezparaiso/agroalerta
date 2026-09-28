@@ -11,6 +11,7 @@ from app.domain.disease_rules import evaluate_risk
 from app.domain.geospatial import haversine_km
 from app.domain.raif_evidence import score_raif_evidence
 from app.domain.weather_context import build_weather_context
+from app.jobs.weather_ingestion_job import ingest_weather_for_parcel
 from app.connectors.source_registry import list_data_sources
 from app.core.config import settings
 from app.core.storage import Storage
@@ -176,6 +177,15 @@ def spatial_context(
 @app.get("/api/v1/weather-stations")
 def get_weather_stations(_token=Depends(optional_bearer_token)):
     return {"source": "ria_ifapa", "stations": storage.list_weather_stations()}
+
+
+@app.post("/api/v1/weather/ingest/{parcel_id}")
+async def ingest_parcel_weather(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> dict[str, object]:
+    """Actualiza RIA para una parcela usando automáticamente estaciones cercanas."""
+    owner_id = _token or 'anonymous'
+    parcel = get_parcel(parcel_id, owner_id)
+    result = await ingest_weather_for_parcel(parcel.latitude, parcel.longitude)
+    return {"parcel_id": parcel_id, **result}
 
 
 @app.get("/api/v1/weather-context/{parcel_id}")
