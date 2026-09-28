@@ -3,6 +3,7 @@ import logging
 import os
 import time
 from uuid import uuid4
+from typing import Literal
 
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,7 +12,8 @@ from app.core.security import optional_bearer_token
 from app.core.storage import Storage
 from app.domain.disease_rules import evaluate_risk
 from app.domain.agronomic_decision import make_agronomic_decision
-from app.schemas import AgronomicDecision, Device, DeviceCreate, DiseaseRisk, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
+from app.domain.farm_operation_center import build_farm_center
+from app.schemas import AgronomicDecision, Device, DeviceCreate, DiseaseRisk, FarmOperationCenter, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
 from app.schemas_push import PushTokenCreate
 
 
