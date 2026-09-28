@@ -43,3 +43,9 @@ La ingesta puede persistir una observación sin que exista contexto meteorológi
 **Estado:** aceptado
 
 El selector meteorológico deduplica estaciones por fuente y código, conservando la observación más reciente. El parser RAIF ignora nodos contenedores XML que no contienen campos de un registro. Estas reglas evitan duplicados y registros vacíos derivados de la estructura física de las fuentes.
+
+
+## ADR-009 — CI como validación cuando no hay entorno local
+**Estado:** aceptado
+
+Cuando el desarrollador no dispone temporalmente de un entorno local para ejecutar VS Code, las pruebas no se posponen por defecto: se ejecutan en GitHub Actions y se corrigen sus resultados. La validación local queda como comprobación adicional cuando vuelva a estar disponible.
