@@ -281,3 +281,12 @@ class AlertPreferences(BaseModel):
 class AlertPreferencesUpdate(BaseModel):
     minimum_risk_level: Literal["medio", "alto"] = "medio"
     push_enabled: bool = True
+
+
+class IrrigationSummary(BaseModel):
+    parcel_id: str
+    campaign_id: str | None = None
+    event_count: int
+    total_duration_minutes: int
+    total_water_liters: float
+    events_with_volume: int
