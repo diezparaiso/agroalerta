@@ -7,6 +7,8 @@ from app.core.storage import Storage
 from app.jobs.weather_ingestion_job import ingest_weather_for_parcel
 from app.domain.disease_rules import evaluate_risk
 from app.domain.raif_evidence import score_raif_evidence
+from app.domain.risk_alert_engine import decide_risk_alert
+from app.schemas import RiskSnapshot
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +24,7 @@ async def refresh_all_parcel_weather() -> dict[str, int | str]:
     updated = 0
     failed = 0
     risks_recalculated = 0
+    alerts_created = 0
 
     for parcel in parcels:
         try:
@@ -47,15 +50,40 @@ async def refresh_all_parcel_weather() -> dict[str, int | str]:
                         raif_signal=float(evidence["signal"]),
                         weather=context["weather"] if context["available"] else None,
                     )
-                    from app.schemas import RiskSnapshot
-                    storage.save_risk_snapshot(RiskSnapshot(
+                    previous_snapshot = storage.get_latest_risk_snapshot(
+                        parcel.id,
+                        parcel.owner_id,
+                        risk.disease_code,
+                    )
+                    snapshot = RiskSnapshot(
                         parcel_id=parcel.id,
                         owner_id=parcel.owner_id,
                         disease_code=risk.disease_code,
                         risk_score=risk.risk_score,
                         risk_level=risk.risk_level,
                         calculated_at=risk.calculated_at,
-                    ))
+                    )
+                    storage.save_risk_snapshot(snapshot)
+
+                    decision = decide_risk_alert(risk, previous_snapshot)
+                    if decision.should_create:
+                        alert = storage.save_alert(
+                            parcel_id=parcel.id,
+                            owner_id=parcel.owner_id,
+                            disease_code=risk.disease_code,
+                            alert_type=decision.alert_type,
+                            risk_level=risk.risk_level,
+                            risk_score=risk.risk_score,
+                            message=decision.message,
+                            created_at=risk.calculated_at,
+                            valid_until=risk.valid_until,
+                            dedup_key=(
+                                f"{parcel.id}:{risk.disease_code}:"
+                                f"{decision.reason_code}:{risk.calculated_at.isoformat()}"
+                            ),
+                        )
+                        if alert is not None:
+                            alerts_created += 1
                     risks_recalculated += 1
             else:
                 failed += 1
@@ -69,5 +97,6 @@ async def refresh_all_parcel_weather() -> dict[str, int | str]:
         "updated": updated,
         "failed": failed,
         "risks_recalculated": risks_recalculated,
+        "alerts_created": alerts_created,
         "finished_at": datetime.now(timezone.utc).isoformat(),
     }
