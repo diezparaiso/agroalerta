@@ -123,6 +123,15 @@ class DeviceHealth(BaseModel):
     telemetry_count: int
 
 
+class FieldReportSummary(BaseModel):
+    parcel_id: str
+    total_reports: int
+    reports_by_type: dict[str, int]
+    recent_reports_30d: int
+    latest_reported_at: datetime | None = None
+    latest_report_type: str | None = None
+
+
 class ParcelAgronomicSummary(BaseModel):
     parcel_id: str
     label: str
