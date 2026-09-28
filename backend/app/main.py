@@ -9,6 +9,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from app.domain.disease_rules import evaluate_risk
 from app.domain.geospatial import haversine_km
+from app.domain.raif_evidence import score_raif_evidence
 from app.connectors.source_registry import list_data_sources
 from app.core.config import settings
 from app.core.storage import Storage
@@ -190,7 +191,24 @@ def get_disease_risk(parcel_id: str, _token: str | None = Depends(optional_beare
     owner_id = _token or 'anonymous'
     parcel = get_parcel(parcel_id, owner_id)
     telemetry = storage.latest_telemetry(parcel_id, owner_id)
-    risks = [evaluate_risk(parcel_id, disease, parcel.crop_type, telemetry) for disease in ("repilo", "mildiu") if (disease == "repilo" and parcel.crop_type == "olivar") or (disease == "mildiu" and parcel.crop_type == "vinedo")]
+    raif_records = storage.list_georeferenced_source_records("raif_fitosanitario")
+    risks = []
+    for disease in ("repilo", "mildiu"):
+        if not ((disease == "repilo" and parcel.crop_type == "olivar") or (disease == "mildiu" and parcel.crop_type == "vinedo")):
+            continue
+        evidence = score_raif_evidence(
+            parcel.latitude,
+            parcel.longitude,
+            raif_records,
+            disease,
+        )
+        risks.append(evaluate_risk(
+            parcel_id,
+            disease,
+            parcel.crop_type,
+            telemetry,
+            raif_signal=float(evidence["signal"]),
+        ))
     for risk in risks:
         storage.save_risk_snapshot(RiskSnapshot(parcel_id=parcel_id, owner_id=owner_id, disease_code=risk.disease_code, risk_score=risk.risk_score, risk_level=risk.risk_level, calculated_at=risk.calculated_at))
     return risks
