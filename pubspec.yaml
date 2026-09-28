@@ -4,7 +4,7 @@ publish_to: none
 version: 0.1.0+1
 
 environment:
-  sdk: '>=3.5.0 <4.0.0'
+  sdk: '>=3.6.0 <4.0.0'
 
 dependencies:
   flutter:
@@ -18,7 +18,7 @@ dependencies:
   firebase_auth: ^5.4.1
   google_sign_in: ^6.2.2
   sign_in_with_apple: ^6.1.4
-  google_mobile_ads: ^5.3.1
+  google_mobile_ads: ^6.0.0
   flutter_local_notifications: ^18.0.1
   geolocator: ^13.0.2
   flutter_map: ^7.0.2
