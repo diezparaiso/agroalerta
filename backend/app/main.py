@@ -17,7 +17,7 @@ from app.connectors.source_registry import list_data_sources
 from app.connectors.mapa_catalog import load_catalog
 from app.core.config import settings
 from app.core.storage import Storage
-from app.schemas import Alert, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, NotificationDelivery, Parcel, WeatherEvidenceSummary, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
+from app.schemas import Alert, AlertUserState, AlertUserStateUpdate, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, NotificationDelivery, Parcel, WeatherEvidenceSummary, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
 from app.core.security import optional_bearer_token
 from app.schemas_push import PushTokenCreate
 
@@ -454,6 +454,22 @@ def list_devices(parcel_id: str, _token: str | None = Depends(optional_bearer_to
     return storage.list_devices(parcel_id, owner_id)
 
 
+@app.get("/api/v1/alerts/{alert_id}/state", response_model=AlertUserState)
+def get_alert_user_state(alert_id: int, _token: str | None = Depends(optional_bearer_token)) -> AlertUserState:
+    owner_id = _token or "anonymous"
+    alert = next((item for item in storage.list_alerts(owner_id=owner_id, limit=500, offset=0) if item.id == alert_id), None)
+    if alert is None: raise HTTPException(status_code=404, detail="Alerta no encontrada")
+    state = storage.get_alert_user_state(owner_id, alert_id)
+    return AlertUserState(alert_id=alert_id, read=bool(state and state['read_at']), acknowledged=bool(state and state['acknowledged_at']), read_at=state['read_at'] if state else None, acknowledged_at=state['acknowledged_at'] if state else None)
+
+@app.patch("/api/v1/alerts/{alert_id}/state", response_model=AlertUserState)
+def update_alert_user_state(alert_id: int, payload: AlertUserStateUpdate, _token: str | None = Depends(optional_bearer_token)) -> AlertUserState:
+    owner_id = _token or "anonymous"
+    alert = next((item for item in storage.list_alerts(owner_id=owner_id, limit=500, offset=0) if item.id == alert_id), None)
+    if alert is None: raise HTTPException(status_code=404, detail="Alerta no encontrada")
+    if payload.read is None and payload.acknowledged is None: raise HTTPException(status_code=422, detail='Debe indicar read o acknowledged')
+    state = storage.set_alert_user_state(owner_id, alert_id, payload.read, payload.acknowledged)
+    return AlertUserState(alert_id=alert_id, read=bool(state['read_at']), acknowledged=bool(state['acknowledged_at']), read_at=state['read_at'], acknowledged_at=state['acknowledged_at'])
 @app.get("/api/v1/notifications/deliveries", response_model=list[NotificationDelivery])
 def notification_delivery_history(
     alert_id: int | None = Query(default=None, ge=1),
