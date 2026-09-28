@@ -109,7 +109,7 @@ class Storage:
                 columns = {row['name'] for row in connection.execute(f'PRAGMA table_info({table})')}
                 if 'owner_id' not in columns:
                     connection.execute(f"ALTER TABLE {table} ADD COLUMN owner_id TEXT NOT NULL DEFAULT 'anonymous'")
-            connection.execute(
+            connection.executescript(
                 """
                 CREATE TABLE IF NOT EXISTS weather_stations (
                     source_code TEXT NOT NULL,
