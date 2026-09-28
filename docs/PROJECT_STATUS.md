@@ -191,3 +191,10 @@ La cobertura de **Informes de campo** se mantiene en 72% porque este cambio corr
 El módulo de productos autorizados deja de ser una lista básica: la API admite filtrado por cultivo/enfermedad y Flutter muestra los metadatos oficiales de dosis y plazo de seguridad disponibles en el snapshot. Se añadió cobertura de mapeo y ausencia explícita de datos.
 
 **Phytosanitarios/MAPA:** 35% → 45%. El siguiente salto dependerá de disponer de un proceso de actualización/validación del catálogo oficial y de integración contextual con el riesgo, sin convertir el catálogo en una recomendación automática de tratamiento.
+
+
+## Actualización 2026-09-28 — Histórico de telemetría
+
+Se cerró el contrato inicial de histórico reciente de telemetría por parcela: backend autenticado, consulta limitada y ordenada, y cliente Flutter preparado para consumirlo. No se generan valores sintéticos.
+
+**IoT/telemetría:** 75% → 80%. Queda para una fase posterior la visualización temporal avanzada, gestión completa del ciclo de vida del dispositivo y validación con hardware real.
