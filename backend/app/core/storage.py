@@ -107,6 +107,21 @@ class Storage:
                     headline TEXT NOT NULL,
                     created_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS campaign_treatments (
+                    id TEXT PRIMARY KEY,
+                    campaign_id TEXT NOT NULL,
+                    owner_id TEXT NOT NULL,
+                    applied_at TEXT NOT NULL,
+                    product_name TEXT NOT NULL,
+                    active_substance TEXT,
+                    dose REAL,
+                    dose_unit TEXT,
+                    target TEXT,
+                    disease_code TEXT,
+                    safety_period_days INTEGER,
+                    notes TEXT,
+                    created_at TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS campaign_results (
                     id TEXT PRIMARY KEY,
                     campaign_id TEXT NOT NULL,
@@ -269,6 +284,23 @@ class Storage:
             ).fetchall()
         return [dict(row) for row in rows]
 
+
+
+    def create_campaign_treatment(self, treatment_id: str, campaign_id: str, owner_id: str, payload: dict) -> dict:
+        with self._connect() as connection:
+            connection.execute(
+                'INSERT INTO campaign_treatments (id, campaign_id, owner_id, applied_at, product_name, active_substance, dose, dose_unit, target, disease_code, safety_period_days, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                (treatment_id, campaign_id, owner_id, payload['applied_at'].isoformat(), payload['product_name'], payload.get('active_substance'), payload.get('dose'), payload.get('dose_unit'), payload.get('target'), payload.get('disease_code'), payload.get('safety_period_days'), payload.get('notes'), payload['created_at'].isoformat()),
+            )
+        return {'id': treatment_id, 'owner_id': owner_id, **payload}
+
+    def list_campaign_treatments(self, campaign_id: str, owner_id: str) -> list[dict]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                'SELECT * FROM campaign_treatments WHERE campaign_id = ? AND owner_id = ? ORDER BY applied_at DESC',
+                (campaign_id, owner_id),
+            ).fetchall()
+        return [dict(row) for row in rows]
 
     def create_campaign_result(self, result_id: str, campaign_id: str, owner_id: str, payload: dict) -> dict:
         with self._connect() as connection:
