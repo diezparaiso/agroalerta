@@ -123,6 +123,17 @@ class DeviceHealth(BaseModel):
     telemetry_count: int
 
 
+class WeatherEvidenceSummary(BaseModel):
+    parcel_id: str
+    available: bool
+    source: str
+    confidence: str
+    station_count: int
+    fresh_window_hours: int
+    latest_observed_at: datetime | None = None
+    stations: list[dict[str, object]]
+
+
 class FieldReportSummary(BaseModel):
     parcel_id: str
     total_reports: int
