@@ -133,6 +133,26 @@ class Storage:
                 if 'owner_id' not in columns:
                     connection.execute(f"ALTER TABLE {table} ADD COLUMN owner_id TEXT NOT NULL DEFAULT 'anonymous'")
 
+    def create_irrigation_event(self, event: dict[str, object]) -> dict[str, object]:
+        with self._connect() as connection:
+            connection.execute(
+                """INSERT INTO irrigation_events
+                (id, parcel_id, campaign_id, owner_id, started_at, duration_minutes, water_liters, method, notes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (event['id'], event['parcel_id'], event['campaign_id'], event['owner_id'],
+                 event['started_at'], event['duration_minutes'], event['water_liters'],
+                 event['method'], event['notes']),
+            )
+        return event
+
+    def list_irrigation_events(self, parcel_id: str, owner_id: str, limit: int = 100) -> list[dict[str, object]]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT * FROM irrigation_events WHERE parcel_id = ? AND owner_id = ? ORDER BY started_at DESC LIMIT ?",
+                (parcel_id, owner_id, max(1, min(limit, 200))),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
     def list_parcels(self, owner_id: str | None = None) -> list[Parcel]:
         with self._connect() as connection:
             if owner_id is None:
