@@ -25,7 +25,7 @@ Future<void> _showCreateDialog(BuildContext context, WidgetRef ref) async {
       content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
         TextField(controller: labelController, decoration: const InputDecoration(labelText: 'Nombre')),
         const SizedBox(height: 12),
-        DropdownButtonFormField<String>(value: cropType, decoration: const InputDecoration(labelText: 'Cultivo'), items: const [DropdownMenuItem(value: 'olivar', child: Text('Olivar')), DropdownMenuItem(value: 'vinedo', child: Text('Vinedo'))], onChanged: (value) => setState(() => cropType = value ?? 'olivar')),
+        DropdownButtonFormField<String>(initialValue: cropType, decoration: const InputDecoration(labelText: 'Cultivo'), items: const [DropdownMenuItem(value: 'olivar', child: Text('Olivar')), DropdownMenuItem(value: 'vinedo', child: Text('Vinedo'))], onChanged: (value) => setState(() => cropType = value ?? 'olivar')),
         const SizedBox(height: 12),
         TextField(controller: comarcaController, decoration: const InputDecoration(labelText: 'Comarca')),
         const SizedBox(height: 12),
