@@ -6,6 +6,7 @@ import '../../core/storage/photo_upload.dart';
 import '../home/home_screen.dart';
 import '../parcels/parcel_provider.dart';
 import 'offline_report_store.dart';
+import 'offline_queue_status_provider.dart';
 import 'report_payload.dart';
 
 class ReportScreen extends ConsumerStatefulWidget {
@@ -62,9 +63,11 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
         longitude: payload['longitude'] as double,
         photoUrl: payload['photo_url'] as String?,
       );
+      ref.invalidate(offlineQueueStatusProvider);
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Observacion enviada')));
     } catch (_) {
       await offlineStore.enqueue(payload);
+      ref.invalidate(offlineQueueStatusProvider);
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Guardada para sincronizar cuando haya conexion')));
     } finally {
       if (mounted) setState(() => sending = false);
@@ -74,12 +77,37 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   @override
   Widget build(BuildContext context) {
     final parcelsAsync = ref.watch(parcelsProvider);
+    final queueStatusAsync = ref.watch(offlineQueueStatusProvider);
 
     return AppPage(
       title: 'Observacion de campo',
       subtitle: 'Aporta datos para mejorar los avisos de tu zona',
       child: ListView(
         children: [
+          queueStatusAsync.when(
+            loading: () => const LinearProgressIndicator(),
+            error: (_, __) => const SizedBox.shrink(),
+            data: (status) {
+              if (!status.hasPending) {
+                return const ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.cloud_done_outlined),
+                  title: Text('Sin observaciones pendientes'),
+                );
+              }
+              final next = status.nextAttemptAt;
+              final detail = next == null
+                  ? 'Pendientes de sincronizar'
+                  : 'Próximo reintento: ${next.hour.toString().padLeft(2, '0')}:${next.minute.toString().padLeft(2, '0')}';
+              return ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.cloud_upload_outlined),
+                title: Text('${status.pendingCount} observación(es) pendientes'),
+                subtitle: Text(status.failedCount == 0 ? detail : '$detail · ${status.failedCount} con reintento'),
+              );
+            },
+          ),
+
           parcelsAsync.when(
             loading: () => const LinearProgressIndicator(),
             error: (_, __) => const Text('No se pueden cargar las parcelas'),
