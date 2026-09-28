@@ -408,3 +408,17 @@ La decisión evita aceptar telemetría huérfana o procedente de dispositivos re
 **Validación:** pruebas de activación/desactivación y de aislamiento entre propietarios en `backend/tests/test_api.py`.
 
 **Pendiente:** pantalla Flutter de administración de dispositivos y estados adicionales si el hardware real los requiere.
+
+
+## ADR-038: Validación temporal de telemetría en la entrada
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+La API rechaza telemetría cuya marca `measured_at` esté más de 15 minutos en el futuro respecto al reloj del servidor. Las marcas sin zona se interpretan en UTC para evitar ambigüedad.
+
+**Motivo:** una lectura futura no puede utilizarse como evidencia observada y puede contaminar ordenación, históricos y cálculos de riesgo.
+
+**Alcance:** no se rechazan por edad las lecturas históricas; pueden ser necesarias para sincronizaciones atrasadas. La vigencia para riesgo debe seguir siendo una regla del cálculo, separada de la aceptación del dato histórico.
+
+**Validación:** prueba de API que verifica HTTP 422 ante una marca temporal futura.
