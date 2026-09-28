@@ -8,6 +8,7 @@ from uuid import uuid4
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from app.domain.disease_rules import evaluate_risk
+from app.domain.geospatial import haversine_km
 from app.connectors.source_registry import list_data_sources
 from app.core.config import settings
 from app.core.storage import Storage
@@ -130,6 +131,45 @@ def delete_parcel(parcel_id: str, _token: str | None = Depends(optional_bearer_t
     if not storage.delete_parcel(parcel_id, _token or 'anonymous'):
         raise HTTPException(status_code=404, detail="Parcela no encontrada")
 
+
+
+@app.get("/api/v1/spatial-context/{parcel_id}")
+def spatial_context(
+    parcel_id: str,
+    radius_km: float = Query(default=25, ge=1, le=100),
+    _token: str | None = Depends(optional_bearer_token),
+) -> dict[str, object]:
+    """Devuelve evidencias georreferenciadas cercanas a una parcela."""
+    owner_id = _token or 'anonymous'
+    parcel = get_parcel(parcel_id, owner_id)
+    matches: list[dict[str, object]] = []
+
+    for source_code in ("raif_fitosanitario",):
+        for record in storage.list_georeferenced_source_records(source_code):
+            distance = haversine_km(
+                parcel.latitude,
+                parcel.longitude,
+                float(record["latitude"]),
+                float(record["longitude"]),
+            )
+            if distance <= radius_km:
+                matches.append({
+                    "source_code": record["source_code"],
+                    "external_id": record["external_id"],
+                    "distance_km": round(distance, 2),
+                    "observed_at": record["observed_at"],
+                    "province": record["province"],
+                    "municipality": record["municipality"],
+                    "parcel_reference": record["parcel_reference"],
+                })
+
+    matches.sort(key=lambda item: (item["distance_km"], item["observed_at"] or ""),)
+    return {
+        "parcel_id": parcel_id,
+        "radius_km": radius_km,
+        "evidence_count": len(matches),
+        "evidence": matches[:100],
+    }
 
 @app.get("/api/v1/weather/{parcel_id}")
 def get_weather(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> dict:
