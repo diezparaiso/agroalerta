@@ -544,3 +544,21 @@ Se añade un módulo de consulta de calidad operativa de telemetría por parcela
 **Motivo:** proporcionar una señal operativa independiente para detectar sensores sin datos recientes antes de interpretar los resultados agronómicos.
 
 **Validación:** prueba API para ventana de 24 horas, sensor sin muestras y aislamiento entre propietarios.
+
+
+## ADR-047: Línea temporal operativa de actividad de parcela
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+Se incorpora `GET /api/v1/parcels/{parcel_id}/activity` como lectura cronológica de actividad persistida de una parcela.
+
+**Decisión:** la línea temporal reúne cuatro tipos de eventos ya existentes: telemetría recibida, partes de campo, alertas y cálculos de riesgo. Cada evento expone tipo, identificador, fecha/hora, título y un detalle breve. El resultado se ordena de más reciente a más antiguo y queda limitado a 200 elementos.
+
+**Alcance:** es un módulo de lectura; no crea eventos, no recalcula riesgos y no modifica las fuentes originales. No se infieren actividades que no estén persistidas.
+
+**Seguridad:** la parcela se resuelve mediante el control de propietario existente y todas las consultas de eventos filtran por el mismo propietario.
+
+**Motivo:** ofrecer una vista única de actividad agronómica y operativa para futuras pantallas de parcela, auditoría ligera y sincronización, evitando que cada cliente tenga que combinar cuatro endpoints.
+
+**Validación:** prueba de API que comprueba orden cronológico, identidad de eventos y aislamiento entre propietarios.
