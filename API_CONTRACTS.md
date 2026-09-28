@@ -98,3 +98,15 @@ Los tokens se guardan por propietario y se eliminan cuando fallan los envíos tr
 - `404`: recurso inexistente o perteneciente a otro usuario.
 - `422`: validación Pydantic fallida.
 - `500`: error interno; revisar métricas y logs sin exponer secretos.
+
+
+## Contexto espacial
+
+### GET /api/v1/spatial-context/{parcel_id}
+
+Devuelve evidencias fitosanitarias georreferenciadas de las fuentes disponibles dentro de un radio configurable.
+
+Query:
+- `radius_km`: 1..100, por defecto 25.
+
+La respuesta conserva la distancia calculada a la parcela y la trazabilidad de la evidencia. Actualmente solo se incluyen registros RAIF que publiquen coordenadas; los registros sin coordenadas no se fuerzan a una posición estimada.
