@@ -11,6 +11,7 @@ from app.domain.disease_rules import evaluate_risk
 from app.domain.geospatial import haversine_km
 from app.domain.raif_evidence import score_raif_evidence
 from app.domain.weather_context import build_weather_context
+from app.jobs.ria_station_catalog_job import sync_ria_station_catalog
 from app.connectors.source_registry import list_data_sources
 from app.core.config import settings
 from app.core.storage import Storage
@@ -172,6 +173,11 @@ def spatial_context(
         "evidence_count": len(matches),
         "evidence": matches[:100],
     }
+
+@app.get("/api/v1/weather-stations")
+def get_weather_stations(_token=Depends(optional_bearer_token)):
+    return {"source": "ria_ifapa", "stations": storage.list_weather_stations()}
+
 
 @app.get("/api/v1/weather-context/{parcel_id}")
 def get_weather_context(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> dict[str, object]:
