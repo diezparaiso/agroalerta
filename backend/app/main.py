@@ -17,7 +17,7 @@ from app.connectors.source_registry import list_data_sources
 from app.connectors.mapa_catalog import load_catalog
 from app.core.config import settings
 from app.core.storage import Storage
-from app.schemas import Alert, AlertUserState, AlertUserStateUpdate, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, NotificationDelivery, Parcel, WeatherEvidenceSummary, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate, TelemetryQualitySummary, ParcelActivityEvent, CropCampaignCreate, CropCampaignStatusUpdate, CropCampaign, IrrigationEventCreate, IrrigationEvent, TreatmentRecordCreate, TreatmentRecord, AlertPreferences, AlertPreferencesUpdate, IrrigationSummary
+from app.schemas import Alert, AlertUserState, AlertUserStateUpdate, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, NotificationDelivery, Parcel, WeatherEvidenceSummary, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate, TelemetryQualitySummary, ParcelActivityEvent, CropCampaignCreate, CropCampaignStatusUpdate, CropCampaign, IrrigationEventCreate, IrrigationEvent, TreatmentRecordCreate, TreatmentRecord, AlertPreferences, AlertPreferencesUpdate, IrrigationSummary, AgronomicReport
 from app.core.security import optional_bearer_token
 from app.schemas_push import PushTokenCreate
 
@@ -337,6 +337,16 @@ def create_irrigation_event(
         notes=payload.notes,
     )
     return IrrigationEvent(**storage.create_irrigation_event(event.model_dump(mode="json")))
+
+
+@app.get("/api/v1/parcels/{parcel_id}/agronomic-report", response_model=AgronomicReport)
+def agronomic_report(
+    parcel_id: str,
+    _token: str | None = Depends(optional_bearer_token),
+) -> AgronomicReport:
+    owner_id = _token or "anonymous"
+    parcel = get_parcel(parcel_id, owner_id)
+    return AgronomicReport(**storage.agronomic_report(parcel, owner_id))
 
 
 @app.get("/api/v1/parcels/{parcel_id}/irrigation/summary", response_model=IrrigationSummary)
