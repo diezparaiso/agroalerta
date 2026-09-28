@@ -117,10 +117,26 @@ def get_parcel(
 
 
 @app.put("/api/v1/parcels/{parcel_id}", response_model=Parcel)
-def update_parcel(parcel_id: str, payload: ParcelCreate, _token: str | None = Depends(optional_bearer_token)) -> Parcel:
-    parcel = storage.update_parcel(parcel_id, payload, _token or 'anonymous')
-    if parcel is None:
+def update_parcel(
+    parcel_id: str,
+    payload: ParcelCreate,
+    expected_updated_at: datetime | None = Query(default=None),
+    _token: str | None = Depends(optional_bearer_token),
+) -> Parcel:
+    owner_id = _token or 'anonymous'
+    current = storage.get_parcel(parcel_id, owner_id)
+    if current is None:
         raise HTTPException(status_code=404, detail="Parcela no encontrada")
+    if expected_updated_at is not None and current.updated_at != expected_updated_at:
+        raise HTTPException(status_code=409, detail="La parcela ha cambiado desde la última lectura")
+    parcel = storage.update_parcel(
+        parcel_id,
+        payload,
+        owner_id,
+        expected_updated_at=expected_updated_at,
+    )
+    if parcel is None:
+        raise HTTPException(status_code=409, detail="La parcela ha cambiado durante la actualización")
     return parcel
 
 
