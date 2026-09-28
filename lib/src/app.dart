@@ -64,10 +64,10 @@ class AppShell extends StatelessWidget {
     (label: 'Resumen', icon: Icons.dashboard_outlined, path: '/home'),
     (label: 'Parcelas', icon: Icons.landscape_outlined, path: '/parcels'),
     (label: 'Avisos', icon: Icons.warning_amber_rounded, path: '/alerts'),
-    (label: 'Explotación', icon: Icons.agriculture_outlined, path: '/operation-center'),
-    (label: 'Campañas', icon: Icons.event_note_outlined, path: '/campaigns'),
     (label: 'Productos', icon: Icons.inventory_2_outlined, path: '/products'),
     (label: 'Ajustes', icon: Icons.settings_outlined, path: '/settings'),
+    (label: 'Explotación', icon: Icons.agriculture_outlined, path: '/operation-center'),
+    (label: 'Campañas', icon: Icons.event_note_outlined, path: '/campaigns'),
   ];
 
   @override
