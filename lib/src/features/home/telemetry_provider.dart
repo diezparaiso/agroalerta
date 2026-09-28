@@ -21,6 +21,7 @@ final telemetryWindowProvider = StateProvider<TelemetryWindow>(
 );
 
 final selectedTelemetryParcelIdProvider = StateProvider<String?>((ref) => null);
+final selectedTelemetryDeviceIdProvider = StateProvider<String?>((ref) => null);
 
 final telemetryHistoryProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) async {
@@ -41,10 +42,11 @@ final telemetryProvider = FutureProvider<Map<String, dynamic>?>((ref) async {
 
 List<Map<String, dynamic>> telemetrySeries(
   List<Map<String, dynamic>> history,
-  String field,
-) {
+  String field, {
+  String? deviceId,
+}) {
   final points = history
-      .where((item) => item[field] is num && item['measured_at'] != null)
+      .where((item) => (deviceId == null || item['device_id'] == deviceId) && item[field] is num && item['measured_at'] != null)
       .toList()
     ..sort(
       (a, b) => DateTime.parse(a['measured_at'] as String)
