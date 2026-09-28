@@ -42,10 +42,15 @@ def test_latest_telemetry_history_is_ordered_and_owner_scoped(tmp_path):
             soil_moisture=30,
             battery_percent=90,
             measured_at=datetime.fromisoformat(measured_at),
-            owner_id=owner,
+            owner_id=owner if device_id == "sensor-1" else "other-owner",
         )
         storage.create_telemetry(payload)
 
     history = storage.list_latest_telemetry(parcel, owner, 10)
     assert [row["temperature_c"] for row in history] == [21.0, 20.0]
     assert all(row["device_id"] == "sensor-1" for row in history)
+
+    filtered = storage.list_latest_telemetry(parcel, owner, 10, device_id="sensor-1")
+    assert [row["device_id"] for row in filtered] == ["sensor-1", "sensor-1"]
+
+    assert storage.list_latest_telemetry(parcel, owner, 10, device_id="sensor-2") == []
