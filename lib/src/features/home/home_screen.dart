@@ -334,6 +334,7 @@ class _TelemetryCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final window = ref.watch(telemetryWindowProvider);
+    final selectedParcelId = ref.watch(selectedTelemetryParcelIdProvider);
     return _Panel(
       title: 'Sensores',
       icon: Icons.sensors_outlined,
@@ -347,7 +348,32 @@ class _TelemetryCard extends ConsumerWidget {
           ref.read(telemetryWindowProvider.notifier).state = selection.first;
         },
       ),
-      child: ref.watch(telemetryHistoryProvider).when(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ref.watch(parcelsProvider).when(
+            data: (parcels) {
+              final valid = parcels.where((parcel) => parcel.id != null).toList();
+              return DropdownButtonFormField<String>(
+                value: valid.any((parcel) => parcel.id == selectedParcelId) ? selectedParcelId : null,
+                decoration: const InputDecoration(
+                  labelText: 'Parcela',
+                  helperText: 'Selecciona la parcela cuyos sensores quieres consultar.',
+                ),
+                items: [
+                  for (final parcel in valid)
+                    DropdownMenuItem(value: parcel.id, child: Text(parcel.name)),
+                ],
+                onChanged: valid.isEmpty
+                    ? null
+                    : (value) => ref.read(selectedTelemetryParcelIdProvider.notifier).state = value,
+              );
+            },
+            loading: () => const LinearProgressIndicator(),
+            error: (_, __) => const Text('Parcelas no disponibles'),
+          ),
+          const SizedBox(height: 16),
+          ref.watch(telemetryHistoryProvider).when(
         data: (history) {
           if (history.isEmpty) {
             return const Text('No hay mediciones reales en el periodo seleccionado.');
@@ -404,7 +430,9 @@ class _TelemetryCard extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => const Text('Telemetría no disponible'),
+            error: (_, __) => const Text('Telemetría no disponible'),
+          ),
+        ],
       ),
     );
   }
