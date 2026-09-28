@@ -4,6 +4,10 @@ import os
 from fastapi import Header, HTTPException, status
 
 
+def _is_production() -> bool:
+    return os.getenv('ENVIRONMENT', 'development').strip().lower() == 'production'
+
+
 def _verify_with_firebase(token: str) -> str | None:
     credentials_json = os.getenv('FIREBASE_SERVICE_ACCOUNT_JSON')
     if not credentials_json:
@@ -21,8 +25,15 @@ def _verify_with_firebase(token: str) -> str | None:
 
 def optional_bearer_token(authorization: str | None = Header(default=None)) -> str | None:
     if authorization is None:
+        if _is_production():
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Autenticacion requerida')
         return None
     scheme, _, token = authorization.partition(' ')
     if scheme.lower() != 'bearer' or not token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Token Bearer invalido')
-    return _verify_with_firebase(token) or token
+    verified_uid = _verify_with_firebase(token)
+    if verified_uid:
+        return verified_uid
+    if _is_production():
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Firebase Admin no esta configurado')
+    return token
