@@ -98,3 +98,22 @@ Los tokens se guardan por propietario y se eliminan cuando fallan los envíos tr
 - `404`: recurso inexistente o perteneciente a otro usuario.
 - `422`: validación Pydantic fallida.
 - `500`: error interno; revisar métricas y logs sin exponer secretos.
+
+
+## Operación agronómica
+
+- `GET /api/v1/farm/center`
+  - Devuelve el estado operativo agregado de las parcelas, sensores, telemetría, riesgos y eventos recientes.
+
+## Campañas y resultados
+
+- `POST /api/v1/parcels/{parcel_id}/campaigns`
+- `GET /api/v1/parcels/{parcel_id}/campaigns`
+- `PATCH /api/v1/campaigns/{campaign_id}/status`
+- `GET /api/v1/campaigns/{campaign_id}/summary`
+- `GET /api/v1/campaigns/{campaign_id}/decisions`
+- `POST /api/v1/campaigns/{campaign_id}/results`
+- `GET /api/v1/campaigns/{campaign_id}/results`
+- `GET /api/v1/campaigns/{campaign_id}/results/summary`
+
+La interfaz Flutter consume estos contratos sin duplicar reglas de dominio: el backend mantiene las validaciones de parcela, cultivo, fechas, campaña activa y cálculo de rendimiento.
