@@ -148,3 +148,18 @@ Reintentos del mismo evento no crean otra alerta, mientras que una nueva transic
 **Alcance:** esta primera versión registra el esquema actual; no se inventa una migración histórica destructiva para instalaciones existentes. Las siguientes modificaciones de esquema deberán añadir una versión nueva y una prueba de upgrade.
 
 **Validación:** se comprueba que una base nueva queda en versión 1 y que inicializar varias veces mantiene la misma versión.
+
+
+### ADR-017: Publicidad AdMob configurable y segura por defecto
+
+**Estado:** aceptado
+
+**Decisión:** AgroAlerta integra banners mediante `google_mobile_ads`, pero el identificador de unidad publicitaria se obtiene exclusivamente de `ADMOB_BANNER_ID` en tiempo de compilación. Si no existe configuración, no se inicializa el SDK ni se muestra publicidad.
+
+**Motivo:** evitar publicar accidentalmente el ID de anuncios de prueba de Google y separar el código de la aplicación de credenciales/configuración específica de monetización.
+
+**Consentimiento:** el banner existente requiere aceptación explícita almacenada localmente antes de solicitar el anuncio. Antes de publicar en mercados regulados deberá sustituirse/completarse este mecanismo con la solución de consentimiento adecuada para la configuración de Google y la jurisdicción objetivo.
+
+**Plataformas:** el repositorio actual no contiene todavía los proyectos nativos Android/iOS, por lo que quedan pendientes los App IDs nativos de AdMob y su configuración en `AndroidManifest.xml`/Info.plist cuando esos proyectos se incorporen.
+
+**Validación:** el código queda inactivo cuando `ADMOB_BANNER_ID` no está definido y CI debe validar el build Flutter.
