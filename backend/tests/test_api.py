@@ -297,3 +297,32 @@ def test_field_report_summary_is_owner_scoped() -> None:
     }).json()
     response = client.get(f"/api/v1/parcels/{parcel['id']}/field-reports/summary", headers={"Authorization": "Bearer user-b"})
     assert response.status_code == 404
+
+
+def test_weather_evidence_summary_reports_no_evidence_without_observations() -> None:
+    parcel = client.post("/api/v1/parcels", headers={"Authorization": "Bearer user-a"}, json={
+        "label": "Evidencia meteorológica", "latitude": 37.39, "longitude": -5.99,
+        "crop_type": "olivar", "comarca": "Sevilla",
+    }).json()
+    response = client.get(
+        f"/api/v1/parcels/{parcel['id']}/weather-evidence",
+        headers={"Authorization": "Bearer user-a"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["available"] is False
+    assert body["station_count"] == 0
+    assert body["source"] == "none"
+    assert body["fresh_window_hours"] == 72
+
+
+def test_weather_evidence_summary_is_owner_scoped() -> None:
+    parcel = client.post("/api/v1/parcels", headers={"Authorization": "Bearer user-a"}, json={
+        "label": "Evidencia privada", "latitude": 37.39, "longitude": -5.99,
+        "crop_type": "olivar", "comarca": "Sevilla",
+    }).json()
+    response = client.get(
+        f"/api/v1/parcels/{parcel['id']}/weather-evidence",
+        headers={"Authorization": "Bearer user-b"},
+    )
+    assert response.status_code == 404
