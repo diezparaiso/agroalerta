@@ -17,7 +17,7 @@ from app.connectors.source_registry import list_data_sources
 from app.connectors.mapa_catalog import load_catalog
 from app.core.config import settings
 from app.core.storage import Storage
-from app.schemas import Alert, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, Parcel, WeatherEvidenceSummary, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
+from app.schemas import Alert, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, NotificationDelivery, Parcel, WeatherEvidenceSummary, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
 from app.core.security import optional_bearer_token
 from app.schemas_push import PushTokenCreate
 
@@ -452,6 +452,16 @@ def list_devices(parcel_id: str, _token: str | None = Depends(optional_bearer_to
     owner_id = _token or 'anonymous'
     get_parcel(parcel_id, owner_id)
     return storage.list_devices(parcel_id, owner_id)
+
+
+@app.get("/api/v1/notifications/deliveries", response_model=list[NotificationDelivery])
+def notification_delivery_history(
+    alert_id: int | None = Query(default=None, ge=1),
+    limit: int = Query(default=100, ge=1, le=200),
+    _token: str | None = Depends(optional_bearer_token),
+) -> list[NotificationDelivery]:
+    owner_id = _token or "anonymous"
+    return [NotificationDelivery(**item) for item in storage.list_notification_deliveries(owner_id, alert_id, limit)]
 
 
 @app.post("/api/v1/push-tokens", status_code=status.HTTP_202_ACCEPTED)
