@@ -12,6 +12,8 @@ import 'features/products/products_screen.dart';
 import 'features/reports/report_screen.dart';
 import 'features/devices/devices_screen.dart';
 import 'features/settings/settings_screen.dart';
+import 'features/operation_center/operation_center_screen.dart';
+import 'features/campaigns/campaigns_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final firebaseAvailable = ref.watch(firebaseAvailableProvider);
@@ -29,6 +31,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/reports/new', builder: (_, __) => const ReportScreen()),
           GoRoute(path: '/devices/:parcelId', builder: (_, state) => DevicesScreen(parcelId: state.pathParameters['parcelId'] ?? '')),
           GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
+          GoRoute(path: '/operation-center', builder: (_, __) => const OperationCenterScreen()),
+          GoRoute(path: '/campaigns', builder: (_, __) => const CampaignsScreen()),
         ],
       ),
     ],
@@ -60,6 +64,8 @@ class AppShell extends StatelessWidget {
     (label: 'Resumen', icon: Icons.dashboard_outlined, path: '/home'),
     (label: 'Parcelas', icon: Icons.landscape_outlined, path: '/parcels'),
     (label: 'Avisos', icon: Icons.warning_amber_rounded, path: '/alerts'),
+    (label: 'Explotación', icon: Icons.agriculture_outlined, path: '/operation-center'),
+    (label: 'Campañas', icon: Icons.event_note_outlined, path: '/campaigns'),
     (label: 'Productos', icon: Icons.inventory_2_outlined, path: '/products'),
     (label: 'Ajustes', icon: Icons.settings_outlined, path: '/settings'),
   ];
