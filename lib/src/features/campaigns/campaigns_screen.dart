@@ -5,6 +5,7 @@ import '../home/home_screen.dart';
 import '../parcels/parcel_provider.dart';
 import '../../core/network/api_client.dart';
 import 'campaigns_provider.dart';
+import '../campaign_results/campaign_result_form.dart';
 
 class CampaignsScreen extends ConsumerWidget {
   const CampaignsScreen({super.key});
@@ -86,6 +87,8 @@ class _CampaignCard extends ConsumerWidget {
             tooltip: 'Resultados',
             onPressed: () => _showResults(context, ref, '${campaign['id']}', '${campaign['season_label'] ?? 'Campaña'}'),
             icon: const Icon(Icons.analytics_outlined),
+          ),
+          IconButton(tooltip: 'Registrar resultado', onPressed: () => showCampaignResultForm(context, ref, '${campaign['id']}'), icon: const Icon(Icons.add_chart_outlined)),
           ),
           PopupMenuButton<String>(
           onSelected: (value) async {
