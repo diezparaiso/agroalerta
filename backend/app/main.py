@@ -16,7 +16,8 @@ from app.domain.farm_operation_center import build_farm_center
 from app.domain.activity_timeline import build_activity_timeline
 from app.domain.campaign_management import build_campaign_summary
 from app.domain.campaign_results import build_campaign_result, build_results_summary
-from app.schemas import AgronomicActivity, AgronomicActivityCreate, CampaignDecisionLink, CampaignResult, CampaignResultCreate, CampaignResultsSummary, CampaignStatusUpdate, CropCampaign, CropCampaignCreate, CampaignSummary, AgronomicDecision, Device, DeviceCreate, DiseaseRisk, FarmOperationCenter, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
+from app.domain.irrigation_intelligence import build_irrigation_intelligence
+from app.schemas import AgronomicActivity, IrrigationEventCreate, IrrigationIntelligence, AgronomicActivityCreate, CampaignDecisionLink, CampaignResult, CampaignResultCreate, CampaignResultsSummary, CampaignStatusUpdate, CropCampaign, CropCampaignCreate, CampaignSummary, AgronomicDecision, Device, DeviceCreate, DiseaseRisk, FarmOperationCenter, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
 from app.schemas_push import PushTokenCreate
 
 
@@ -198,6 +199,29 @@ def activity_timeline(parcel_id: str, limit: int = Query(default=100, ge=1, le=3
         limit,
     )
 
+
+@app.post('/api/v1/parcels/{parcel_id}/irrigation/events', status_code=status.HTTP_201_CREATED)
+def create_irrigation_event(parcel_id: str, payload: IrrigationEventCreate, _token: str | None = Depends(optional_bearer_token)) -> dict:
+    owner_id = _token or 'anonymous'
+    get_parcel(parcel_id, owner_id)
+    if payload.parcel_id != parcel_id:
+        raise HTTPException(status_code=400, detail='El riego no pertenece a la parcela indicada')
+    event = {'id': str(uuid4()), **payload.model_dump(), 'owner_id': owner_id}
+    storage.create_irrigation_event(event)
+    return event
+
+@app.get('/api/v1/parcels/{parcel_id}/irrigation/events')
+def list_irrigation_events(parcel_id: str, limit: int = Query(default=100, ge=1, le=200), _token: str | None = Depends(optional_bearer_token)) -> list[dict]:
+    owner_id = _token or 'anonymous'
+    get_parcel(parcel_id, owner_id)
+    return storage.list_irrigation_events(parcel_id, owner_id, limit)
+
+@app.get('/api/v1/parcels/{parcel_id}/irrigation/intelligence', response_model=IrrigationIntelligence)
+def irrigation_intelligence(parcel_id: str, window_days: int = Query(default=7, ge=1, le=90), _token: str | None = Depends(optional_bearer_token)) -> IrrigationIntelligence:
+    owner_id = _token or 'anonymous'
+    get_parcel(parcel_id, owner_id)
+    telemetry = storage.latest_telemetry(parcel_id, owner_id)
+    return IrrigationIntelligence(**build_irrigation_intelligence(parcel_id, storage.list_irrigation_events(parcel_id, owner_id, 200), telemetry.model_dump(mode='json') if telemetry else None, window_days))
 
 @app.get('/api/v1/parcels/{parcel_id}', response_model=Parcel)
 def get_parcel(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> Parcel:
