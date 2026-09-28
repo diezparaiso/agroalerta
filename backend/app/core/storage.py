@@ -97,6 +97,16 @@ class Storage:
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS campaign_decisions (
+                    id TEXT PRIMARY KEY,
+                    campaign_id TEXT NOT NULL,
+                    owner_id TEXT NOT NULL,
+                    disease_code TEXT NOT NULL,
+                    decision_score REAL NOT NULL,
+                    priority TEXT NOT NULL,
+                    headline TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS push_tokens (
                     token TEXT PRIMARY KEY,
                     owner_id TEXT NOT NULL,
@@ -229,6 +239,22 @@ class Storage:
                 (status, ended_at.isoformat() if ended_at else None, now.isoformat(), campaign_id, owner_id),
             )
         return self.get_campaign(campaign_id, owner_id) if result.rowcount else None
+
+
+    def create_campaign_decision(self, decision_id: str, campaign_id: str, owner_id: str, decision: dict) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                'INSERT INTO campaign_decisions (id, campaign_id, owner_id, disease_code, decision_score, priority, headline, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                (decision_id, campaign_id, owner_id, decision['disease_code'], decision['decision_score'], decision['priority'], decision['headline'], decision['calculated_at']),
+            )
+
+    def list_campaign_decisions(self, campaign_id: str, owner_id: str) -> list[dict]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                'SELECT id, campaign_id, owner_id, disease_code, decision_score, priority, headline, created_at FROM campaign_decisions WHERE campaign_id = ? AND owner_id = ? ORDER BY created_at DESC',
+                (campaign_id, owner_id),
+            ).fetchall()
+        return [dict(row) for row in rows]
 
     def create_report(self, report_id: str, payload: FieldReportCreate) -> None:
         with self._connect() as connection:
