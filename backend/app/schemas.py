@@ -199,3 +199,12 @@ class CampaignSummary(BaseModel):
     risk_event_count: int
     highest_risk: Literal["ninguno", "bajo", "medio", "alto"]
     progress: Literal["planificada", "en_curso", "cerrada", "cancelada"]
+
+
+class CampaignDecisionLink(BaseModel):
+    campaign_id: str
+    disease_code: Literal["repilo", "mildiu"]
+    decision_score: float = Field(ge=0, le=1)
+    priority: Literal["informativa", "vigilar", "revisar"]
+    headline: str
+    created_at: datetime
