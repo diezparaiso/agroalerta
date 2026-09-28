@@ -716,6 +716,30 @@ class Storage:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    def telemetry_quality_summary(self, parcel_id: str, owner_id: str, since_hours: int = 24) -> dict[str, object]:
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=since_hours)
+        with self._connect() as connection:
+            rows = connection.execute(
+                """SELECT d.device_id, d.name, d.device_type, d.active,
+                          MAX(t.measured_at) AS latest_measured_at,
+                          COUNT(t.id) AS sample_count
+                   FROM devices d
+                   LEFT JOIN telemetry t ON t.device_id = d.device_id AND t.parcel_id = d.parcel_id
+                       AND t.owner_id = ? AND t.measured_at >= ?
+                   WHERE d.parcel_id = ? AND d.owner_id = ?
+                   GROUP BY d.device_id, d.name, d.device_type, d.active
+                   ORDER BY d.device_id""",
+                (owner_id, cutoff.isoformat(), parcel_id, owner_id),
+            ).fetchall()
+        devices = []
+        for row in rows:
+            latest = row['latest_measured_at']
+            age = None
+            if latest:
+                age = max(0, int((datetime.now(timezone.utc) - datetime.fromisoformat(latest.replace('Z', '+00:00'))).total_seconds() / 60))
+            devices.append({'device_id': row['device_id'], 'name': row['name'], 'device_type': row['device_type'], 'active': bool(row['active']), 'latest_measured_at': latest, 'minutes_since_last_measurement': age, 'sample_count': int(row['sample_count'])})
+        return {'parcel_id': parcel_id, 'window_hours': since_hours, 'device_count': len(devices), 'active_device_count': sum(1 for item in devices if item['active']), 'devices': devices}
+
     def get_alert_user_state(self, owner_id: str, alert_id: int) -> dict[str, object] | None:
         with self._connect() as connection:
             row = connection.execute('SELECT owner_id, alert_id, read_at, acknowledged_at FROM alert_user_states WHERE owner_id = ? AND alert_id = ?', (owner_id, alert_id)).fetchone()
