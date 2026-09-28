@@ -16,6 +16,7 @@ import 'features/operation_center/operation_center_screen.dart';
 import 'features/campaigns/campaigns_screen.dart';
 import 'features/activity_timeline/activity_timeline_screen.dart';
 import 'features/agronomic_decision/agronomic_decision_screen.dart';
+import 'features/irrigation/irrigation_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final firebaseAvailable = ref.watch(firebaseAvailableProvider);
@@ -37,6 +38,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/campaigns', builder: (_, __) => const CampaignsScreen()),
           GoRoute(path: '/timeline', builder: (_, __) => const ActivityTimelineScreen()),
           GoRoute(path: '/agronomic-decision', builder: (_, __) => const AgronomicDecisionScreen()),
+          GoRoute(path: '/irrigation', builder: (_, __) => const IrrigationScreen()),
         ],
       ),
     ],
@@ -74,6 +76,7 @@ class AppShell extends StatelessWidget {
     (label: 'Campañas', icon: Icons.event_note_outlined, path: '/campaigns'),
     (label: 'Línea temporal', icon: Icons.timeline, path: '/timeline'),
     (label: 'Decisión', icon: Icons.psychology_outlined, path: '/agronomic-decision'),
+    (label: 'Riego', icon: Icons.water_drop_outlined, path: '/irrigation'),
   ];
 
   @override
