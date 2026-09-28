@@ -148,6 +148,23 @@ def get_disease_risk(parcel_id: str, _token: str | None = Depends(optional_beare
     return risks
 
 
+@app.get('/api/v1/agronomic-decision/{parcel_id}/{disease_code}', response_model=AgronomicDecision)
+def agronomic_decision(parcel_id: str, disease_code: Literal["repilo", "mildiu"], _token: str | None = Depends(optional_bearer_token)) -> AgronomicDecision:
+    owner_id = _token or 'anonymous'
+    get_parcel(parcel_id, _token)
+    risks = get_disease_risk(parcel_id, _token)
+    risk = next((item for item in risks if item.disease_code == disease_code), None)
+    if risk is None:
+        raise HTTPException(status_code=404, detail="Riesgo no disponible para el cultivo")
+    telemetry = storage.latest_telemetry(parcel_id, owner_id)
+    return AgronomicDecision(**make_agronomic_decision(
+        parcel_id,
+        disease_code,
+        risk.model_dump(mode='json'),
+        telemetry.model_dump(mode='json') if telemetry else None,
+    ))
+
+
 @app.get('/api/v1/alerts', response_model=list[DiseaseRisk])
 def list_alerts(_token: str | None = Depends(optional_bearer_token)) -> list[DiseaseRisk]:
     alerts: list[DiseaseRisk] = []
