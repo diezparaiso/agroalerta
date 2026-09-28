@@ -204,3 +204,25 @@ class ParcelActivityEvent(BaseModel):
     event_at: datetime
     title: str
     detail: str | None = None
+
+
+class CropCampaignCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    crop_type: Literal["olivar", "vinedo"]
+    started_at: datetime
+    ended_at: datetime | None = None
+
+
+class CropCampaignStatusUpdate(BaseModel):
+    status: Literal["activa", "cerrada"]
+
+
+class CropCampaign(BaseModel):
+    id: str
+    parcel_id: str
+    owner_id: str
+    name: str
+    crop_type: Literal["olivar", "vinedo"]
+    started_at: datetime
+    ended_at: datetime | None = None
+    status: Literal["activa", "cerrada"]
