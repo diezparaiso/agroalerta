@@ -121,7 +121,9 @@ Implementado: cola offline con sincronización sin concurrencia y reintentos por
 
 Implementado: estado visible de la cola, reintentos por informe con backoff exponencial hasta 1 hora y protección contra sincronizaciones concurrentes.
 
-Pendiente: conflictos y consistencia avanzada entre dispositivo y servidor.
+Implementado: conflictos de edición de parcelas con versión `updated_at`, HTTP 409 y protección en Flutter.
+
+Pendiente: reconciliación visual de dos versiones y estrategia avanzada de merge.
 
 ### 14. Privacidad / publicidad — 75%
 
