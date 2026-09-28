@@ -1,3 +1,9 @@
+"""Motor de resultados productivos: calcula kg/ha, desviación frente al objetivo y resumen de producción.
+
+Este módulo contiene reglas de dominio puras o casi puras. Las rutas HTTP y la persistencia
+se mantienen fuera para que los cálculos puedan probarse de forma aislada.
+"""
+
 from app.schemas import CampaignResult, CropCampaign
 
 
