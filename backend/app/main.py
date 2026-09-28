@@ -17,7 +17,7 @@ from app.connectors.source_registry import list_data_sources
 from app.connectors.mapa_catalog import load_catalog
 from app.core.config import settings
 from app.core.storage import Storage
-from app.schemas import Alert, AlertUserState, AlertUserStateUpdate, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, NotificationDelivery, Parcel, WeatherEvidenceSummary, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate, TelemetryQualitySummary, ParcelActivityEvent, CropCampaignCreate, CropCampaignStatusUpdate, CropCampaign
+from app.schemas import Alert, AlertUserState, AlertUserStateUpdate, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, NotificationDelivery, Parcel, WeatherEvidenceSummary, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate, TelemetryQualitySummary, ParcelActivityEvent, CropCampaignCreate, CropCampaignStatusUpdate, CropCampaign, IrrigationEventCreate, IrrigationEvent
 from app.core.security import optional_bearer_token
 from app.schemas_push import PushTokenCreate
 
@@ -276,6 +276,43 @@ def weather_evidence_summary(parcel_id: str, _token: str | None = Depends(option
         latest_observed_at=context.get("observed_at"),
         stations=context.get("stations", []),
     )
+
+
+@app.post("/api/v1/parcels/{parcel_id}/irrigation", response_model=IrrigationEvent, status_code=201)
+def create_irrigation_event(
+    parcel_id: str,
+    payload: IrrigationEventCreate,
+    _token: str | None = Depends(optional_bearer_token),
+) -> IrrigationEvent:
+    owner_id = _token or "anonymous"
+    get_parcel(parcel_id, owner_id)
+    if payload.started_at.tzinfo is None:
+        started_at = payload.started_at.replace(tzinfo=timezone.utc)
+    else:
+        started_at = payload.started_at
+    event = IrrigationEvent(
+        id=str(uuid4()),
+        parcel_id=parcel_id,
+        campaign_id=payload.campaign_id,
+        owner_id=owner_id,
+        started_at=started_at,
+        duration_minutes=payload.duration_minutes,
+        water_liters=payload.water_liters,
+        method=payload.method,
+        notes=payload.notes,
+    )
+    return IrrigationEvent(**storage.create_irrigation_event(event.model_dump(mode="json")))
+
+
+@app.get("/api/v1/parcels/{parcel_id}/irrigation", response_model=list[IrrigationEvent])
+def list_irrigation_events(
+    parcel_id: str,
+    limit: int = Query(default=100, ge=1, le=200),
+    _token: str | None = Depends(optional_bearer_token),
+) -> list[IrrigationEvent]:
+    owner_id = _token or "anonymous"
+    get_parcel(parcel_id, owner_id)
+    return [IrrigationEvent(**item) for item in storage.list_irrigation_events(parcel_id, owner_id, limit)]
 
 
 @app.post("/api/v1/parcels/{parcel_id}/campaigns", response_model=CropCampaign, status_code=201)
