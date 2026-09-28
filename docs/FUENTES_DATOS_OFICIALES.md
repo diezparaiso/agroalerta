@@ -135,7 +135,7 @@ Las URL y endpoints concretos de descarga/consulta deben permanecer centralizado
 
 El conector `backend/app/connectors/raif_client.py` descarga el recurso ZIP configurado para cada cultivo, abre sus XML y normaliza registros a un contrato interno.
 
-La primera fuente configurada es **RAIF Olivar**. El recurso oficial publicado por la Junta se actualiza semanalmente para olivar y relaciona parcelas y muestreos mediante PROVINCIA, MUNICIPIO y PARCELA. citeturn1view0
+La primera fuente configurada es **RAIF Olivar**. El recurso oficial publicado por la Junta se actualiza semanalmente para olivar y relaciona parcelas y muestreos mediante PROVINCIA, MUNICIPIO y PARCELA.
 
 Las evidencias se almacenan en `source_records`, conservando:
 
