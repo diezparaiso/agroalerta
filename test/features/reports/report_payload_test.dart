@@ -24,6 +24,7 @@ void main() {
         photoUrl: 'https://example.invalid/photo.jpg',
       );
 
+      expect(payload['report_id'], isA<String>());
       expect(payload['parcel_id'], 'parcel-7');
       expect(payload['latitude'], 37.31);
       expect(payload['longitude'], -5.91);
