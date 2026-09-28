@@ -44,7 +44,7 @@ def test_latest_telemetry_history_is_ordered_and_owner_scoped(tmp_path):
             measured_at=datetime.fromisoformat(measured_at),
             owner_id=owner,
         )
-        storage.save_telemetry(payload)
+        storage.create_telemetry(payload)
 
     history = storage.list_latest_telemetry(parcel, owner, 10)
     assert [row["temperature_c"] for row in history] == [21.0, 20.0]
