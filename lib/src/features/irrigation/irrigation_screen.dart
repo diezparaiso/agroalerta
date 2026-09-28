@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../home/home_screen.dart';
 import '../parcels/parcel_provider.dart';
-import '../../core/network/api_client.dart';
+import '../parcels/parcel_provider.dart';
 
 class IrrigationScreen extends ConsumerStatefulWidget {
   const IrrigationScreen({super.key});
