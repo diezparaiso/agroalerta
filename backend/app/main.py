@@ -350,6 +350,12 @@ def create_report(payload: FieldReportCreate, _token: str | None = Depends(optio
 def ingest_telemetry(payload: TelemetryCreate, _token: str | None = Depends(optional_bearer_token)) -> dict[str, str]:
     owner_id = _token or 'anonymous'
     get_parcel(payload.parcel_id, owner_id)
+    devices = storage.list_devices(payload.parcel_id, owner_id)
+    device = next((item for item in devices if item.device_id == payload.device_id), None)
+    if device is None:
+        raise HTTPException(status_code=404, detail="Sensor no registrado en la parcela")
+    if not device.active:
+        raise HTTPException(status_code=409, detail="Sensor inactivo")
     payload = payload.model_copy(update={'owner_id': owner_id})
     storage.create_telemetry(payload)
     return {"status": "accepted", "device_id": payload.device_id}
