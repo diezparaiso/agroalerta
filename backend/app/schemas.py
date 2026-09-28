@@ -290,3 +290,12 @@ class IrrigationSummary(BaseModel):
     total_duration_minutes: int
     total_water_liters: float
     events_with_volume: int
+
+
+class AgronomicReport(BaseModel):
+    parcel: dict[str, object]
+    operational: dict[str, object]
+    field_reports: dict[str, object]
+    irrigation: dict[str, object]
+    campaign_count: int
+    treatment_count: int
