@@ -67,3 +67,12 @@ def test_risk_decrease_is_not_push_alert():
     assert decision.should_create is False
     assert decision.should_notify is False
     assert decision.reason_code == "risk_decrease"
+
+
+def test_repeated_same_transition_uses_same_decision_reason():
+    first = decide_risk_alert(_risk("medio"), _snapshot("bajo"))
+    repeated = decide_risk_alert(_risk("medio"), _snapshot("medio"))
+
+    assert first.reason_code == "risk_increase"
+    assert repeated.reason_code == "unchanged"
+    assert repeated.should_create is False
