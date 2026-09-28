@@ -7,7 +7,10 @@ import 'products_provider.dart';
 class ProductsScreen extends ConsumerWidget {
   const ProductsScreen({super.key});
   @override
-  Widget build(BuildContext context, WidgetRef ref) => AppPage(title: 'Productos autorizados', subtitle: 'Consulta el catalogo sincronizado del MAPA', child: ref.watch(productsProvider).when(data: (products) => ListView(children: [for (final product in products) _ProductTile(name: product.name, substance: product.substance, crop: product.crop)]), loading: () => const Center(child: CircularProgressIndicator()), error: (error, stack) => Center(child: Text('No se pudo cargar el catalogo: $error'))));
+  Widget build(BuildContext context, WidgetRef ref) => AppPage(title: 'Productos autorizados', subtitle: 'Consulta el catalogo sincronizado del MAPA', child: ref.watch(productsProvider).when(data: (products) {
+      if (products.isEmpty) return const Center(child: Text('Catálogo MAPA no disponible.'));
+      return ListView(children: [for (final product in products) _ProductTile(name: product.name, substance: product.substance, crop: product.crop)]);
+    }, loading: () => const Center(child: CircularProgressIndicator()), error: (error, stack) => Center(child: Text('No se pudo cargar el catalogo: $error'))));
 }
 
 class _ProductTile extends StatelessWidget {
