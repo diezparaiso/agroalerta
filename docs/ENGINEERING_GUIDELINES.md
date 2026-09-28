@@ -21,3 +21,9 @@ Un cambio técnico no se considera terminado hasta que, cuando corresponda, incl
 
 ## Registro de decisiones
 Las decisiones arquitectónicas y de comportamiento se registran en `docs/DECISIONS.md`. Para cada decisión relevante se documentan contexto, decisión, consecuencias y validación.
+
+
+## Persistencia y esquema
+- El esquema de base de datos debe inicializarse desde un único punto de bootstrap; los métodos de escritura no deben crear tablas durante operaciones normales.
+- Toda modificación estructural nueva debe introducir una versión de esquema y una prueba de migración o compatibilidad.
+- La configuración del motor de persistencia debe ser explícita. No se debe anunciar soporte para un motor hasta disponer de un adaptador probado.
