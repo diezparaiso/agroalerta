@@ -18,6 +18,8 @@ async def ingest_raif(crop: str = "olivar") -> dict[str, int | str]:
             municipality=record.municipality,
             parcel_reference=record.parcel,
             payload=record.payload,
+            latitude=record.latitude,
+            longitude=record.longitude,
         ):
             saved += 1
     return {"status": "ingested", "crop": crop, "records": saved}
