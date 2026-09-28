@@ -119,7 +119,9 @@ Existe almacenamiento local para parcelas y otros datos.
 
 Implementado: cola offline con sincronización sin concurrencia y reintentos por informe con backoff exponencial hasta 1 hora.
 
-Pendiente: estado de sincronización visible, conflictos y consistencia avanzada entre dispositivo y servidor.
+Implementado: estado visible de la cola, reintentos por informe con backoff exponencial hasta 1 hora y protección contra sincronizaciones concurrentes.
+
+Pendiente: conflictos y consistencia avanzada entre dispositivo y servidor.
 
 ### 14. Privacidad / publicidad — 75%
 
