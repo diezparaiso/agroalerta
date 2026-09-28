@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.domain.disease_rules import evaluate_risk
 from app.domain.geospatial import haversine_km
 from app.domain.raif_evidence import score_raif_evidence
+from app.domain.weather_context import build_weather_context
 from app.connectors.source_registry import list_data_sources
 from app.core.config import settings
 from app.core.storage import Storage
@@ -172,17 +173,47 @@ def spatial_context(
         "evidence": matches[:100],
     }
 
+@app.get("/api/v1/weather-context/{parcel_id}")
+def get_weather_context(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> dict[str, object]:
+    owner_id = _token or 'anonymous'
+    parcel = get_parcel(parcel_id, owner_id)
+    context = build_weather_context(
+        parcel.latitude,
+        parcel.longitude,
+        storage.list_latest_weather_observations(),
+    )
+    return {"parcel_id": parcel_id, **context}
+
+
 @app.get("/api/v1/weather/{parcel_id}")
 def get_weather(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> dict:
-    get_parcel(parcel_id, _token or 'anonymous')
+    owner_id = _token or 'anonymous'
+    parcel = get_parcel(parcel_id, owner_id)
+    context = build_weather_context(
+        parcel.latitude,
+        parcel.longitude,
+        storage.list_latest_weather_observations(),
+    )
+    if context["available"]:
+        return {
+            "parcel_id": parcel_id,
+            **context["weather"],
+            "station_distance_km": context.get("station_distance_km"),
+            "observed_at": context.get("observed_at"),
+            "source": context.get("source"),
+            "confidence": context.get("confidence"),
+            "stations": context.get("stations", []),
+        }
     return {
         "parcel_id": parcel_id,
         "temperature_c": 18.4,
         "relative_humidity": 87,
         "rainfall_mm_24h": 12.2,
-        "station_distance_km": 6.4,
+        "station_distance_km": None,
         "observed_at": datetime.now(timezone.utc),
-        "source": "demo-ria-aemet",
+        "source": "fallback-demo",
+        "confidence": "estimada",
+        "stations": [],
     }
 
 
@@ -192,6 +223,11 @@ def get_disease_risk(parcel_id: str, _token: str | None = Depends(optional_beare
     parcel = get_parcel(parcel_id, owner_id)
     telemetry = storage.latest_telemetry(parcel_id, owner_id)
     raif_records = storage.list_georeferenced_source_records("raif_fitosanitario")
+    weather_context = build_weather_context(
+        parcel.latitude,
+        parcel.longitude,
+        storage.list_latest_weather_observations(),
+    )
     risks = []
     for disease in ("repilo", "mildiu"):
         if not ((disease == "repilo" and parcel.crop_type == "olivar") or (disease == "mildiu" and parcel.crop_type == "vinedo")):
@@ -208,6 +244,7 @@ def get_disease_risk(parcel_id: str, _token: str | None = Depends(optional_beare
             parcel.crop_type,
             telemetry,
             raif_signal=float(evidence["signal"]),
+            weather=weather_context["weather"] if weather_context["available"] else None,
         ))
     for risk in risks:
         storage.save_risk_snapshot(RiskSnapshot(parcel_id=parcel_id, owner_id=owner_id, disease_code=risk.disease_code, risk_score=risk.risk_score, risk_level=risk.risk_level, calculated_at=risk.calculated_at))
