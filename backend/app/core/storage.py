@@ -113,6 +113,7 @@ class Storage:
                     ingested_at TEXT NOT NULL,
                     PRIMARY KEY (source_code, external_id)
                 );
+                CREATE TABLE IF NOT EXISTS alert_user_states (owner_id TEXT NOT NULL, alert_id INTEGER NOT NULL, read_at TEXT, acknowledged_at TEXT, PRIMARY KEY (owner_id, alert_id));
                 CREATE TABLE IF NOT EXISTS notification_deliveries (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     owner_id TEXT NOT NULL,
@@ -174,6 +175,7 @@ class Storage:
                 connection.execute('ALTER TABLE telemetry ADD COLUMN telemetry_id TEXT')
             connection.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_telemetry_telemetry_id ON telemetry(telemetry_id) WHERE telemetry_id IS NOT NULL')
             self._record_schema_version(connection, 2)
+            self._record_schema_version(connection, 3)
 
     @staticmethod
     def _record_schema_version(connection: sqlite3.Connection, version: int) -> None:
@@ -714,6 +716,22 @@ class Storage:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    def get_alert_user_state(self, owner_id: str, alert_id: int) -> dict[str, object] | None:
+        with self._connect() as connection:
+            row = connection.execute('SELECT owner_id, alert_id, read_at, acknowledged_at FROM alert_user_states WHERE owner_id = ? AND alert_id = ?', (owner_id, alert_id)).fetchone()
+        return dict(row) if row else None
+
+    def set_alert_user_state(self, owner_id: str, alert_id: int, read: bool | None = None, acknowledged: bool | None = None) -> dict[str, object]:
+        current = self.get_alert_user_state(owner_id, alert_id)
+        read_at = current['read_at'] if current else None
+        acknowledged_at = current['acknowledged_at'] if current else None
+        now = datetime.now(timezone.utc).isoformat()
+        if read is not None: read_at = now if read else None
+        if acknowledged is not None: acknowledged_at = now if acknowledged else None
+        with self._connect() as connection:
+            connection.execute('INSERT INTO alert_user_states (owner_id, alert_id, read_at, acknowledged_at) VALUES (?, ?, ?, ?) ON CONFLICT(owner_id, alert_id) DO UPDATE SET read_at = excluded.read_at, acknowledged_at = excluded.acknowledged_at', (owner_id, alert_id, read_at, acknowledged_at))
+            row = connection.execute('SELECT owner_id, alert_id, read_at, acknowledged_at FROM alert_user_states WHERE owner_id = ? AND alert_id = ?', (owner_id, alert_id)).fetchone()
+        return dict(row)
     def save_notification_delivery(self, owner_id: str, alert_id: int, status: str, token_count: int, sent_count: int, failed_count: int) -> dict[str, object]:
         created_at = datetime.now(timezone.utc).isoformat()
         with self._connect() as connection:
