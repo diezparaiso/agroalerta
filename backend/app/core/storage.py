@@ -77,6 +77,8 @@ class Storage:
                     province TEXT,
                     municipality TEXT,
                     parcel_reference TEXT,
+                    latitude REAL,
+                    longitude REAL,
                     payload TEXT NOT NULL,
                     ingested_at TEXT NOT NULL,
                     PRIMARY KEY (source_code, external_id)
@@ -241,13 +243,15 @@ class Storage:
         municipality: str | None,
         parcel_reference: str | None,
         payload: dict[str, object],
+        latitude: float | None = None,
+        longitude: float | None = None,
     ) -> bool:
         with self._connect() as connection:
             cursor = connection.execute(
                 '''
                 INSERT OR REPLACE INTO source_records
-                (source_code, external_id, observed_at, province, municipality, parcel_reference, payload, ingested_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (source_code, external_id, observed_at, province, municipality, parcel_reference, latitude, longitude, payload, ingested_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ''',
                 (
                     source_code,
@@ -256,6 +260,8 @@ class Storage:
                     province,
                     municipality,
                     parcel_reference,
+                    latitude,
+                    longitude,
                     json.dumps(payload, ensure_ascii=False, default=str),
                     datetime.now(timezone.utc).isoformat(),
                 ),
@@ -269,3 +275,18 @@ class Storage:
                 (source_code,),
             ).fetchone()
         return int(row['count'])
+
+    def list_georeferenced_source_records(self, source_code: str, limit: int = 1000) -> list[dict[str, object]]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                '''
+                SELECT source_code, external_id, observed_at, province, municipality,
+                       parcel_reference, latitude, longitude, payload
+                FROM source_records
+                WHERE source_code = ? AND latitude IS NOT NULL AND longitude IS NOT NULL
+                ORDER BY observed_at DESC
+                LIMIT ?
+                ''',
+                (source_code, limit),
+            ).fetchall()
+        return [dict(row) for row in rows]
