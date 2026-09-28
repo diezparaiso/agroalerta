@@ -237,3 +237,16 @@ def test_telemetry_retry_is_idempotent() -> None:
     second = client.post("/api/v1/telemetry", headers={"Authorization": "Bearer user-a"}, json=payload)
     assert first.json()["status"] == "accepted"
     assert second.json()["status"] == "already_received"
+
+
+def test_device_health_reports_latest_telemetry() -> None:
+    parcel = client.post("/api/v1/parcels", headers={"Authorization": "Bearer user-a"}, json={"label": "IoT health", "latitude": 37.39, "longitude": -5.99, "crop_type": "olivar", "comarca": "Sevilla"}).json()
+    client.post("/api/v1/devices", headers={"Authorization": "Bearer user-a"}, json={"parcel_id": parcel["id"], "device_id": "sensor-health", "name": "Health", "device_type": "weather_station"})
+    client.post("/api/v1/telemetry", headers={"Authorization": "Bearer user-a"}, json={"telemetry_id": "health-001", "parcel_id": parcel["id"], "device_id": "sensor-health", "temperature_c": 21, "relative_humidity": 55, "leaf_wetness_hours": 2, "soil_moisture": 40, "battery_percent": 73, "measured_at": "2026-09-28T10:00:00+00:00"})
+    response = client.get(f"/api/v1/devices/{parcel['id']}/health", headers={"Authorization": "Bearer user-a"})
+    assert response.status_code == 200
+    item = response.json()[0]
+    assert item["device_id"] == "sensor-health"
+    assert item["battery_percent"] == 73
+    assert item["telemetry_count"] == 1
+    assert item["last_seen_at"] == "2026-09-28T10:00:00+00:00"
