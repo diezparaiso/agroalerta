@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import os
 import logging
 import time
@@ -349,6 +349,12 @@ def create_report(payload: FieldReportCreate, _token: str | None = Depends(optio
 @app.post("/api/v1/telemetry", status_code=status.HTTP_202_ACCEPTED)
 def ingest_telemetry(payload: TelemetryCreate, _token: str | None = Depends(optional_bearer_token)) -> dict[str, str]:
     owner_id = _token or 'anonymous'
+    now = datetime.now(timezone.utc)
+    measured_at = payload.measured_at
+    if measured_at.tzinfo is None:
+        measured_at = measured_at.replace(tzinfo=timezone.utc)
+    if measured_at > now + timedelta(minutes=15):
+        raise HTTPException(status_code=422, detail='Telemetría con fecha futura no válida')
     get_parcel(payload.parcel_id, owner_id)
     devices = storage.list_devices(payload.parcel_id, owner_id)
     device = next((item for item in devices if item.device_id == payload.device_id), None)
