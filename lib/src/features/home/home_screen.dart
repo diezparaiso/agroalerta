@@ -345,9 +345,7 @@ class _TelemetryCard extends ConsumerWidget {
           ButtonSegment(value: TelemetryWindow(168), label: Text('7 días')),
         ],
         selected: {window},
-        onSelectionChanged: (selection) {
-          ref.read(telemetryWindowProvider.notifier).state = selection.first;
-        },
+        onSelectionChanged: (selection) => ref.read(telemetryWindowProvider.notifier).state = selection.first,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -357,17 +355,12 @@ class _TelemetryCard extends ConsumerWidget {
               final valid = parcels.where((parcel) => parcel.id != null).toList();
               return DropdownButtonFormField<String>(
                 value: valid.any((parcel) => parcel.id == selectedParcelId) ? selectedParcelId : null,
-                decoration: const InputDecoration(
-                  labelText: 'Parcela',
-                  helperText: 'Selecciona la parcela cuyos sensores quieres consultar.',
-                ),
-                items: [
-                  for (final parcel in valid)
-                    DropdownMenuItem(value: parcel.id, child: Text(parcel.name)),
-                ],
-                onChanged: valid.isEmpty
-                    ? null
-                    : (value) => ref.read(selectedTelemetryParcelIdProvider.notifier).state = value,
+                decoration: const InputDecoration(labelText: 'Parcela', helperText: 'Selecciona la parcela cuyos sensores quieres consultar.'),
+                items: [for (final parcel in valid) DropdownMenuItem(value: parcel.id, child: Text(parcel.name))],
+                onChanged: valid.isEmpty ? null : (value) {
+                  ref.read(selectedTelemetryParcelIdProvider.notifier).state = value;
+                  ref.read(selectedTelemetryDeviceIdProvider.notifier).state = null;
+                },
               );
             },
             loading: () => const LinearProgressIndicator(),
@@ -376,103 +369,71 @@ class _TelemetryCard extends ConsumerWidget {
           const SizedBox(height: 16),
           ref.watch(telemetryHistoryProvider).when(
             data: (history) {
-              final devices = history
-                  .map((item) => item['device_id'])
-                  .whereType<String>()
-                  .toSet()
-                  .toList()
-                ..sort();
+              final devices = history.map((item) => item['device_id']).whereType<String>().toSet().toList()..sort();
               final effectiveDevice = devices.contains(selectedDeviceId) ? selectedDeviceId : null;
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   DropdownButtonFormField<String>(
                     value: effectiveDevice,
-                    decoration: const InputDecoration(
-                      labelText: 'Sensor',
-                      helperText: 'Selecciona el dispositivo cuando haya más de uno.',
-                    ),
-                    items: [
-                      for (final deviceId in devices)
-                        DropdownMenuItem(value: deviceId, child: Text(deviceId)),
-                    ],
-                    onChanged: devices.isEmpty
-                        ? null
-                        : (value) => ref.read(selectedTelemetryDeviceIdProvider.notifier).state = value,
+                    decoration: const InputDecoration(labelText: 'Sensor', helperText: 'Selecciona el dispositivo cuando haya más de uno.'),
+                    items: [for (final deviceId in devices) DropdownMenuItem(value: deviceId, child: Text(deviceId))],
+                    onChanged: devices.isEmpty ? null : (value) => ref.read(selectedTelemetryDeviceIdProvider.notifier).state = value,
                   ),
                   const SizedBox(height: 16),
-                  _TelemetryChart(
-                    history: history,
-                    window: window,
-                    deviceId: effectiveDevice,
-                  ),
+                  _TelemetryChart(history: history, window: window, deviceId: effectiveDevice),
                 ],
               );
             },
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (_, __) => const Text('Telemetría no disponible'),
           ),
-
-        data: (history) {
-          if (history.isEmpty) {
-            return const Text('No hay mediciones reales en el periodo seleccionado.');
-          }
-          final temperature = telemetrySeries(history, 'temperature_c');
-          if (temperature.isEmpty) {
-            return const Text('No hay temperatura disponible en el periodo seleccionado.');
-          }
-          final values = temperature.map((item) => (item['temperature_c'] as num).toDouble()).toList();
-          final min = values.reduce((a, b) => a < b ? a : b);
-          final max = values.reduce((a, b) => a > b ? a : b);
-          final range = max - min;
-          final padding = range == 0 ? 1.0 : range * 0.15;
-
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Temperatura · ${window.label}', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 190,
-                child: LineChart(
-                  LineChartData(
-                    minY: min - padding,
-                    maxY: max + padding,
-                    gridData: const FlGridData(show: true),
-                    titlesData: const FlTitlesData(show: false),
-                    borderData: FlBorderData(show: false),
-                    lineBarsData: [
-                      LineChartBarData(
-                        spots: [
-                          for (var i = 0; i < values.length; i++) FlSpot(i.toDouble(), values[i]),
-                        ],
-                        isCurved: false,
-                        dotData: const FlDotData(show: false),
-                        barWidth: 2,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 24,
-                runSpacing: 8,
-                children: [
-                  _Metric(label: 'Actual', value: '${values.last} °C'),
-                  _Metric(label: 'Mínima', value: '$min °C'),
-                  _Metric(label: 'Máxima', value: '$max °C'),
-                  _Metric(label: 'Mediciones', value: '${values.length}'),
-                ],
-              ),
-            ],
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-            error: (_, __) => const Text('Telemetría no disponible'),
-          ),
         ],
       ),
+    );
+  }
+}
+
+class _TelemetryChart extends StatelessWidget {
+  const _TelemetryChart({required this.history, required this.window, required this.deviceId});
+  final List<Map<String, dynamic>> history;
+  final TelemetryWindow window;
+  final String? deviceId;
+
+  @override
+  Widget build(BuildContext context) {
+    final temperature = telemetrySeries(history, 'temperature_c', deviceId: deviceId);
+    if (temperature.isEmpty) return const Text('No hay temperatura disponible en el periodo seleccionado.');
+    final values = temperature.map((item) => (item['temperature_c'] as num).toDouble()).toList();
+    final min = values.reduce((a, b) => a < b ? a : b);
+    final max = values.reduce((a, b) => a > b ? a : b);
+    final padding = (max - min) == 0 ? 1.0 : (max - min) * 0.15;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Temperatura · ${window.label}', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)),
+        const SizedBox(height: 12),
+        SizedBox(height: 190, child: LineChart(LineChartData(
+          minY: min - padding,
+          maxY: max + padding,
+          gridData: const FlGridData(show: true),
+          titlesData: const FlTitlesData(show: false),
+          borderData: FlBorderData(show: false),
+          lineBarsData: [LineChartBarData(
+            spots: [for (var i = 0; i < values.length; i++) FlSpot(i.toDouble(), values[i])],
+            isCurved: false,
+            dotData: const FlDotData(show: false),
+            barWidth: 2,
+          )],
+        ))),
+        const SizedBox(height: 12),
+        Wrap(spacing: 24, runSpacing: 8, children: [
+          _Metric(label: 'Actual', value: '${values.last} °C'),
+          _Metric(label: 'Mínima', value: '$min °C'),
+          _Metric(label: 'Máxima', value: '$max °C'),
+          _Metric(label: 'Mediciones', value: '${values.length}'),
+        ]),
+      ],
     );
   }
 }
