@@ -429,6 +429,20 @@ class Storage:
             ).fetchall()
         return [dict(row) for row in rows]
 
+    def get_latest_risk_level(self, parcel_id: str, owner_id: str, disease_code: str) -> str | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT risk_level
+                FROM risk_snapshots
+                WHERE parcel_id = ? AND owner_id = ? AND disease_code = ?
+                ORDER BY calculated_at DESC
+                LIMIT 1
+                """,
+                (parcel_id, owner_id, disease_code),
+            ).fetchone()
+        return str(row["risk_level"]) if row else None
+
     def list_weather_observations(self, limit: int = 500) -> list[dict[str, object]]:
         with self._connect() as connection:
             rows = connection.execute(
