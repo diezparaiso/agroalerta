@@ -4,7 +4,7 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from app.schemas import Device, DeviceCreate, FieldReportCreate, Parcel, ParcelCreate, RiskSnapshot, TelemetryCreate
+from app.schemas import AgronomicActivity, AgronomicActivityCreate, Device, DeviceCreate, FieldReportCreate, Parcel, ParcelCreate, RiskSnapshot, TelemetryCreate
 from app.schemas_push import PushTokenCreate
 
 
@@ -69,6 +69,18 @@ class Storage:
                     risk_score REAL NOT NULL,
                     risk_level TEXT NOT NULL,
                     calculated_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS agronomic_activities (
+                    id TEXT PRIMARY KEY,
+                    parcel_id TEXT NOT NULL,
+                    owner_id TEXT NOT NULL,
+                    activity_type TEXT NOT NULL,
+                    title TEXT NOT NULL,
+                    detail TEXT,
+                    occurred_at TEXT NOT NULL,
+                    quantity REAL,
+                    unit TEXT,
+                    created_at TEXT NOT NULL
                 );
                 CREATE TABLE IF NOT EXISTS push_tokens (
                     token TEXT PRIMARY KEY,
@@ -148,6 +160,24 @@ class Storage:
                 parameters += (owner_id,)
             result = connection.execute(query, parameters)
         return self.get_parcel(parcel_id, owner_id) if result.rowcount else None
+
+    def create_activity(self, activity_id: str, payload: AgronomicActivityCreate) -> AgronomicActivity:
+        created_at = datetime.now(timezone.utc)
+        owner_id = payload.owner_id or 'anonymous'
+        with self._connect() as connection:
+            connection.execute(
+                'INSERT INTO agronomic_activities (id, parcel_id, owner_id, activity_type, title, detail, occurred_at, quantity, unit, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                (activity_id, payload.parcel_id, owner_id, payload.activity_type, payload.title, payload.detail, payload.occurred_at.isoformat(), payload.quantity, payload.unit, created_at.isoformat()),
+            )
+        return AgronomicActivity(id=activity_id, created_at=created_at, **payload.model_dump())
+
+    def list_activities(self, parcel_id: str, owner_id: str, limit: int = 100) -> list[AgronomicActivity]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                'SELECT id, parcel_id, owner_id, activity_type, title, detail, occurred_at, quantity, unit, created_at FROM agronomic_activities WHERE parcel_id = ? AND owner_id = ? ORDER BY occurred_at DESC LIMIT ?',
+                (parcel_id, owner_id, limit),
+            ).fetchall()
+        return [AgronomicActivity(**dict(row)) for row in rows]
 
     def create_report(self, report_id: str, payload: FieldReportCreate) -> None:
         with self._connect() as connection:

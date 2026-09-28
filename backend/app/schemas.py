@@ -145,3 +145,19 @@ class FarmOperationCenter(BaseModel):
     sensor_count: int
     parcels: list[FarmCenterParcel]
     recent_events: list[FarmCenterEvent]
+
+
+class AgronomicActivityCreate(BaseModel):
+    parcel_id: str
+    activity_type: Literal["labor", "irrigation", "treatment", "observation", "harvest"]
+    title: str = Field(min_length=1, max_length=160)
+    detail: str | None = Field(default=None, max_length=2000)
+    occurred_at: datetime
+    quantity: float | None = Field(default=None, ge=0)
+    unit: str | None = Field(default=None, max_length=40)
+    owner_id: str | None = None
+
+
+class AgronomicActivity(AgronomicActivityCreate):
+    id: str
+    created_at: datetime

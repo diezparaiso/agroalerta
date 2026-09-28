@@ -13,7 +13,8 @@ from app.core.storage import Storage
 from app.domain.disease_rules import evaluate_risk
 from app.domain.agronomic_decision import make_agronomic_decision
 from app.domain.farm_operation_center import build_farm_center
-from app.schemas import AgronomicDecision, Device, DeviceCreate, DiseaseRisk, FarmOperationCenter, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
+from app.domain.activity_timeline import build_activity_timeline
+from app.schemas import AgronomicActivity, AgronomicActivityCreate, AgronomicDecision, Device, DeviceCreate, DiseaseRisk, FarmOperationCenter, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
 from app.schemas_push import PushTokenCreate
 
 
@@ -114,6 +115,28 @@ def create_parcel(payload: ParcelCreate, _token: str | None = Depends(optional_b
     now = datetime.now(timezone.utc)
     parcel = Parcel(id=str(uuid4()), owner_id=_token or 'anonymous', created_at=now, updated_at=now, **payload.model_dump())
     return storage.create_parcel(parcel)
+
+
+@app.post('/api/v1/parcels/{parcel_id}/activities', response_model=AgronomicActivity, status_code=status.HTTP_201_CREATED)
+def create_activity(parcel_id: str, payload: AgronomicActivityCreate, _token: str | None = Depends(optional_bearer_token)) -> AgronomicActivity:
+    owner_id = _token or 'anonymous'
+    get_parcel(parcel_id, owner_id)
+    if payload.parcel_id != parcel_id:
+        raise HTTPException(status_code=400, detail='La actividad no pertenece a la parcela indicada')
+    payload = payload.model_copy(update={'owner_id': owner_id})
+    return storage.create_activity(str(uuid4()), payload)
+
+
+@app.get('/api/v1/parcels/{parcel_id}/activity-timeline')
+def activity_timeline(parcel_id: str, limit: int = Query(default=100, ge=1, le=300), _token: str | None = Depends(optional_bearer_token)) -> list[dict]:
+    owner_id = _token or 'anonymous'
+    get_parcel(parcel_id, owner_id)
+    return build_activity_timeline(
+        storage.list_activities(parcel_id, owner_id, limit),
+        get_disease_risk(parcel_id, _token),
+        storage.latest_telemetry(parcel_id, owner_id),
+        limit,
+    )
 
 
 @app.get('/api/v1/parcels/{parcel_id}', response_model=Parcel)
