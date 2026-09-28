@@ -634,3 +634,19 @@ Se incorpora configuración por propietario para definir el nivel mínimo de rie
 **Motivo:** preparar una configuración explícita y persistente para futuras políticas de notificación sin acoplarla al cálculo agronómico.
 
 **Validación:** prueba de API para valores por defecto, persistencia y aislamiento entre propietarios.
+
+
+## ADR-052: Resumen de consumo de riego registrado
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+Se incorpora una consulta agregada sobre los eventos de riego registrados para una parcela, opcionalmente filtrados por campaña.
+
+**Decisión:** el resumen expone número de eventos, duración total, volumen total registrado y número de eventos que incluyen volumen. Los datos proceden exclusivamente de `irrigation_events`.
+
+**Alcance:** es analítica histórica de datos introducidos por el usuario. No estima consumo ausente, no calcula necesidades hídricas y no genera recomendaciones de riego.
+
+**Seguridad:** la consulta valida la parcela mediante el propietario autenticado y agrega únicamente eventos del mismo propietario.
+
+**Validación:** prueba de API con dos eventos y comprobación de agregación y aislamiento entre propietarios.
