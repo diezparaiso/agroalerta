@@ -15,7 +15,7 @@ from app.domain.agronomic_decision import make_agronomic_decision
 from app.domain.farm_operation_center import build_farm_center
 from app.domain.activity_timeline import build_activity_timeline
 from app.domain.campaign_management import build_campaign_summary
-from app.schemas import AgronomicActivity, AgronomicActivityCreate, CampaignStatusUpdate, CropCampaign, CropCampaignCreate, CampaignSummary, AgronomicDecision, Device, DeviceCreate, DiseaseRisk, FarmOperationCenter, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
+from app.schemas import AgronomicActivity, AgronomicActivityCreate, CampaignDecisionLink, CampaignStatusUpdate, CropCampaign, CropCampaignCreate, CampaignSummary, AgronomicDecision, Device, DeviceCreate, DiseaseRisk, FarmOperationCenter, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
 from app.schemas_push import PushTokenCreate
 
 
@@ -246,7 +246,7 @@ def get_disease_risk(parcel_id: str, _token: str | None = Depends(optional_beare
 
 
 @app.get('/api/v1/agronomic-decision/{parcel_id}/{disease_code}', response_model=AgronomicDecision)
-def agronomic_decision(parcel_id: str, disease_code: Literal["repilo", "mildiu"], _token: str | None = Depends(optional_bearer_token)) -> AgronomicDecision:
+def agronomic_decision(parcel_id: str, disease_code: Literal["repilo", "mildiu"], campaign_id: str | None = Query(default=None), _token: str | None = Depends(optional_bearer_token)) -> AgronomicDecision:
     owner_id = _token or 'anonymous'
     get_parcel(parcel_id, _token)
     risks = get_disease_risk(parcel_id, _token)
@@ -254,12 +254,28 @@ def agronomic_decision(parcel_id: str, disease_code: Literal["repilo", "mildiu"]
     if risk is None:
         raise HTTPException(status_code=404, detail="Riesgo no disponible para el cultivo")
     telemetry = storage.latest_telemetry(parcel_id, owner_id)
-    return AgronomicDecision(**make_agronomic_decision(
+    decision = AgronomicDecision(**make_agronomic_decision(
         parcel_id,
         disease_code,
         risk.model_dump(mode='json'),
         telemetry.model_dump(mode='json') if telemetry else None,
     ))
+    if campaign_id is not None:
+        campaign = storage.get_campaign(campaign_id, owner_id)
+        if campaign is None or campaign.parcel_id != parcel_id:
+            raise HTTPException(status_code=404, detail='Campaña no encontrada para la parcela')
+        storage.create_campaign_decision(str(uuid4()), campaign_id, owner_id, decision.model_dump(mode='json'))
+    return decision
+
+
+
+@app.get('/api/v1/campaigns/{campaign_id}/decisions', response_model=list[CampaignDecisionLink])
+def campaign_decisions(campaign_id: str, _token: str | None = Depends(optional_bearer_token)) -> list[CampaignDecisionLink]:
+    owner_id = _token or 'anonymous'
+    campaign = storage.get_campaign(campaign_id, owner_id)
+    if campaign is None:
+        raise HTTPException(status_code=404, detail='Campaña no encontrada')
+    return [CampaignDecisionLink(**item) for item in storage.list_campaign_decisions(campaign_id, owner_id)]
 
 
 @app.get('/api/v1/alerts', response_model=list[DiseaseRisk])
