@@ -10,7 +10,11 @@ from app.schemas_push import PushTokenCreate
 
 class Storage:
     def __init__(self) -> None:
-        database_url = os.getenv('AGROALERTA_DB_PATH', 'backend/agroalerta.db')
+        database_url = os.getenv('AGROALERTA_DB_URL', os.getenv('AGROALERTA_DB_PATH', 'backend/agroalerta.db'))
+        if database_url.startswith('sqlite:///'):
+            database_url = database_url.removeprefix('sqlite:///')
+        elif '://' in database_url:
+            raise ValueError('AGROALERTA_DB_URL currently supports SQLite only; configure PostgreSQL adapter before using another driver')
         self.path = Path(database_url)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._initialize()
