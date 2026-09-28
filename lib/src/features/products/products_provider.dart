@@ -7,7 +7,7 @@ final productsProvider = FutureProvider<List<ProductSummary>>((ref) async {
     final records = await ref.read(apiClientProvider).getProducts();
     return records.map(ProductSummary.fromJson).toList();
   } catch (_) {
-    return const [ProductSummary(name: 'Catalogo pendiente de sincronizar', substance: 'Consultar registro oficial vigente', crop: 'Olivar · Repilo')];
+    return const [];
   }
 });
 
