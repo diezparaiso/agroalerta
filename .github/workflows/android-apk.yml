@@ -22,6 +22,20 @@ jobs:
       - name: Generate Android platform
         run: flutter create --platforms=android --project-name=agroalerta_andalucia .
 
+      - name: Configure Android core library desugaring
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("android/app/build.gradle.kts")
+          text = path.read_text()
+          marker = "compileOptions {"
+          if marker not in text:
+              raise SystemExit("No se encontró compileOptions en el proyecto Android generado")
+          text = text.replace(marker, marker + "\n        isCoreLibraryDesugaringEnabled = true", 1)
+          text += '\n\ndependencies {\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")\n}\n'
+          path.write_text(text)
+          PY
+
       - name: Remove generated Flutter sample test
         run: rm -f test/widget_test.dart
 
