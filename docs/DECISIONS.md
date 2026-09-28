@@ -306,3 +306,17 @@ Reintentos del mismo evento no crean otra alerta, mientras que una nueva transic
 La primera compilación Android reproducible mostró que `google_mobile_ads 5.3.1` falla al configurarse con el Gradle generado por la versión estable de Flutter usada por CI. En lugar de degradar la cadena Android completa, se actualiza `google_mobile_ads` a 7.0.0 y el mínimo de Dart a 3.9.0, manteniendo la API de publicidad existente.
 
 La decisión se valida mediante `flutter analyze`, `flutter test` y la compilación `flutter build apk --debug`. La firma de producción y la configuración nativa de AdMob siguen fuera del alcance de esta build de pruebas.
+
+
+## ADR-029: Mantener la identidad del informe de campo también en el envío online
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+**Contexto:** el payload Flutter de observaciones de campo ya genera un `report_id` estable para que la cola offline pueda reintentar el mismo evento sin duplicarlo. El envío online estaba reconstruyendo la petición sin incluir ese identificador, por lo que una petición repetida después de un timeout podía crear una identidad nueva y perder la protección de idempotencia.
+
+**Decisión:** `ApiClient.submitFieldReport()` acepta y transmite el `report_id` generado por `buildFieldReportPayload()`. El backend ya utiliza ese identificador como clave persistente y responde `already_received` cuando el mismo evento llega de nuevo.
+
+**Consecuencia:** la identidad del evento es única desde la creación de la observación y se conserva tanto en el camino online como en la cola offline. Un reintento por conectividad o por respuesta ambigua no necesita inventar otra identidad.
+
+**Validación:** se conserva la prueba backend de deduplicación por `report_id` y la prueba Flutter que exige que el payload contenga un identificador persistente. El cambio de integración queda cubierto por el análisis y las pruebas Flutter de CI.
