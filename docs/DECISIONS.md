@@ -49,3 +49,22 @@ El selector meteorológico deduplica estaciones por fuente y código, conservand
 **Estado:** aceptado
 
 Cuando el desarrollador no dispone temporalmente de un entorno local para ejecutar VS Code, las pruebas no se posponen por defecto: se ejecutan en GitHub Actions y se corrigen sus resultados. La validación local queda como comprobación adicional cuando vuelva a estar disponible.
+
+
+## ADR-010 — La interfaz no puede presentar datos agronómicos ficticios
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+### Contexto
+La capa Flutter contenía valores de demostración visibles en inicio, detalle de alertas y fallback de parcelas. En una aplicación agrícola operativa, esos valores pueden confundirse con observaciones reales y contaminar la interpretación del riesgo.
+
+### Decisión
+- El inicio consume alertas y parcelas persistidas mediante sus providers.
+- El detalle de alerta muestra únicamente el nivel y puntuación de un evento persistido.
+- Las variables meteorológicas no disponibles se presentan explícitamente como “No disponible”.
+- Se elimina el fallback de parcelas ficticias y coordenadas de demostración.
+- Los estados vacíos, errores y falta de evidencia se muestran como estados de disponibilidad, no como valores estimados inventados.
+
+### Consecuencia
+La interfaz puede parecer menos completa cuando no existen datos, pero conserva trazabilidad y evita presentar información sintética como si fuera evidencia agronómica.
