@@ -191,6 +191,22 @@ class Storage:
                 '''
             )
             self._record_schema_version(connection, 4)
+            connection.execute(
+                '''
+                CREATE TABLE IF NOT EXISTS irrigation_events (
+                    id TEXT PRIMARY KEY,
+                    parcel_id TEXT NOT NULL,
+                    campaign_id TEXT,
+                    owner_id TEXT NOT NULL,
+                    started_at TEXT NOT NULL,
+                    duration_minutes INTEGER NOT NULL,
+                    water_liters REAL,
+                    method TEXT NOT NULL,
+                    notes TEXT
+                )
+                '''
+            )
+            self._record_schema_version(connection, 5)
 
     @staticmethod
     def _record_schema_version(connection: sqlite3.Connection, version: int) -> None:
@@ -235,6 +251,22 @@ class Storage:
                 (campaign_id, owner_id),
             ).fetchone()
         return dict(row) if row else None
+
+    def create_irrigation_event(self, event: dict[str, object]) -> dict[str, object]:
+        with self._connect() as connection:
+            connection.execute(
+                "INSERT INTO irrigation_events (id, parcel_id, campaign_id, owner_id, started_at, duration_minutes, water_liters, method, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (event["id"], event["parcel_id"], event["campaign_id"], event["owner_id"], event["started_at"], event["duration_minutes"], event["water_liters"], event["method"], event["notes"]),
+            )
+        return event
+
+    def list_irrigation_events(self, parcel_id: str, owner_id: str, limit: int = 100) -> list[dict[str, object]]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT * FROM irrigation_events WHERE parcel_id = ? AND owner_id = ? ORDER BY started_at DESC LIMIT ?",
+                (parcel_id, owner_id, max(1, min(limit, 200))),
+            ).fetchall()
+        return [dict(row) for row in rows]
 
     def list_parcels(self, owner_id: str | None = None) -> list[Parcel]:
         with self._connect() as connection:
