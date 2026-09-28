@@ -224,6 +224,17 @@ class Storage:
                 '''
             )
             self._record_schema_version(connection, 6)
+            connection.execute(
+                '''
+                CREATE TABLE IF NOT EXISTS alert_preferences (
+                    owner_id TEXT PRIMARY KEY,
+                    minimum_risk_level TEXT NOT NULL,
+                    push_enabled INTEGER NOT NULL DEFAULT 1,
+                    updated_at TEXT NOT NULL
+                )
+                '''
+            )
+            self._record_schema_version(connection, 7)
 
     @staticmethod
     def _record_schema_version(connection: sqlite3.Connection, version: int) -> None:
@@ -300,6 +311,35 @@ class Storage:
                 (parcel_id, owner_id, max(1, min(limit, 200))),
             ).fetchall()
         return [dict(row) for row in rows]
+
+    def get_alert_preferences(self, owner_id: str) -> dict[str, object] | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT owner_id, minimum_risk_level, push_enabled, updated_at FROM alert_preferences WHERE owner_id = ?",
+                (owner_id,),
+            ).fetchone()
+        return dict(row) if row else None
+
+    def set_alert_preferences(self, owner_id: str, minimum_risk_level: str, push_enabled: bool) -> dict[str, object]:
+        updated_at = datetime.now(timezone.utc).isoformat()
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT INTO alert_preferences (owner_id, minimum_risk_level, push_enabled, updated_at)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(owner_id) DO UPDATE SET
+                    minimum_risk_level = excluded.minimum_risk_level,
+                    push_enabled = excluded.push_enabled,
+                    updated_at = excluded.updated_at
+                """,
+                (owner_id, minimum_risk_level, int(push_enabled), updated_at),
+            )
+        return {
+            "owner_id": owner_id,
+            "minimum_risk_level": minimum_risk_level,
+            "push_enabled": push_enabled,
+            "updated_at": updated_at,
+        }
 
     def list_parcels(self, owner_id: str | None = None) -> list[Parcel]:
         with self._connect() as connection:
