@@ -5,9 +5,11 @@ import '../parcels/parcel_provider.dart';
 import 'activity_timeline_provider.dart';
 class ActivityTimelineScreen extends ConsumerWidget {
   const ActivityTimelineScreen({super.key});
+  $dialog
   @override Widget build(BuildContext context, WidgetRef ref) {
     final parcels = ref.watch(parcelsProvider);
     final selected = ref.watch(selectedTimelineParcelProvider);
+    ref.watch(activityTimelineRefreshProvider);
     return AppPage(title: 'Línea temporal', subtitle: 'Actividad, telemetría y riesgo de la parcela', child: parcels.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => Center(child: Text('No se pudieron cargar las parcelas: ' + e.toString())),
@@ -15,7 +17,7 @@ class ActivityTimelineScreen extends ConsumerWidget {
         final current = items.where((p) => p.id == selected).firstOrNull;
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           DropdownButton<String>(value: current?.id, hint: const Text('Selecciona una parcela'), items: [for (final p in items) DropdownMenuItem(value: p.id, child: Text(p.name))], onChanged: (v) => ref.read(selectedTimelineParcelProvider.notifier).state = v),
-          const SizedBox(height: 12),
+          const SizedBox(height: 12),Row(children: [FilledButton.icon(onPressed: current == null ? null : () => _createActivity(context, ref, current.id), icon: const Icon(Icons.add), label: const Text('Registrar actividad')), const SizedBox(width: 8), OutlinedButton.icon(onPressed: current == null ? null : () => ref.invalidate(activityTimelineProvider), icon: const Icon(Icons.refresh), label: const Text('Actualizar'))]),
           Expanded(child: ref.watch(activityTimelineProvider).when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (e, _) => Center(child: Text('No se pudo cargar la línea temporal: ' + e.toString())),
