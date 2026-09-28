@@ -97,6 +97,18 @@ class Storage:
                     connection.execute(f"ALTER TABLE {table} ADD COLUMN owner_id TEXT NOT NULL DEFAULT 'anonymous'")
             connection.execute(
                 """
+                CREATE TABLE IF NOT EXISTS weather_stations (
+                    source_code TEXT NOT NULL,
+                    station_code TEXT NOT NULL,
+                    name TEXT NOT NULL,
+                    province TEXT,
+                    latitude REAL NOT NULL,
+                    longitude REAL NOT NULL,
+                    altitude_m REAL,
+                    active INTEGER NOT NULL DEFAULT 1,
+                    updated_at TEXT NOT NULL,
+                    PRIMARY KEY (source_code, station_code)
+                );
                 CREATE TABLE IF NOT EXISTS weather_observations (
                     source_code TEXT NOT NULL,
                     station_code TEXT NOT NULL,
@@ -297,6 +309,45 @@ class Storage:
                 (source_code,),
             ).fetchone()
         return int(row['count'])
+
+    def save_weather_station(
+        self,
+        source_code: str,
+        station_code: str,
+        name: str,
+        province: str | None,
+        latitude: float,
+        longitude: float,
+        altitude_m: float | None,
+        active: bool,
+    ) -> None:
+        with self._connect() as connection:
+            connection.execute(
+                """
+                INSERT OR REPLACE INTO weather_stations
+                (source_code, station_code, name, province, latitude, longitude,
+                 altitude_m, active, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    source_code, station_code, name, province, latitude, longitude,
+                    altitude_m, int(active), datetime.now(timezone.utc).isoformat(),
+                ),
+            )
+
+    def list_weather_stations(self, source_code: str = "ria_ifapa") -> list[dict[str, object]]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT source_code, station_code, name, province, latitude,
+                       longitude, altitude_m, active
+                FROM weather_stations
+                WHERE source_code = ? AND active = 1
+                ORDER BY name
+                """,
+                (source_code,),
+            ).fetchall()
+        return [dict(row) for row in rows]
 
     def save_weather_observation(
         self,
