@@ -17,7 +17,7 @@ from app.connectors.source_registry import list_data_sources
 from app.connectors.mapa_catalog import load_catalog
 from app.core.config import settings
 from app.core.storage import Storage
-from app.schemas import Alert, AlertUserState, AlertUserStateUpdate, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, NotificationDelivery, Parcel, WeatherEvidenceSummary, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
+from app.schemas import Alert, AlertUserState, AlertUserStateUpdate, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, FieldReportSummary, NotificationDelivery, Parcel, WeatherEvidenceSummary, ParcelAgronomicSummary, ParcelCreate, Product, RiskSnapshot, TelemetryCreate, TelemetryQualitySummary
 from app.core.security import optional_bearer_token
 from app.schemas_push import PushTokenCreate
 
@@ -420,6 +420,13 @@ def get_latest_telemetry(
     if telemetry is None:
         raise HTTPException(status_code=404, detail="Sin telemetria para esta parcela")
     return telemetry
+
+
+@app.get("/api/v1/telemetry/{parcel_id}/quality", response_model=TelemetryQualitySummary)
+def telemetry_quality(parcel_id: str, since_hours: int = Query(default=24, ge=1, le=168), _token: str | None = Depends(optional_bearer_token)) -> TelemetryQualitySummary:
+    owner_id = _token or "anonymous"
+    get_parcel(parcel_id, owner_id)
+    return TelemetryQualitySummary(**storage.telemetry_quality_summary(parcel_id, owner_id, since_hours))
 
 
 @app.get("/api/v1/telemetry/{parcel_id}/history", response_model=list[dict])
