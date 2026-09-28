@@ -270,3 +270,14 @@ class TreatmentRecord(BaseModel):
     dose: str | None = None
     treated_area_ha: float | None = None
     notes: str | None = None
+
+
+class AlertPreferences(BaseModel):
+    minimum_risk_level: Literal["medio", "alto"] = "medio"
+    push_enabled: bool = True
+    updated_at: datetime | None = None
+
+
+class AlertPreferencesUpdate(BaseModel):
+    minimum_risk_level: Literal["medio", "alto"] = "medio"
+    push_enabled: bool = True
