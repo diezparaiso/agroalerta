@@ -162,6 +162,7 @@ class Storage:
             columns = {row['name'] for row in connection.execute('PRAGMA table_info(telemetry)')}
             if 'telemetry_id' not in columns:
                 connection.execute('ALTER TABLE telemetry ADD COLUMN telemetry_id TEXT')
+            connection.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_telemetry_telemetry_id ON telemetry(telemetry_id) WHERE telemetry_id IS NOT NULL')
             self._record_schema_version(connection, 2)
 
     @staticmethod
