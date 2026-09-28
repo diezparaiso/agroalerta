@@ -12,6 +12,7 @@ from app.domain.geospatial import haversine_km
 from app.domain.raif_evidence import score_raif_evidence
 from app.domain.weather_context import build_weather_context
 from app.jobs.weather_ingestion_job import ingest_weather_for_parcel
+from app.jobs.weather_refresh_job import refresh_all_parcel_weather
 from app.connectors.source_registry import list_data_sources
 from app.core.config import settings
 from app.core.storage import Storage
@@ -177,6 +178,27 @@ def spatial_context(
 @app.get("/api/v1/weather-stations")
 def get_weather_stations(_token=Depends(optional_bearer_token)):
     return {"source": "ria_ifapa", "stations": storage.list_weather_stations()}
+
+
+@app.post("/api/v1/weather/refresh")
+async def refresh_weather(_token: str | None = Depends(optional_bearer_token)) -> dict[str, object]:
+    """Actualiza meteorología de las parcelas del propietario autenticado."""
+    owner_id = _token or "anonymous"
+    storage_for_refresh = Storage()
+    parcels = storage_for_refresh.list_parcels(owner_id)
+    updated = 0
+    failed = 0
+    for parcel in parcels:
+        try:
+            result = await ingest_weather_for_parcel(parcel.latitude, parcel.longitude)
+            if result.get("status") == "ingested":
+                updated += 1
+            else:
+                failed += 1
+        except Exception:
+            failed += 1
+            logger.exception("Error refrescando parcela %s", parcel.id)
+    return {"status": "completed", "parcels": len(parcels), "updated": updated, "failed": failed}
 
 
 @app.post("/api/v1/weather/ingest/{parcel_id}")
