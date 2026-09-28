@@ -184,3 +184,10 @@ La valoración de Flutter/UI-UX pasa de 78% a 82% por esta mejora integrada. No 
 Se corrigió el flujo online de observaciones para transmitir el mismo `report_id` que ya se utiliza en la cola offline. La identidad del evento queda ahora conservada en ambos caminos y el backend puede deduplicar reintentos mediante la misma clave persistente.
 
 La cobertura de **Informes de campo** se mantiene en 72% porque este cambio corrige una condición de robustez, pero siguen pendientes la explotación agronómica de los informes y validaciones end-to-end en dispositivo.
+
+
+## Actualización 2026-09-28 — Cierre funcional del catálogo MAPA
+
+El módulo de productos autorizados deja de ser una lista básica: la API admite filtrado por cultivo/enfermedad y Flutter muestra los metadatos oficiales de dosis y plazo de seguridad disponibles en el snapshot. Se añadió cobertura de mapeo y ausencia explícita de datos.
+
+**Phytosanitarios/MAPA:** 35% → 45%. El siguiente salto dependerá de disponer de un proceso de actualización/validación del catálogo oficial y de integración contextual con el riesgo, sin convertir el catálogo en una recomendación automática de tratamiento.
