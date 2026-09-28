@@ -178,3 +178,21 @@ class ParcelAgronomicSummary(BaseModel):
     risk_count: int
     latest_risks: list[RiskSnapshot]
     recent_alert_count: int
+
+
+class TelemetryQualityDevice(BaseModel):
+    device_id: str
+    name: str
+    device_type: str
+    active: bool
+    latest_measured_at: datetime | None = None
+    minutes_since_last_measurement: int | None = None
+    sample_count: int
+
+
+class TelemetryQualitySummary(BaseModel):
+    parcel_id: str
+    window_hours: int
+    device_count: int
+    active_device_count: int
+    devices: list[TelemetryQualityDevice]
