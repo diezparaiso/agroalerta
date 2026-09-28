@@ -409,6 +409,37 @@ class Storage:
             "recent_alert_count": len(alerts),
         }
 
+    def field_report_summary(self, parcel_id: str, owner_id: str) -> dict[str, object]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT payload FROM field_reports WHERE parcel_id = ? AND owner_id = ?",
+                (parcel_id, owner_id),
+            ).fetchall()
+        reports = [json.loads(row["payload"]) for row in rows]
+        counts = {"trampa": 0, "sintoma": 0}
+        latest = None
+        for report in reports:
+            report_type = report.get("type")
+            if report_type in counts:
+                counts[report_type] += 1
+            reported_at = report.get("reported_at")
+            if reported_at and (latest is None or reported_at > latest["reported_at"]):
+                latest = {"reported_at": reported_at, "type": report_type}
+        cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+        recent = sum(
+            1 for report in reports
+            if report.get("reported_at")
+            and datetime.fromisoformat(report["reported_at"].replace("Z", "+00:00")) >= cutoff
+        )
+        return {
+            "parcel_id": parcel_id,
+            "total_reports": len(reports),
+            "reports_by_type": counts,
+            "recent_reports_30d": recent,
+            "latest_reported_at": latest["reported_at"] if latest else None,
+            "latest_report_type": latest["type"] if latest else None,
+        }
+
     def list_georeferenced_source_records(self, source_code: str) -> list[dict[str, object]]:
         with self._connect() as connection:
             rows = connection.execute(
