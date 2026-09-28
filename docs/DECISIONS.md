@@ -205,3 +205,16 @@ Reintentos del mismo evento no crean otra alerta, mientras que una nueva transic
 
 **Pendiente:** mostrar estado de sincronización y añadir estrategia de reintentos con backoff para la cola offline.
 
+## ADR-021: Reintentos offline con backoff por informe
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+**Contexto:** la cola offline podía volver a intentar todos los informes ante cada evento de conectividad. Esto podía producir reintentos demasiado frecuentes cuando el backend o la red seguían fallando.
+
+**Decisión:** cada informe conserva `attempts`, `last_attempt_at` y `next_attempt_at`. Los informes antiguos sin estos campos se normalizan con cero intentos y siguen siendo elegibles. Tras un fallo se aplica backoff exponencial: 30 segundos, 1 minuto, 2, 4, etc., con un máximo de 1 hora.
+
+**Consecuencia:** una incidencia persistente no genera una tormenta de peticiones, mientras que un informe nuevo o pendiente por primera vez puede sincronizarse inmediatamente. El backoff es independiente por informe, por lo que un fallo no bloquea artificialmente los demás.
+
+**Validación:** `test/features/reports/offline_retry_policy_test.dart` cubre elegibilidad, progresión exponencial, límite máximo y compatibilidad con registros antiguos.
+
