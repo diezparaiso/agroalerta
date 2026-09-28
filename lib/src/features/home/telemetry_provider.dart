@@ -8,6 +8,12 @@ class TelemetryWindow {
   final int hours;
 
   String get label => hours == 24 ? '24 h' : '7 días';
+
+  @override
+  bool operator ==(Object other) => other is TelemetryWindow && other.hours == hours;
+
+  @override
+  int get hashCode => hours.hashCode;
 }
 
 final telemetryWindowProvider = StateProvider<TelemetryWindow>(
