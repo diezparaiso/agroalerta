@@ -4,6 +4,27 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/network/api_client.dart';
 import 'local_parcel_store.dart';
 
+Future<ParcelSummary> updateParcelWithConflictProtection({
+  required ApiClient apiClient,
+  required ParcelSummary parcel,
+  required String label,
+}) async {
+  if (parcel.id == null || parcel.updatedAt == null) {
+    throw StateError('La parcela no tiene una versión del servidor para actualizarse de forma segura');
+  }
+  final json = await apiClient.updateParcel(
+    parcelId: parcel.id!,
+    label: label,
+    latitude: parcel.latitude,
+    longitude: parcel.longitude,
+    cropType: parcel.crop == 'Vinedo' ? 'vinedo' : 'olivar',
+    comarca: parcel.place,
+    expectedUpdatedAt: parcel.updatedAt!,
+  );
+  return ParcelSummary.fromJson(json);
+}
+
+
 final apiClientProvider = Provider<ApiClient>((ref) => ApiClient());
 final localParcelStoreProvider = Provider<LocalParcelStore>((ref) => LocalParcelStore());
 
@@ -22,7 +43,7 @@ final parcelsProvider = FutureProvider<List<ParcelSummary>>((ref) async {
 });
 
 class ParcelSummary {
-  const ParcelSummary({this.id, this.latitude = 0, this.longitude = 0, required this.name, required this.crop, required this.place, required this.risk});
+  const ParcelSummary({this.id, this.latitude = 0, this.longitude = 0, required this.name, required this.crop, required this.place, required this.risk, this.updatedAt});
 
   final String? id;
   final double latitude;
@@ -31,6 +52,7 @@ class ParcelSummary {
   final String crop;
   final String place;
   final String risk;
+  final DateTime? updatedAt;
 
   factory ParcelSummary.fromJson(Map<String, dynamic> json) => ParcelSummary(
       id: json['id'] as String?,
@@ -40,7 +62,8 @@ class ParcelSummary {
         crop: json['crop_type'] == 'vinedo' ? 'Vinedo' : 'Olivar',
         place: json['comarca'] as String? ?? 'Andalucia',
         risk: 'Pendiente',
+      updatedAt: DateTime.tryParse(json['updated_at'] as String? ?? ''),
       );
 
-  Map<String, dynamic> toJson() => {'id': id, 'label': name, 'latitude': latitude, 'longitude': longitude, 'crop_type': crop == 'Vinedo' ? 'vinedo' : 'olivar', 'comarca': place};
+  Map<String, dynamic> toJson() => {'id': id, 'label': name, 'latitude': latitude, 'longitude': longitude, 'crop_type': crop == 'Vinedo' ? 'vinedo' : 'olivar', 'comarca': place, if (updatedAt != null) 'updated_at': updatedAt!.toUtc().toIso8601String()};
 }
