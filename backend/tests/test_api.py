@@ -470,3 +470,36 @@ def test_crop_campaign_lifecycle_is_owner_scoped() -> None:
 
     other = client.get(f"/api/v1/parcels/{parcel_id}/campaigns", headers={"Authorization": "Bearer user-b"})
     assert other.status_code == 404
+
+
+def test_irrigation_event_is_recorded_and_owner_scoped() -> None:
+    parcel = client.post("/api/v1/parcels", headers={"Authorization": "Bearer user-a"}, json={
+        "label": "Riego", "latitude": 37.39, "longitude": -5.99,
+        "crop_type": "olivar", "comarca": "Sevilla",
+    }).json()
+    parcel_id = parcel["id"]
+
+    created = client.post(
+        f"/api/v1/parcels/{parcel_id}/irrigation",
+        headers={"Authorization": "Bearer user-a"},
+        json={
+            "started_at": "2026-09-28T07:30:00+00:00",
+            "duration_minutes": 45,
+            "water_liters": 1800,
+            "method": "goteo",
+            "notes": "Riego de mantenimiento",
+        },
+    )
+    assert created.status_code == 201
+    body = created.json()
+    assert body["parcel_id"] == parcel_id
+    assert body["method"] == "goteo"
+    assert body["duration_minutes"] == 45
+    assert body["water_liters"] == 1800
+
+    listed = client.get(f"/api/v1/parcels/{parcel_id}/irrigation", headers={"Authorization": "Bearer user-a"})
+    assert listed.status_code == 200
+    assert len(listed.json()) == 1
+
+    other = client.get(f"/api/v1/parcels/{parcel_id}/irrigation", headers={"Authorization": "Bearer user-b"})
+    assert other.status_code == 404
