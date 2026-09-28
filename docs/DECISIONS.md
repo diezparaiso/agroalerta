@@ -163,3 +163,16 @@ Reintentos del mismo evento no crean otra alerta, mientras que una nueva transic
 **Plataformas:** el repositorio actual no contiene todavía los proyectos nativos Android/iOS, por lo que quedan pendientes los App IDs nativos de AdMob y su configuración en `AndroidManifest.xml`/Info.plist cuando esos proyectos se incorporen.
 
 **Validación:** el código queda inactivo cuando `ADMOB_BANNER_ID` no está definido y CI debe validar el build Flutter.
+
+
+### ADR-018: Catálogo de productos sin datos ficticios
+
+**Estado:** aceptado
+
+**Decisión:** el endpoint de productos solo expone registros procedentes de un snapshot CSV configurado mediante `MAPA_CATALOG_PATH`. Si no existe catálogo configurado, devuelve una lista vacía y el cliente muestra explícitamente que el catálogo no está disponible.
+
+**Motivo:** el producto fitosanitario, la sustancia, dosis y plazo de seguridad son datos regulados y no deben rellenarse con ejemplos sintéticos dentro de la aplicación.
+
+**Importación:** `backend/app/connectors/mapa_catalog.py` sigue siendo el límite de entrada. La petición de usuario no realiza scraping ni descarga directamente del registro oficial.
+
+**Pendiente:** automatizar la obtención/verificación del snapshot oficial vigente, conservar metadatos de fuente y fecha de descarga y ampliar filtros según el contrato oficial validado.
