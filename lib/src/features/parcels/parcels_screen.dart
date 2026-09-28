@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../home/home_screen.dart';
 import '../../core/location/location_service.dart';
 import 'parcel_provider.dart';
+import '../../core/network/api_client.dart';
 import 'parcel_conflict.dart';
 
 class ParcelsScreen extends ConsumerWidget {
