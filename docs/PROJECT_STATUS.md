@@ -177,3 +177,10 @@ La pantalla inicial se ha rediseñado con cabecera contextual, resumen meteorol�
 También se eliminó el último fallback Flutter que mostraba temperatura, humedad y lluvia sintéticas cuando no había evidencia meteorológica. Ahora el estado se expresa como `No disponible`.
 
 La valoración de Flutter/UI-UX pasa de 78% a 82% por esta mejora integrada. No implica que el módulo esté terminado: siguen pendientes accesibilidad, pruebas de widgets/pantallas, notificaciones completas y validación en dispositivos reales.
+
+
+## Actualización 2026-09-28 — Idempotencia de informes de campo
+
+Se corrigió el flujo online de observaciones para transmitir el mismo `report_id` que ya se utiliza en la cola offline. La identidad del evento queda ahora conservada en ambos caminos y el backend puede deduplicar reintentos mediante la misma clave persistente.
+
+La cobertura de **Informes de campo** se mantiene en 72% porque este cambio corrige una condición de robustez, pero siguen pendientes la explotación agronómica de los informes y validaciones end-to-end en dispositivo.
