@@ -368,6 +368,17 @@ def get_latest_telemetry(
     return telemetry
 
 
+@app.get("/api/v1/telemetry/{parcel_id}/history", response_model=list[dict])
+def telemetry_history(
+    parcel_id: str,
+    limit: int = Query(default=24, ge=1, le=200),
+    _token: str | None = Depends(optional_bearer_token),
+) -> list[dict]:
+    owner_id = _token or "anonymous"
+    get_parcel(parcel_id, owner_id)
+    return storage.list_latest_telemetry(parcel_id, owner_id, limit)
+
+
 @app.post("/api/v1/devices", response_model=Device, status_code=status.HTTP_201_CREATED)
 def register_device(payload: DeviceCreate, _token: str | None = Depends(optional_bearer_token)) -> Device:
     owner_id = _token or 'anonymous'
