@@ -598,3 +598,21 @@ Se incorpora un registro operativo de riegos asociado opcionalmente a una campa�
 **Motivo:** proporcionar trazabilidad de labores de riego y una base fiable para futuras métricas de consumo y comparativas por campaña sin mezclar registro histórico con recomendaciones agronómicas.
 
 **Validación:** prueba de API para creación, consulta, valores principales y aislamiento entre propietarios.
+
+
+## ADR-050: Registro de tratamientos realizados
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+Se incorpora un histórico de tratamientos fitosanitarios realizados o introducidos por el usuario para una parcela, con asociación opcional a una campaña.
+
+**Decisión:** cada registro conserva fecha de aplicación, producto indicado por el usuario, materia activa opcional, dosis opcional, superficie tratada opcional y notas. La API permite registrar y consultar estos eventos.
+
+**Alcance:** el módulo es exclusivamente de trazabilidad. No recomienda productos, dosis ni tratamientos; tampoco modifica el catálogo MAPA ni el motor de riesgo.
+
+**Integridad y seguridad:** la parcela se valida contra el propietario autenticado; las consultas son owner-scoped y los campos de texto y superficie tienen límites de entrada.
+
+**Motivo:** disponer de historial agronómico verificable para futuras consultas de trazabilidad, informes y métricas por campaña, manteniendo separadas las actuaciones realizadas de las recomendaciones.
+
+**Validación:** prueba de API para creación, persistencia, lectura y aislamiento entre propietarios.
