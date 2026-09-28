@@ -161,3 +161,41 @@ class AgronomicActivityCreate(BaseModel):
 class AgronomicActivity(AgronomicActivityCreate):
     id: str
     created_at: datetime
+
+
+class CropCampaignCreate(BaseModel):
+    parcel_id: str
+    crop_type: Literal["olivar", "vinedo"]
+    season_label: str = Field(min_length=1, max_length=80)
+    started_at: datetime
+    ended_at: datetime | None = None
+    status: Literal["planned", "active", "closed", "cancelled"] = "planned"
+    variety: str | None = Field(default=None, max_length=120)
+    target_yield_t_ha: float | None = Field(default=None, ge=0)
+    notes: str | None = Field(default=None, max_length=2000)
+    owner_id: str | None = None
+
+
+class CropCampaign(CropCampaignCreate):
+    id: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class CampaignStatusUpdate(BaseModel):
+    status: Literal["planned", "active", "closed", "cancelled"]
+    ended_at: datetime | None = None
+
+
+class CampaignSummary(BaseModel):
+    campaign: CropCampaign
+    activity_count: int
+    irrigation_count: int
+    irrigation_quantity: float
+    treatment_count: int
+    observation_count: int
+    harvest_count: int
+    latest_activity_at: datetime | None = None
+    risk_event_count: int
+    highest_risk: Literal["ninguno", "bajo", "medio", "alto"]
+    progress: Literal["planificada", "en_curso", "cerrada", "cancelada"]
