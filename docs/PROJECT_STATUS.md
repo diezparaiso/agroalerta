@@ -169,3 +169,11 @@ Un módulo no se considerará terminado únicamente porque exista código. Para 
 - preparación operativa para producción.
 
 Este documento es una **fotografía de ingeniería** y debe actualizarse cuando cambie materialmente el alcance o el estado del proyecto.
+
+## Actualización 2026-09-28 — Dashboard visual
+
+La pantalla inicial se ha rediseñado con cabecera contextual, resumen meteorológico, avisos, parcelas, mapa, alertas recientes y sensores, manteniendo adaptación responsive.
+
+También se eliminó el último fallback Flutter que mostraba temperatura, humedad y lluvia sintéticas cuando no había evidencia meteorológica. Ahora el estado se expresa como `No disponible`.
+
+La valoración de Flutter/UI-UX pasa de 78% a 82% por esta mejora integrada. No implica que el módulo esté terminado: siguen pendientes accesibilidad, pruebas de widgets/pantallas, notificaciones completas y validación en dispositivos reales.
