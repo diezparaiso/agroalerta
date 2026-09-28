@@ -14,6 +14,7 @@ from app.domain.weather_context import build_weather_context
 from app.jobs.weather_ingestion_job import ingest_weather_for_parcel
 from app.jobs.weather_refresh_job import refresh_all_parcel_weather
 from app.connectors.source_registry import list_data_sources
+from app.connectors.mapa_catalog import load_catalog
 from app.core.config import settings
 from app.core.storage import Storage
 from app.schemas import Alert, Device, DeviceCreate, DiseaseRisk, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
@@ -51,18 +52,7 @@ def metrics() -> dict[str, dict[str, float]]:
 
 
 storage = Storage()
-products = [
-    Product(
-        id="demo-copper-01",
-        commercial_name="Catalogo MAPA pendiente de sincronizar",
-        active_substance="Consultar registro oficial vigente",
-        dose="Segun etiqueta autorizada",
-        safety_period_days=0,
-        crop_type="olivar",
-        disease_code="repilo",
-        mapa_snapshot_date=datetime.now(timezone.utc),
-    )
-]
+products = load_catalog(settings.mapa_catalog_path) if settings.mapa_catalog_path else []
 
 
 @app.get("/api/v1/data-sources")
