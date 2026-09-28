@@ -220,24 +220,33 @@ class Storage:
             result = connection.execute(query, parameters)
         return result.rowcount > 0
 
-    def update_parcel(self, parcel_id: str, payload: ParcelCreate, owner_id: str | None = None) -> Parcel | None:
+    def update_parcel(
+        self,
+        parcel_id: str,
+        payload: ParcelCreate,
+        owner_id: str | None = None,
+        expected_updated_at: datetime | None = None,
+    ) -> Parcel | None:
         now = datetime.now(timezone.utc)
         with self._connect() as connection:
             query = '''UPDATE parcels SET label = ?, latitude = ?, longitude = ?,
                    crop_type = ?, comarca = ?, updated_at = ? WHERE id = ?'''
-            parameters: tuple[object, ...] = (
-                    payload.label,
-                    payload.latitude,
-                    payload.longitude,
-                    payload.crop_type,
-                    payload.comarca,
-                    now.isoformat(),
-                    parcel_id,
-                )
+            parameters: list[object] = [
+                payload.label,
+                payload.latitude,
+                payload.longitude,
+                payload.crop_type,
+                payload.comarca,
+                now.isoformat(),
+                parcel_id,
+            ]
             if owner_id is not None:
                 query += ' AND owner_id = ?'
-                parameters += (owner_id,)
-            result = connection.execute(query, parameters)
+                parameters.append(owner_id)
+            if expected_updated_at is not None:
+                query += ' AND updated_at = ?'
+                parameters.append(expected_updated_at.isoformat())
+            result = connection.execute(query, tuple(parameters))
         return self.get_parcel(parcel_id, owner_id) if result.rowcount else None
 
     def create_report(self, report_id: str, payload: FieldReportCreate) -> bool:
