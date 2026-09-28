@@ -21,6 +21,8 @@ class RaifRecord:
     province: str | None
     municipality: str | None
     parcel: str | None
+    latitude: float | None
+    longitude: float | None
     payload: dict[str, Any]
 
 
@@ -68,6 +70,8 @@ class RaifClient:
             province = self._pick(fields, "PROVINCIA")
             municipality = self._pick(fields, "MUNICIPIO", "MUNICIPIO_NOMBRE")
             parcel = self._pick(fields, "PARCELA", "CODIGO_PARCELA")
+            latitude = self._parse_float(self._pick(fields, "LATITUD", "LATITUDE", "LAT"))
+            longitude = self._parse_float(self._pick(fields, "LONGITUD", "LONGITUDE", "LON", "LONG"))
             observed_at = self._parse_date(
                 self._pick(fields, "FECHA", "FECHA_MUESTREO", "FECHA_MUESTREO")
             )
@@ -82,6 +86,8 @@ class RaifClient:
                     province=province,
                     municipality=municipality,
                     parcel=parcel,
+                    latitude=latitude,
+                    longitude=longitude,
                     payload={"crop": crop, "file": filename, "fields": fields},
                 )
             )
@@ -98,6 +104,15 @@ class RaifClient:
             if value:
                 return value
         return None
+
+    @staticmethod
+    def _parse_float(value: str | None) -> float | None:
+        if not value:
+            return None
+        try:
+            return float(value.replace(',', '.'))
+        except ValueError:
+            return None
 
     @staticmethod
     def _parse_date(value: str | None) -> datetime | None:
