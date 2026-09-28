@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "AgroAlerta Flutter",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": ["--dart-define=API_BASE_URL=http://localhost:8000"]
+    },
+    {
+      "name": "AgroAlerta API",
+      "request": "launch",
+      "type": "debugpy",
+      "module": "uvicorn",
+      "args": ["app.main:app", "--reload", "--port", "8000"],
+      "cwd": "${workspaceFolder}/backend",
+      "env": {"PYTHONPATH": "${workspaceFolder}/backend"}
+    }
+  ]
+}
