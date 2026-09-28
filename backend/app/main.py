@@ -17,7 +17,7 @@ from app.connectors.source_registry import list_data_sources
 from app.connectors.mapa_catalog import load_catalog
 from app.core.config import settings
 from app.core.storage import Storage
-from app.schemas import Alert, Device, DeviceCreate, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
+from app.schemas import Alert, Device, DeviceCreate, DeviceHealth, DeviceStateUpdate, DiseaseRisk, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
 from app.core.security import optional_bearer_token
 from app.schemas_push import PushTokenCreate
 
@@ -184,6 +184,13 @@ def spatial_context(
         "evidence_count": len(matches),
         "evidence": matches[:100],
     }
+
+@app.get("/api/v1/devices/{parcel_id}/health", response_model=list[DeviceHealth])
+def device_health(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> list[DeviceHealth]:
+    owner_id = _token or "anonymous"
+    get_parcel(parcel_id, owner_id)
+    return [DeviceHealth(**item) for item in storage.list_device_health(parcel_id, owner_id)]
+
 
 @app.get("/api/v1/weather-stations")
 def get_weather_stations(_token=Depends(optional_bearer_token)):
