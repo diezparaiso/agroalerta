@@ -176,3 +176,16 @@ Reintentos del mismo evento no crean otra alerta, mientras que una nueva transic
 **Importación:** `backend/app/connectors/mapa_catalog.py` sigue siendo el límite de entrada. La petición de usuario no realiza scraping ni descarga directamente del registro oficial.
 
 **Pendiente:** automatizar la obtención/verificación del snapshot oficial vigente, conservar metadatos de fuente y fecha de descarga y ampliar filtros según el contrato oficial validado.
+
+
+### ADR-019: Observaciones offline ancladas a la parcela real
+
+**Estado:** aceptado
+
+**Decisión:** los informes de campo enviados desde Flutter deben usar el identificador y las coordenadas reales de la parcela seleccionada. Si no hay parcela o sus coordenadas no son válidas, el envío se bloquea y se informa al usuario.
+
+**Motivo:** una observación agronómica georreferenciada no puede caer en coordenadas Sevilla por defecto ni usar el nombre de la parcela como sustituto de un identificador persistente.
+
+**Sincronización:** el servicio offline evita ejecuciones concurrentes de sincronización para no enviar dos veces la misma cola cuando se producen varios eventos de conectividad.
+
+**Pendiente:** selector explícito de parcela en el formulario, estado de sincronización visible y estrategia de reintentos con backoff.
