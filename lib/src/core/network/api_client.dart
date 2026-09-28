@@ -98,6 +98,30 @@ class ApiClient {
     return response.data!.cast<Map<String, dynamic>>();
   }
 
+  Future<Map<String, dynamic>> createActivity({
+    required String parcelId,
+    required String activityType,
+    required String title,
+    String? detail,
+    required DateTime occurredAt,
+    double? quantity,
+    String? unit,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/parcels/$parcelId/activities',
+      data: {
+        'parcel_id': parcelId,
+        'activity_type': activityType,
+        'title': title,
+        'detail': detail,
+        'occurred_at': occurredAt.toUtc().toIso8601String(),
+        'quantity': quantity,
+        'unit': unit,
+      },
+    );
+    return response.data!;
+  }
+
   Future<List<Map<String, dynamic>>> getActivityTimeline(String parcelId, {int limit = 100}) async {
     final response = await _dio.get<List<dynamic>>(
       '/api/v1/parcels/$parcelId/activity-timeline',
