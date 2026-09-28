@@ -231,3 +231,16 @@ Reintentos del mismo evento no crean otra alerta, mientras que una nueva transic
 
 **Validación:** `test/features/reports/offline_queue_status_test.dart` cubre conteos, reintentos pendientes y cola vacía.
 
+## ADR-023: Idempotencia de observaciones offline
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+**Contexto:** una observación de campo puede enviarse correctamente al servidor y, por una interrupción de red o respuesta perdida, permanecer en la cola local. Un reintento posterior no debe crear una segunda observación.
+
+**Decisión:** cada observación se crea en Flutter con un `report_id` UUID persistente dentro del payload. La API acepta ese identificador y la tabla `field_reports` lo utiliza como clave primaria mediante inserción idempotente. Si el identificador ya existe, la API devuelve `already_received` y no duplica el registro.
+
+**Consecuencia:** los reintentos son seguros frente a respuestas perdidas y reconexiones. La identidad de la observación pertenece al evento original, no a cada intento de transporte.
+
+**Validación:** `backend/tests/test_field_report_idempotency.py` verifica que dos inserciones con el mismo identificador dejan un único registro; el test Flutter de payload verifica la generación del identificador.
+
