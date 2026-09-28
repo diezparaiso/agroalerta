@@ -77,6 +77,13 @@ La persistencia de desarrollo continúa siendo SQLite y los contratos HTTP está
 - La decisión conserva código de enfermedad, puntuación, prioridad y titular.
 - La integración permite que la campaña sea el contexto longitudinal de las decisiones.
 
+### PR #13 — completar flujos agronómicos Flutter
+- Se completa la exposición Flutter de la línea temporal agronómica.
+- Se añade interfaz para calcular y consultar la decisión agronómica explicable.
+- Se conecta el registro de resultados productivos a las campañas desde Flutter.
+- Se amplía `ApiClient` con timeline, decisión, inteligencia hídrica y alta de resultados.
+- No se introducen nuevas entidades ni reglas de dominio.
+
 ### PR #12 — módulos Flutter de explotación y campañas
 - Se completa la exposición en Flutter del centro de explotación ya existente en backend.
 - Se añade gestión de campañas por parcela usando los contratos ya definidos.
@@ -217,6 +224,7 @@ La serie anterior permanece como historial de desarrollo:
 - PR #9 — decisiones en campañas.
 - PR #10 — resultados productivos.
 - PR #12 — módulos Flutter de explotación y campañas.
+- PR #13 — completar flujos agronómicos Flutter.
 
 No se debe interpretar que un PR abierto está integrado en `main` hasta que GitHub confirme su merge.
 
