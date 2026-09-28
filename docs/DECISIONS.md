@@ -303,6 +303,6 @@ Reintentos del mismo evento no crean otra alerta, mientras que una nueva transic
 **Estado:** aceptado  
 **Fecha:** 2026-09-28
 
-La primera compilación Android reproducible mostró que `google_mobile_ads 5.3.1` falla al configurarse con el Gradle generado por la versión estable de Flutter usada por CI. En lugar de degradar la cadena Android completa, se actualiza `google_mobile_ads` a 6.0.0 y el mínimo de Dart a 3.6.0, manteniendo la API de publicidad existente.
+La primera compilación Android reproducible mostró que `google_mobile_ads 5.3.1` falla al configurarse con el Gradle generado por la versión estable de Flutter usada por CI. En lugar de degradar la cadena Android completa, se actualiza `google_mobile_ads` a 7.0.0 y el mínimo de Dart a 3.9.0, manteniendo la API de publicidad existente.
 
 La decisión se valida mediante `flutter analyze`, `flutter test` y la compilación `flutter build apk --debug`. La firma de producción y la configuración nativa de AdMob siguen fuera del alcance de esta build de pruebas.
