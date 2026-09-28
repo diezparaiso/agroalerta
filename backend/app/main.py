@@ -182,23 +182,9 @@ def get_weather_stations(_token=Depends(optional_bearer_token)):
 
 @app.post("/api/v1/weather/refresh")
 async def refresh_weather(_token: str | None = Depends(optional_bearer_token)) -> dict[str, object]:
-    """Actualiza meteorología de las parcelas del propietario autenticado."""
+    """Actualiza meteorología, recalcula riesgo y genera alertas del propietario."""
     owner_id = _token or "anonymous"
-    storage_for_refresh = Storage()
-    parcels = storage_for_refresh.list_parcels(owner_id)
-    updated = 0
-    failed = 0
-    for parcel in parcels:
-        try:
-            result = await ingest_weather_for_parcel(parcel.latitude, parcel.longitude)
-            if result.get("status") == "ingested":
-                updated += 1
-            else:
-                failed += 1
-        except Exception:
-            failed += 1
-            logger.exception("Error refrescando parcela %s", parcel.id)
-    return {"status": "completed", "parcels": len(parcels), "updated": updated, "failed": failed}
+    return await refresh_all_parcel_weather(owner_id)
 
 
 @app.post("/api/v1/weather/ingest/{parcel_id}")
