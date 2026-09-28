@@ -27,3 +27,8 @@ Las decisiones arquitectónicas y de comportamiento se registran en `docs/DECISI
 - El esquema de base de datos debe inicializarse desde un único punto de bootstrap; los métodos de escritura no deben crear tablas durante operaciones normales.
 - Toda modificación estructural nueva debe introducir una versión de esquema y una prueba de migración o compatibilidad.
 - La configuración del motor de persistencia debe ser explícita. No se debe anunciar soporte para un motor hasta disponer de un adaptador probado.
+
+### Idempotencia de operaciones offline
+
+Las operaciones móviles que puedan repetirse por reconexión o respuesta perdida deben transportar una identidad estable del evento. El servidor debe tratar esa identidad como clave de idempotencia y devolver un resultado explícito cuando el evento ya fue recibido. No se debe generar un identificador nuevo por cada intento de red.
+
