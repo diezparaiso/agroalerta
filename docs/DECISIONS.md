@@ -480,3 +480,19 @@ Se incorpora `GET /api/v1/parcels/{parcel_id}/field-reports/summary` como lectur
 **Trazabilidad:** los contadores se calculan exclusivamente desde `field_reports`; no se infieren observaciones ni se generan tendencias sintéticas.
 
 **Validación:** pruebas de API para agregación y aislamiento entre propietarios.
+
+
+## ADR-043: Estado de evidencia meteorológica por parcela
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+Se incorpora `GET /api/v1/parcels/{parcel_id}/weather-evidence` como módulo de lectura para conocer la disponibilidad y frescura de la evidencia meteorológica utilizada por la parcela.
+
+**Decisión:** el contrato expone disponibilidad, fuente, confianza, número de estaciones seleccionadas, ventana máxima de frescura (72 horas), última observación y detalle de estaciones. Reutiliza el mismo contexto meteorológico espacial existente, sin recalcular riesgo ni ingerir datos.
+
+**Motivo:** separar la señal de calidad/disponibilidad de la meteorología de los valores meteorológicos y del motor de riesgo, permitiendo que clientes expliquen cuándo una parcela carece de evidencia reciente.
+
+**Trazabilidad:** solo se utilizan observaciones meteorológicas persistidas y la selección espacial existente; no se generan valores sintéticos.
+
+**Validación:** pruebas de API para ausencia de evidencia y aislamiento por propietario.
