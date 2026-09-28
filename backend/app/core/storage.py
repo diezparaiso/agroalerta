@@ -4,7 +4,7 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from app.schemas import AgronomicActivity, AgronomicActivityCreate, Device, DeviceCreate, FieldReportCreate, Parcel, ParcelCreate, RiskSnapshot, TelemetryCreate
+from app.schemas import AgronomicActivity, AgronomicActivityCreate, CropCampaign, CropCampaignCreate, Device, DeviceCreate, FieldReportCreate, Parcel, ParcelCreate, RiskSnapshot, TelemetryCreate
 from app.schemas_push import PushTokenCreate
 
 
@@ -81,6 +81,21 @@ class Storage:
                     quantity REAL,
                     unit TEXT,
                     created_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS crop_campaigns (
+                    id TEXT PRIMARY KEY,
+                    parcel_id TEXT NOT NULL,
+                    owner_id TEXT NOT NULL,
+                    crop_type TEXT NOT NULL,
+                    season_label TEXT NOT NULL,
+                    started_at TEXT NOT NULL,
+                    ended_at TEXT,
+                    status TEXT NOT NULL,
+                    variety TEXT,
+                    target_yield_t_ha REAL,
+                    notes TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
                 );
                 CREATE TABLE IF NOT EXISTS push_tokens (
                     token TEXT PRIMARY KEY,
@@ -178,6 +193,42 @@ class Storage:
                 (parcel_id, owner_id, limit),
             ).fetchall()
         return [AgronomicActivity(**dict(row)) for row in rows]
+
+
+    def create_campaign(self, campaign_id: str, payload: CropCampaignCreate) -> CropCampaign:
+        now = datetime.now(timezone.utc)
+        owner_id = payload.owner_id or 'anonymous'
+        with self._connect() as connection:
+            connection.execute(
+                'INSERT INTO crop_campaigns (id, parcel_id, owner_id, crop_type, season_label, started_at, ended_at, status, variety, target_yield_t_ha, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                (campaign_id, payload.parcel_id, owner_id, payload.crop_type, payload.season_label, payload.started_at.isoformat(), payload.ended_at.isoformat() if payload.ended_at else None, payload.status, payload.variety, payload.target_yield_t_ha, payload.notes, now.isoformat(), now.isoformat()),
+            )
+        return CropCampaign(id=campaign_id, created_at=now, updated_at=now, **payload.model_dump())
+
+    def list_campaigns(self, parcel_id: str, owner_id: str) -> list[CropCampaign]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                'SELECT * FROM crop_campaigns WHERE parcel_id = ? AND owner_id = ? ORDER BY started_at DESC',
+                (parcel_id, owner_id),
+            ).fetchall()
+        return [CropCampaign(**dict(row)) for row in rows]
+
+    def get_campaign(self, campaign_id: str, owner_id: str) -> CropCampaign | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                'SELECT * FROM crop_campaigns WHERE id = ? AND owner_id = ?',
+                (campaign_id, owner_id),
+            ).fetchone()
+        return CropCampaign(**dict(row)) if row else None
+
+    def update_campaign_status(self, campaign_id: str, owner_id: str, status: str, ended_at: datetime | None = None) -> CropCampaign | None:
+        now = datetime.now(timezone.utc)
+        with self._connect() as connection:
+            result = connection.execute(
+                'UPDATE crop_campaigns SET status = ?, ended_at = ?, updated_at = ? WHERE id = ? AND owner_id = ?',
+                (status, ended_at.isoformat() if ended_at else None, now.isoformat(), campaign_id, owner_id),
+            )
+        return self.get_campaign(campaign_id, owner_id) if result.rowcount else None
 
     def create_report(self, report_id: str, payload: FieldReportCreate) -> None:
         with self._connect() as connection:
