@@ -30,7 +30,7 @@ La estimación debe actualizarse después de hitos relevantes y no debe interpre
 | Productos fitosanitarios / MAPA | 35% |
 | GIS / contexto espacial | 45% |
 | Flutter / UI-UX | 78% |
-| Offline / sincronización | 65% |
+| Offline / sincronización | 70% |
 | Privacidad / publicidad | 75% |
 | Tests / QA / CI | 65% |
 | Despliegue / producción | 45% |
@@ -117,7 +117,9 @@ Pendiente: pulido de UX, estados offline avanzados, accesibilidad, integración 
 
 Existe almacenamiento local para parcelas y otros datos.
 
-Pendiente: estrategia completa de sincronización, conflictos, reintentos y consistencia entre dispositivo y servidor.
+Implementado: cola offline con sincronización sin concurrencia y reintentos por informe con backoff exponencial hasta 1 hora.
+
+Pendiente: estado de sincronización visible, conflictos y consistencia avanzada entre dispositivo y servidor.
 
 ### 14. Privacidad / publicidad — 75%
 
