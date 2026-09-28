@@ -207,6 +207,23 @@ class Storage:
                 '''
             )
             self._record_schema_version(connection, 5)
+            connection.execute(
+                '''
+                CREATE TABLE IF NOT EXISTS treatment_records (
+                    id TEXT PRIMARY KEY,
+                    parcel_id TEXT NOT NULL,
+                    campaign_id TEXT,
+                    owner_id TEXT NOT NULL,
+                    applied_at TEXT NOT NULL,
+                    product_name TEXT NOT NULL,
+                    active_substance TEXT,
+                    dose TEXT,
+                    treated_area_ha REAL,
+                    notes TEXT
+                )
+                '''
+            )
+            self._record_schema_version(connection, 6)
 
     @staticmethod
     def _record_schema_version(connection: sqlite3.Connection, version: int) -> None:
@@ -264,6 +281,22 @@ class Storage:
         with self._connect() as connection:
             rows = connection.execute(
                 "SELECT * FROM irrigation_events WHERE parcel_id = ? AND owner_id = ? ORDER BY started_at DESC LIMIT ?",
+                (parcel_id, owner_id, max(1, min(limit, 200))),
+            ).fetchall()
+        return [dict(row) for row in rows]
+
+    def create_treatment_record(self, record: dict[str, object]) -> dict[str, object]:
+        with self._connect() as connection:
+            connection.execute(
+                "INSERT INTO treatment_records (id, parcel_id, campaign_id, owner_id, applied_at, product_name, active_substance, dose, treated_area_ha, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (record["id"], record["parcel_id"], record["campaign_id"], record["owner_id"], record["applied_at"], record["product_name"], record["active_substance"], record["dose"], record["treated_area_ha"], record["notes"]),
+            )
+        return record
+
+    def list_treatment_records(self, parcel_id: str, owner_id: str, limit: int = 100) -> list[dict[str, object]]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT * FROM treatment_records WHERE parcel_id = ? AND owner_id = ? ORDER BY applied_at DESC LIMIT ?",
                 (parcel_id, owner_id, max(1, min(limit, 200))),
             ).fetchall()
         return [dict(row) for row in rows]
