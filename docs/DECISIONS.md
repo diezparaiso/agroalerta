@@ -96,3 +96,16 @@ Reintentos del mismo evento no crean otra alerta, mientras que una nueva transic
 **Consecuencia:** las alertas permanecen visibles cuando AgroAlerta está abierta. En background/terminada se mantiene el comportamiento nativo de FCM para el payload de notificación. No se crea una segunda alerta de dominio: la notificación local es únicamente presentación del evento persistido.
 
 **Validación pendiente:** prueba en dispositivos Android/iOS reales con permisos concedidos y revocados.
+
+
+### ADR-013: Orquestación explícita del ciclo agroclimático
+
+**Estado:** aceptado
+
+**Decisión:** centralizar el orden operativo en `backend/app/jobs/agroclimatic_cycle.py`: catálogo RIA → RAIF por cultivo → meteorología por parcela → riesgo/alertas. Las fuentes auxiliares se aíslan ante errores y el ciclo no inventa evidencia cuando una fuente no está disponible.
+
+**Motivo:** evita que cada mecanismo de ejecución implemente su propio orden y reduce el riesgo de calcular riesgo con catálogos o evidencias desactualizados.
+
+**Operación:** el módulo es invocable como tarea Python y queda preparado para conectarse a un scheduler externo. No se introduce un scheduler embebido en FastAPI para evitar ejecuciones duplicadas cuando existen varias réplicas del servicio.
+
+**Pendiente:** conectar este ciclo a el mecanismo de scheduling del entorno de producción, con control de concurrencia, timeout, reintentos y observabilidad.
