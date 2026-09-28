@@ -233,13 +233,13 @@ def get_weather(parcel_id: str, _token: str | None = Depends(optional_bearer_tok
         }
     return {
         "parcel_id": parcel_id,
-        "temperature_c": 18.4,
-        "relative_humidity": 87,
-        "rainfall_mm_24h": 12.2,
+        "temperature_c": None,
+        "relative_humidity": None,
+        "rainfall_mm_24h": None,
         "station_distance_km": None,
-        "observed_at": datetime.now(timezone.utc),
-        "source": "fallback-demo",
-        "confidence": "estimada",
+        "observed_at": None,
+        "source": "none",
+        "confidence": "no_disponible",
         "stations": [],
     }
 
