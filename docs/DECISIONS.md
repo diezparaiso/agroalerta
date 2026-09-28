@@ -382,3 +382,13 @@ Se utiliza `fl_chart`, ya presente en las dependencias del proyecto. La primera 
 El dashboard no selecciona automáticamente `parcels.first` para representar telemetría. El usuario debe seleccionar la parcela y, cuando existen varios dispositivos, el sensor. Al cambiar de parcela se limpia el sensor seleccionado para evitar reutilizar una identidad de dispositivo de otra parcela. El filtro de `device_id` también se aplica en la API y en SQLite, y la API verifica que el sensor pertenezca a la parcela y al propietario autenticados antes de devolver histórico.
 
 Esta decisión evita mezclar evidencia de parcelas o sensores distintos y mantiene la trazabilidad del histórico mostrado.
+
+
+## ADR-036: Ciclo de vida mínimo de dispositivos IoT
+
+**Estado:** aceptado  
+**Fecha:** 2026-09-28
+
+La API de ingestión de telemetría solo acepta mediciones cuyo device_id esté registrado en la parcela del propietario autenticado y cuyo dispositivo esté activo. Un sensor desconocido devuelve 404 y uno inactivo devuelve 409.
+
+La decisión evita aceptar telemetría huérfana o procedente de dispositivos retirados. La activación/desactivación sigue siendo un estado del dispositivo; la automatización de ese ciclo y la validación física del hardware quedan fuera de este cambio.
