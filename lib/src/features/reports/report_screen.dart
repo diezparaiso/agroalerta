@@ -59,6 +59,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     try {
       await ref.read(apiClientProvider).submitFieldReport(
         parcelId: payload['parcel_id'] as String,
+        reportId: payload['report_id'] as String,
         type: payload['type'] as String,
         notes: payload['notes'] as String,
         count: payload['count'] as int,
