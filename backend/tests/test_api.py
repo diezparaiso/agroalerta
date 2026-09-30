@@ -79,4 +79,24 @@ def test_production_requires_firebase(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv('FIREBASE_SERVICE_ACCOUNT_JSON', raising=False)
     assert client.get('/api/v1/parcels').status_code == 401
     assert client.get('/api/v1/parcels', headers={'Authorization': 'Bearer dev-token'}).status_code == 503
+
+
+def test_production_rejects_malformed_bearer(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv('ENVIRONMENT', 'production')
+    monkeypatch.setenv('FIREBASE_SERVICE_ACCOUNT_JSON', '{"type": "service_account"}')
+    assert client.get('/api/v1/parcels', headers={'Authorization': 'Basic token'}).status_code == 401
+    assert client.get('/api/v1/parcels', headers={'Authorization': 'Bearer token with spaces'}).status_code == 401
+
+
+def test_production_rejects_invalid_firebase_configuration(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv('ENVIRONMENT', 'production')
+    monkeypatch.setenv('FIREBASE_SERVICE_ACCOUNT_JSON', 'not-json')
+    response = client.get('/api/v1/parcels', headers={'Authorization': 'Bearer token'})
+    assert response.status_code == 503
+
+
+def test_development_allows_local_test_identity(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv('ENVIRONMENT', 'development')
+    monkeypatch.delenv('FIREBASE_SERVICE_ACCOUNT_JSON', raising=False)
+    response = client.get('/api/v1/parcels', headers={'Authorization': 'Bearer local-test-user'})
+    assert response.status_code == 200
