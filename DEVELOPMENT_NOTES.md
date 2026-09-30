@@ -106,7 +106,7 @@ AgroAlerta Andalucia es una aplicación Flutter responsive con backend FastAPI p
 - Las 24 incidencias preexistentes de `flutter analyze` (imports sin usar, `value` deprecated en `DropdownButtonFormField` y concatenaciones con `+`) se corrigieron el 2026-09-30; `flutter analyze` queda en 0 incidencias y el paso de análisis de CI pasa.
 - AEMET no se ha podido probar en vivo en este entorno: no existe `AEMET_API_KEY`. Su conversor solo está cubierto por pruebas unitarias con payloads de ejemplo.
 - La combinación ponderada de hasta tres estaciones y el límite de 80 km descritos en el ADR-003 quedan diferidos; el alcance real está registrado en el ADR-007.
-- Entorno de la máquina de desarrollo: Python 3.13.15 con virtualenv en `backend/.venv` (gitignored); el disco `C:` quedó con unos 3 GB libres tras limpiar cachés, por lo que no se ejecutaron compilaciones nativas ni emuladores Android.
+- Entorno de la máquina de desarrollo: Python 3.13.15 con virtualenv en `backend/.venv` (gitignored) y ~8 GB de RAM. La compilación nativa Android se intentó el 2026-10-01: el daemon JVM de Gradle crasheaba por memoria con los valores por defecto de la plantilla (`-Xmx8G`), ya corregidos en `android/gradle.properties`, y el proceso quedó después bloqueado por disco lleno (quedaban ~733 MB). Falta reanudar `flutter build apk --debug` cuando haya espacio.
 
 ## Pendientes de producción
 
@@ -121,6 +121,7 @@ AgroAlerta Andalucia es una aplicación Flutter responsive con backend FastAPI p
 9. Configurar permisos nativos de cámara, ubicación, notificaciones y AdMob.
 10. Pruebas en local completadas el 2026-09-30: backend 31/31, `flutter test` en verde y `flutter analyze` sin incidencias. Queda ejecutar las pruebas en Android, iOS y Web.
 11. Probar AEMET en vivo con una `AEMET_API_KEY` real y verificar el mapeo de la estación más próxima.
+12. Reanudar la compilación Android (`flutter build apk --debug`) cuando haya disco libre y completar el manifest de release: permisos `INTERNET`, ubicación y notificaciones, más el meta-data `APPLICATION_ID` de AdMob.
 
 ## Última validación
 
