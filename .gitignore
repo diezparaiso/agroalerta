@@ -8,6 +8,7 @@ coverage/
 *.iml
 .idea/
 backend/.venv/
+backend/agroalerta.db
 __pycache__/
 .pytest_cache/
 .env
