@@ -50,7 +50,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: ListTile(
               leading: const CircleAvatar(child: Icon(Icons.person_outline)),
               title: Text(user?.email ?? 'Cuenta autenticada'),
-              subtitle: Text('ID: ' + (user?.uid ?? 'local')),
+              subtitle: Text('ID: ${user?.uid ?? 'local'}'),
             ),
           ),
           Card(

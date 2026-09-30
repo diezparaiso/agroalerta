@@ -31,7 +31,7 @@ class _IrrigationScreenState extends ConsumerState<IrrigationScreen> {
       subtitle: 'Histórico de riego y estado de humedad',
       child: parcels.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: ' + e.toString())),
+        error: (e, _) => Center(child: Text('Error: $e')),
         data: (items) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -50,12 +50,12 @@ class _IrrigationScreenState extends ConsumerState<IrrigationScreen> {
               Expanded(
                 child: ListView(children: [
                   Card(child: ListTile(
-                    title: Text('Estado: ' + (data!['soil_status']?.toString() ?? '')),
-                    subtitle: Text((data!['explanation']?.toString() ?? '') + '\nAcción: ' + (data!['action']?.toString() ?? '')),
+                    title: Text('Estado: ${data!['soil_status']?.toString() ?? ''}'),
+                    subtitle: Text('${data!['explanation']?.toString() ?? ''}\nAcción: ${data!['action']?.toString() ?? ''}'),
                   )),
                   Card(child: ListTile(
-                    title: Text('Agua registrada: ' + (data!['total_water_liters']?.toString() ?? '0') + ' L'),
-                    subtitle: Text('Eventos: ' + (data!['event_count']?.toString() ?? '0') + ' · Nivel de uso: ' + (data!['water_use_level']?.toString() ?? '')),
+                    title: Text('Agua registrada: ${data!['total_water_liters']?.toString() ?? '0'} L'),
+                    subtitle: Text('Eventos: ${data!['event_count']?.toString() ?? '0'} · Nivel de uso: ${data!['water_use_level']?.toString() ?? ''}'),
                   )),
                   Text('Evidencias', style: Theme.of(context).textTheme.titleLarge),
                   ...((data!['evidence'] as List<dynamic>? ?? const []).map((e) => ListTile(

@@ -54,10 +54,7 @@ class _ProductTile extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.w700),
         ),
         subtitle: Text(
-          crop +
-              '\n' +
-              substance +
-              '\n\nComprueba siempre la etiqueta y autorizacion vigente.',
+          '$crop\n$substance\n\nComprueba siempre la etiqueta y autorizacion vigente.',
         ),
         isThreeLine: true,
       ),

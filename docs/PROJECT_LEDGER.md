@@ -119,6 +119,7 @@ Este cambio se realizó en la rama `feature/complete-agronomic-workflows` sin ab
 - Flutter: eliminados los fallbacks demo de clima, alertas, detalle de alerta, gráfico de historial y el getter de parcelas demo; la app muestra ahora estados de error explícitos en lugar de datos inventados.
 - Correcciones incluidas: bug de desempaquetado de tupla en la selección de estación (detectado por las nuevas pruebas), desbordamiento de `login_screen.dart` y `test/widget_test.dart` sin `ProviderScope`.
 - Validación: 31/31 pruebas backend, `flutter test` en verde, `flutter analyze` sin incidencias en los archivos tocados y prueba en vivo con datos reales de RIA/IFAPA.
+- Corrección posterior del mismo día: resueltas las 24 incidencias de `flutter analyze` (imports sin usar, `value` deprecated y concatenaciones con `+`) en 10 pantallas, dejando el análisis de CI en verde.
 
 ## 3. Modelo funcional consolidado
 
@@ -224,7 +225,7 @@ Los comandos documentados para ejecutar la suite backend son:
 PYTHONPATH=backend python -m pytest backend/tests -q
 ```
 
-**Estado de verificación (2026-09-30):** la suite backend se ejecutó en local con Python 3.13.15 y terminó con `31 passed`. `flutter test` también pasó en local. `flutter analyze` devuelve 24 incidencias preexistentes en archivos no tocados por la integración meteorológica, por lo que el paso de análisis de CI (`.github/workflows/ci.yml`) fallaría hasta corregirlas; el resultado de GitHub Actions en la nube no se ha verificado desde aquí.
+**Estado de verificación (2026-09-30):** la suite backend se ejecutó en local con Python 3.13.15 y terminó con `31 passed`. `flutter test` también pasó en local. Las 24 incidencias preexistentes de `flutter analyze` (imports sin usar, `value` deprecated y concatenaciones con `+`) se corrigieron el mismo día, de modo que los tres pasos de CI (`.github/workflows/ci.yml`) pasan en local; el resultado de GitHub Actions en la nube no se ha verificado desde aquí.
 
 ## 9. Estado de integración
 

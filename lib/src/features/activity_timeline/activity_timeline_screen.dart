@@ -12,7 +12,7 @@ class ActivityTimelineScreen extends ConsumerWidget {
     final selected = ref.watch(selectedTimelineParcelProvider);
     return AppPage(title: 'Línea temporal', subtitle: 'Actividad, telemetría y riesgo de la parcela', child: parcels.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('No se pudieron cargar las parcelas: ' + e.toString())),
+      error: (e, _) => Center(child: Text('No se pudieron cargar las parcelas: $e')),
       data: (items) {
         final current = items.where((p) => p.id == selected).firstOrNull;
             final currentId = current?.id;
@@ -38,7 +38,7 @@ class ActivityTimelineScreen extends ConsumerWidget {
           const SizedBox(height: 12),
           Expanded(child: ref.watch(activityTimelineProvider).when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('No se pudo cargar la línea temporal: ' + e.toString())),
+            error: (e, _) => Center(child: Text('No se pudo cargar la línea temporal: $e')),
             data: (events) => events.isEmpty ? const Center(child: Text('No hay actividad registrada.')) : ListView.separated(
               itemCount: events.length,
               separatorBuilder: (_, __) => const Divider(height: 1),
@@ -47,7 +47,7 @@ class ActivityTimelineScreen extends ConsumerWidget {
                 return ListTile(
                   leading: Icon(_icon(event['event_type']?.toString() ?? '')),
                   title: Text(event['title']?.toString() ?? 'Evento'),
-                  subtitle: Text((event['detail']?.toString() ?? '') + '\n' + (event['occurred_at']?.toString() ?? '')),
+                  subtitle: Text('${event['detail']?.toString() ?? ''}\n${event['occurred_at']?.toString() ?? ''}'),
                   isThreeLine: true,
                 );
               },
@@ -79,7 +79,7 @@ Future<void> _createActivity(BuildContext context, WidgetRef ref, String parcelI
         title: const Text('Registrar actividad'),
         content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
           DropdownButtonFormField<String>(
-            value: activityType,
+            initialValue: activityType,
             decoration: const InputDecoration(labelText: 'Tipo'),
             items: const [
               DropdownMenuItem(value: 'labor', child: Text('Trabajo')),

@@ -217,13 +217,13 @@ class _ParcelCard extends StatelessWidget {
                 fontSize: 18,
               ),
             ),
-            Text(crop + ' · ' + place),
+            Text('$crop · $place'),
             const SizedBox(height: 10),
             Row(
               children: [
                 const Icon(Icons.circle, size: 10, color: Colors.amber),
                 const SizedBox(width: 8),
-                Text('Riesgo ' + risk),
+                Text('Riesgo $risk'),
               ],
             ),
           ],

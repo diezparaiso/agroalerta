@@ -98,12 +98,12 @@ AgroAlerta Andalucia es una aplicación Flutter responsive con backend FastAPI p
 ### Validación ejecutada
 
 - Backend: `31 passed` con `PYTHONPATH=backend python -m pytest backend/tests -q` (9 pruebas nuevas del servicio meteorológico).
-- Flutter: `flutter test` en verde; `flutter analyze` sin incidencias en los archivos tocados por este cambio.
+- Flutter: `flutter test` en verde; `flutter analyze` sin incidencias en los archivos tocados por este cambio y en todo el proyecto tras corregir las 24 incidencias preexistentes el mismo día.
 - Prueba en vivo contra RIA/IFAPA con una parcela temporal (creada y borrada después): 24,3 °C, humedad 65,1 %, estación "La Rinconada" a 9,4 km, observado el 2026-09-29, `source: ria-ifapa`.
 
 ### Incidencias y limitaciones conocidas
 
-- `flutter analyze` devuelve 24 incidencias preexistentes en archivos no tocados por este cambio; el paso `flutter analyze` de CI (`.github/workflows/ci.yml`) fallará hasta corregirlas.
+- Las 24 incidencias preexistentes de `flutter analyze` (imports sin usar, `value` deprecated en `DropdownButtonFormField` y concatenaciones con `+`) se corrigieron el 2026-09-30; `flutter analyze` queda en 0 incidencias y el paso de análisis de CI pasa.
 - AEMET no se ha podido probar en vivo en este entorno: no existe `AEMET_API_KEY`. Su conversor solo está cubierto por pruebas unitarias con payloads de ejemplo.
 - La combinación ponderada de hasta tres estaciones y el límite de 80 km descritos en el ADR-003 quedan diferidos; el alcance real está registrado en el ADR-007.
 - Entorno de la máquina de desarrollo: Python 3.13.15 con virtualenv en `backend/.venv` (gitignored); el disco `C:` quedó con unos 3 GB libres tras limpiar cachés, por lo que no se ejecutaron compilaciones nativas ni emuladores Android.
@@ -119,13 +119,12 @@ AgroAlerta Andalucia es una aplicación Flutter responsive con backend FastAPI p
 7. Verificar mecanismo de exportación o indexación legal del registro MAPA.
 8. Añadir métricas de retención y carga incremental en la gráfica Flutter.
 9. Configurar permisos nativos de cámara, ubicación, notificaciones y AdMob.
-10. Pruebas en local completadas el 2026-09-30: backend 31/31 y `flutter test` en verde; `flutter analyze` queda con 24 incidencias preexistentes. Queda ejecutar las pruebas en Android, iOS y Web.
-11. Corregir las 24 incidencias preexistentes de `flutter analyze` para dejar el paso de análisis de CI en verde.
-12. Probar AEMET en vivo con una `AEMET_API_KEY` real y verificar el mapeo de la estación más próxima.
+10. Pruebas en local completadas el 2026-09-30: backend 31/31, `flutter test` en verde y `flutter analyze` sin incidencias. Queda ejecutar las pruebas en Android, iOS y Web.
+11. Probar AEMET en vivo con una `AEMET_API_KEY` real y verificar el mapeo de la estación más próxima.
 
 ## Última validación
 
-- Estado global a 2026-09-30: suite backend completa en verde con 31 tests, `flutter test` en verde y `flutter analyze` con 24 incidencias preexistentes en archivos no tocados. La serie siguiente registra la evolución histórica de los 6 tests originales de `test_api.py`.
+- Estado global a 2026-09-30: suite backend completa en verde con 31 tests, `flutter test` en verde y `flutter analyze` sin incidencias (tras corregir las 24 preexistentes del mismo día). La serie siguiente registra la evolución histórica de los 6 tests originales de `test_api.py`.
 - Backend: `6 tests passed` en `backend/tests/test_api.py` tras añadir historial y aislamiento.
 - El endpoint de clima quedó protegido por propietario; la suite mantiene `6 tests passed`.
 - Tokens FCM persistidos; la suite mantiene `6 tests passed`.

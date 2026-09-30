@@ -67,7 +67,7 @@ Las recomendaciones no sustituyen la etiqueta oficial ni el asesoramiento de un 
 
 Cada push y pull request ejecuta las pruebas FastAPI y el análisis, dependencias y pruebas de Flutter mediante GitHub Actions. Las credenciales se configuran como secretos del entorno de despliegue y nunca se guardan en el repositorio.
 
-Estado a 2026-09-30: las pruebas del backend (31) y las de Flutter pasan en local, pero `flutter analyze` devuelve 24 incidencias preexistentes en archivos no tocados por la integración meteorológica, por lo que el paso de análisis de CI fallará hasta corregirlas.
+Estado a 2026-09-30: las pruebas del backend (31) y las de Flutter pasan en local y `flutter analyze` no devuelve incidencias, de modo que los tres pasos de CI quedan en verde.
 
 ## Documentación técnica
 

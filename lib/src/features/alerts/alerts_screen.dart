@@ -32,10 +32,10 @@ class _AlertTile extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
-        onTap: alert.parcelId == null ? null : () => context.push('/alerts/' + alert.title.toLowerCase() + '?parcelId=' + Uri.encodeComponent(alert.parcelId!)),
+        onTap: alert.parcelId == null ? null : () => context.push('/alerts/${alert.title.toLowerCase()}?parcelId=${Uri.encodeComponent(alert.parcelId!)}'),
         contentPadding: const EdgeInsets.all(16),
         leading: CircleAvatar(backgroundColor: color.withValues(alpha: .2), child: Icon(Icons.warning_amber_rounded, color: color)),
-        title: Text(alert.title + ' · riesgo ' + alert.level, style: const TextStyle(fontWeight: FontWeight.w700)),
+        title: Text('${alert.title} · riesgo ${alert.level}', style: const TextStyle(fontWeight: FontWeight.w700)),
         subtitle: Padding(padding: const EdgeInsets.only(top: 8), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(alert.parcel), const SizedBox(height: 10), LinearProgressIndicator(value: alert.value, color: color)])),
         trailing: alert.parcelId == null ? null : const Icon(Icons.chevron_right),
       ),
