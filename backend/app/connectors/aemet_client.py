@@ -7,6 +7,7 @@ from app.core.config import settings
 
 class AemetClient:
     def __init__(self, client: httpx.AsyncClient | None = None) -> None:
+        self._owns_client = client is None
         self.client = client or httpx.AsyncClient(timeout=15)
 
     async def get_daily_forecast(self, municipality_code: str) -> Any:
@@ -24,3 +25,7 @@ class AemetClient:
         data_response = await self.client.get(data_url)
         data_response.raise_for_status()
         return data_response.json()
+
+    async def aclose(self) -> None:
+        if self._owns_client:
+            await self.client.aclose()

@@ -42,6 +42,8 @@ Alta:
 - `GET /api/v1/alerts`
 - `GET /api/v1/risk-history/{parcel_id}?limit=100&offset=0`
 
+El clima usa datos reales: consulta primero la estación RIA-IFAPA activa más cercana a la parcela y, si no responde, la predicción AEMET del municipio de referencia (requiere `AEMET_API_KEY`). Devuelve `parcel_id`, `temperature_c`, `relative_humidity`, `rainfall_mm_24h`, `station_distance_km`, `observed_at`, `station_name` y `source` (`ria-ifapa` o `aemet`). Si ninguna fuente está disponible responde `503` con el motivo; nunca devuelve valores ficticios.
+
 El riesgo devuelve puntuación, nivel, confianza, variables utilizadas, fechas y recomendación orientativa.
 
 ## Productos y reportes
@@ -98,6 +100,7 @@ Los tokens se guardan por propietario y se eliminan cuando fallan los envíos tr
 - `404`: recurso inexistente o perteneciente a otro usuario.
 - `422`: validación Pydantic fallida.
 - `500`: error interno; revisar métricas y logs sin exponer secretos.
+- `503`: fuente externa de clima (RIA-IFAPA o AEMET) sin datos; el `detail` explica el motivo.
 
 
 ## Operación agronómica

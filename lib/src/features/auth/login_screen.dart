@@ -51,7 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Card(
               child: Padding(
                 padding: const EdgeInsets.all(28),
-                child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                   const Icon(Icons.eco, size: 52),
                   const SizedBox(height: 20),
                   Text('AgroAlerta Andalucia', style: Theme.of(context).textTheme.headlineSmall, textAlign: TextAlign.center),
@@ -71,7 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextButton(onPressed: enabled ? () => _run(() async { await widget.authService!.sendPasswordReset(emailController.text.trim()); }) : null, child: const Text('He olvidado mi contrasena')),
                   if (error != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error), textAlign: TextAlign.center)),
                   if (!widget.firebaseAvailable) const Padding(padding: EdgeInsets.only(top: 16), child: Text('Configura Firebase para activar el acceso.', textAlign: TextAlign.center)),
-                ]),
+                ])),
               ),
             ),
           ),

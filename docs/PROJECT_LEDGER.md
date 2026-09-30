@@ -109,6 +109,17 @@ La persistencia de desarrollo continúa siendo SQLite y los contratos HTTP está
   - `GET /api/v1/campaigns/{campaign_id}/results`
   - `GET /api/v1/campaigns/{campaign_id}/results/summary`
 
+### Cambio local 2026-09-30 — meteorología real y retirada de datos ficticios
+
+Este cambio se realizó en la rama `feature/complete-agronomic-workflows` sin abrir PR en el momento de documentarlo:
+
+- Nuevo orquestador `backend/app/core/weather_service.py` que alimenta `GET /api/v1/weather/{parcel_id}`: RIA/IFAPA como fuente primaria (sin credenciales), AEMET como respaldo si existe `AEMET_API_KEY` y error HTTP 503 explícito si ninguna fuente está disponible.
+- Cliente `ria_ifapa_client.py` reescrito sobre los endpoints oficiales verificados en vivo (`/estaciones` y `/datosdiarios/forceEt0/...`); el formato anterior de URL estaba roto.
+- Contratos ampliados con `station_name` y `source` (`ria-ifapa` o `aemet`); detalle en `API_CONTRACTS.md` y en el ADR-007 de `docs/DECISIONS.md`.
+- Flutter: eliminados los fallbacks demo de clima, alertas, detalle de alerta, gráfico de historial y el getter de parcelas demo; la app muestra ahora estados de error explícitos en lugar de datos inventados.
+- Correcciones incluidas: bug de desempaquetado de tupla en la selección de estación (detectado por las nuevas pruebas), desbordamiento de `login_screen.dart` y `test/widget_test.dart` sin `ProviderScope`.
+- Validación: 31/31 pruebas backend, `flutter test` en verde, `flutter analyze` sin incidencias en los archivos tocados y prueba en vivo con datos reales de RIA/IFAPA.
+
 ## 3. Modelo funcional consolidado
 
 ### Parcela
@@ -193,6 +204,7 @@ Esto permite pasar de un sistema de avisos aislados a un historial de explotaci�
 | Riego | POST | `/api/v1/parcels/{parcel_id}/irrigation/events` |
 | Riegos | GET | `/api/v1/parcels/{parcel_id}/irrigation/events` |
 | Inteligencia hídrica | GET | `/api/v1/parcels/{parcel_id}/irrigation/intelligence?window_days=7` |
+| Clima | GET | `/api/v1/weather/{parcel_id}` |
 
 ## 8. Calidad y pruebas
 
@@ -203,7 +215,8 @@ Se han añadido pruebas específicas para:
 - timeline de actividad;
 - gestión de campañas;
 - conexión campaña/decisión;
-- cálculo y agregación de resultados productivos.
+- cálculo y agregación de resultados productivos;
+- servicio meteorológico y conectores RIA/IFAPA y AEMET (9 pruebas en `backend/tests/test_weather_service.py`).
 
 Los comandos documentados para ejecutar la suite backend son:
 
@@ -211,11 +224,11 @@ Los comandos documentados para ejecutar la suite backend son:
 PYTHONPATH=backend python -m pytest backend/tests -q
 ```
 
-**Estado de verificación:** esta documentación registra los tests implementados, pero no afirma una ejecución de CI en este cierre porque no se ha verificado aquí el resultado de GitHub Actions.
+**Estado de verificación (2026-09-30):** la suite backend se ejecutó en local con Python 3.13.15 y terminó con `31 passed`. `flutter test` también pasó en local. `flutter analyze` devuelve 24 incidencias preexistentes en archivos no tocados por la integración meteorológica, por lo que el paso de análisis de CI (`.github/workflows/ci.yml`) fallaría hasta corregirlas; el resultado de GitHub Actions en la nube no se ha verificado desde aquí.
 
 ## 9. Estado de integración
 
-La línea actual es `feature/campaign-results`, basada en `feature/campaign-decision-flow`.
+La última línea documentada al cierre del PR #10 fue `feature/campaign-results`, basada en `feature/campaign-decision-flow`. El 2026-09-30 el repositorio trabajaba en `feature/complete-agronomic-workflows`, donde se realizó el cambio de meteorología real descrito en la sección 2 sin abrir PR.
 
 PR asociado:
 - PR #10 — Cerrar ciclo de resultados productivos de campañas.
@@ -240,7 +253,7 @@ No se debe interpretar que un PR abierto está integrado en `main` hasta que Git
 ## 10. Límites conocidos
 
 - SQLite sigue siendo el almacenamiento de desarrollo.
-- Los conectores externos agronómicos/metereológicos requieren configuración y validación productiva.
+- Conectores externos: RIA/IFAPA está verificado en vivo (2026-09-30); AEMET requiere `AEMET_API_KEY` y sigue pendiente de validación productiva; el catálogo MAPA continúa siendo importación CSV versionada.
 - Los resultados productivos son datos introducidos por el operador; el sistema no inventa kilos ni superficie.
 - Las decisiones agronómicas son de apoyo y trazabilidad, no sustituyen etiqueta oficial ni asesoramiento técnico.
 - El registro de tratamiento actualmente aprovecha la actividad agronómica; una trazabilidad normativa completa de producto, materia activa, dosis y plazo de seguridad requiere un módulo específico de tratamientos.

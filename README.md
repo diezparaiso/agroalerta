@@ -11,13 +11,13 @@ Incluye un vertical slice funcional:
 - Parcelas guardadas localmente por `uid` en el dispositivo para funcionamiento offline.
 - Publicidad AdMob en pantallas generales, nunca dentro de avisos de enfermedad.
 - Navegacion adaptativa: `NavigationBar` en movil y `NavigationRail` en tablet/escritorio.
-- Backend FastAPI con parcelas, clima demo, riesgo de repilo/mildiu, productos y reportes.
+- Backend FastAPI con parcelas, clima real (RIA/IFAPA primero y AEMET como respaldo), riesgo de repilo/mildiu, productos y reportes.
 - Historial de riesgo recuperable desde Flutter para gráficas por parcela.
 - Persistencia SQLite local para parcelas y reportes, con CRUD completo.
-- Conectores aislados para AEMET y RIA/IFAPA, más importador CSV versionado para MAPA.
+- Conectores aislados para AEMET y RIA/IFAPA (RIA/IFAPA verificado en vivo; AEMET requiere `AEMET_API_KEY`), más importador CSV versionado para MAPA.
 - Tarea de ingesta preparada para ejecutarse desde cron, Celery o Cloud Run Jobs.
 - Motor de riesgo MVP determinista con respuesta trazable y nivel de confianza estimado.
-- Modo demo en la interfaz para revisar la experiencia sin credenciales ni backend.
+- Estados de error explícitos cuando una fuente real no está disponible: la app no muestra datos de demostración.
 - Configuracion de VS Code, Docker Compose y pruebas del backend.
 
 ## Ejecutar el backend
@@ -59,13 +59,15 @@ También hay que registrar el `APPLICATION_ID` de AdMob en Android y el `GADAppl
 
 El almacenamiento local del cliente usa `shared_preferences` como adaptador multiplataforma inicial para evitar bloquear Web. La interfaz `OfflineCache` permite sustituirlo por Isar cuando se confirme la estrategia de soporte Web. El backend persiste sus datos de desarrollo en `backend/agroalerta.db` y puede migrarse a PostgreSQL/PostGIS sin cambiar los contratos HTTP.
 
-Los datos meteorológicos y MAPA visibles en el MVP son de demostración. Los conectores ya están aislados, pero la activación productiva requiere credenciales de AEMET y verificación de los contratos públicos de RIA y MAPA.
+Los datos meteorológicos proceden de fuentes reales: RIA/IFAPA en primer plano (sin credenciales) y AEMET como respaldo cuando existe `AEMET_API_KEY`; si ninguna fuente responde, `GET /api/v1/weather/{parcel_id}` devuelve un error 503 explícito en lugar de valores de demostración (ver ADR-007 en `docs/DECISIONS.md`). El catálogo de productos del MAPA sigue pendiente de verificar su contrato público y un mecanismo de exportación o indexación legal.
 
 Las recomendaciones no sustituyen la etiqueta oficial ni el asesoramiento de un técnico agrícola.
 
 ## Integración continua
 
 Cada push y pull request ejecuta las pruebas FastAPI y el análisis, dependencias y pruebas de Flutter mediante GitHub Actions. Las credenciales se configuran como secretos del entorno de despliegue y nunca se guardan en el repositorio.
+
+Estado a 2026-09-30: las pruebas del backend (31) y las de Flutter pasan en local, pero `flutter analyze` devuelve 24 incidencias preexistentes en archivos no tocados por la integración meteorológica, por lo que el paso de análisis de CI fallará hasta corregirlas.
 
 ## Documentación técnica
 
@@ -79,7 +81,7 @@ Ese documento registra:
 - decisiones de diseño;
 - pruebas existentes;
 - límites conocidos;
-- historial de PR #1 a PR #10;
+- historial de PR #1 a PR #14;
 - estado de integración y criterio de cierre.
 
 La arquitectura funcional consolidada es:

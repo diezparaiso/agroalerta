@@ -2,7 +2,7 @@
 
 ## Estado
 
-AgroAlerta Andalucia es una aplicación Flutter responsive con backend FastAPI para avisos fitosanitarios en olivar y vinedo. El cliente está preparado para Android, iOS y Web; el backend concentra las fuentes externas y el cálculo de riesgo.
+AgroAlerta Andalucia es una aplicación Flutter responsive con backend FastAPI para avisos fitosanitarios en olivar y vinedo. El cliente está preparado para Android, iOS y Web; el backend concentra las fuentes externas y el cálculo de riesgo. La meteorología se sirve desde fuentes reales (RIA/IFAPA primero y AEMET como respaldo) y, cuando no hay evidencia, se expresa ausencia explícita en lugar de datos de demostración.
 
 ## Implementado
 
@@ -65,21 +65,48 @@ AgroAlerta Andalucia es una aplicación Flutter responsive con backend FastAPI p
 - Deduplicación temporal de snapshots idénticos para evitar crecimiento innecesario.
 - Historial paginado con `limit` y `offset` para consultas grandes.
 - Retención de snapshots configurable mediante `RISK_SNAPSHOT_RETENTION_DAYS`.
-- Gráfica Flutter de evolución del riesgo en el detalle de alerta, conectada a snapshots reales con fallback demo.
+- Gráfica Flutter de evolución del riesgo en el detalle de alerta, conectada a snapshots reales sin datos de demostración.
 - Fixture de pruebas que limpia SQLite entre casos para evitar contaminación de datos.
 - Prueba de regresión que garantiza deduplicación de snapshots repetidos.
 - Prueba de salud que confirma que no se exponen credenciales de integraciones.
 - Prueba de contrato para paginación de historial.
+- Orquestador `app/core/weather_service.py` y endpoint `GET /api/v1/weather/{parcel_id}`: RIA/IFAPA primero, AEMET con `AEMET_API_KEY` y error 503 explícito cuando no hay fuente disponible.
+- Cliente RIA/IFAPA reescrito sobre los endpoints oficiales verificados en vivo (`/estaciones` y `/datosdiarios/forceEt0/{provincia}/{estacion}/{desde}/{hasta}`).
+- Nuevos campos de respuesta `station_name` y `source` (`ria-ifapa` o `aemet`) junto a `temperature_c`, `relative_humidity`, `rainfall_mm_24h`, `station_distance_km` y `observed_at`.
+- 9 pruebas nuevas del servicio meteorológico en `backend/tests/test_weather_service.py` (31 tests en total en la suite backend).
 
 ## Decisiones técnicas
 
 - `SharedPreferences` funciona como caché inicial multiplataforma para no bloquear Web. Puede sustituirse por Isar cuando se cierre la estrategia Web.
-- Los datos meteorológicos y MAPA siguen teniendo fallback demo hasta validar credenciales, límites y contratos públicos.
+- Los datos meteorológicos son reales: RIA/IFAPA primero (sin credenciales) y AEMET solo si existe `AEMET_API_KEY`; sin fuente disponible se devuelve ausencia explícita (HTTP 503), nunca valores inventados (ADR-007). El catálogo MAPA sigue pendiente de validar su contrato público.
 - AdMob se muestra solo en pantallas generales; nunca en alertas o recomendaciones fitosanitarias.
 - La publicidad requiere consentimiento persistente y revocable.
 - Las fotografías deben pasar por Firebase Storage; no se deben enviar rutas locales al backend en producción.
 - Las recomendaciones son orientativas y deben conservar trazabilidad de fuente MAPA.
 - Los tokens de usuario deben verificarse en backend antes de producción y cada parcela debe filtrarse por propietario.
+
+## Estado de la integración meteorológica (verificación 2026-09-30)
+
+### Qué se hizo
+
+- Backend: nuevo orquestador `app/core/weather_service.py` que alimenta `GET /api/v1/weather/{parcel_id}`. Orden de fuentes: RIA/IFAPA → AEMET (solo si existe `AEMET_API_KEY`) → error HTTP 503 con el motivo real. En ningún caso se inventan valores (ADR-002 y ADR-007).
+- `ria_ifapa_client.py` reescrito con los endpoints oficiales verificados en vivo: `GET {ria_base_url}/estaciones` y `GET {ria_base_url}/datosdiarios/forceEt0/{provincia}/{estacion}/{desde}/{hasta}` (el formato anterior de URL estaba roto).
+- Selección de estación: la estación activa no plástica más próxima a la parcela por distancia haversine sobre el catálogo en vivo; para AEMET, la capital andaluza del INE más próxima (aproximación documentada en ADR-007).
+- Flutter: eliminados todos los datos ficticios de `weather_provider.dart`, `alerts_provider.dart`, `parcel_provider.dart` (getter demo), `alert_detail_screen.dart` (puntuación, métricas, nombre de parcela y gráfica inventados) y `risk_history_chart.dart` (serie por defecto). Se conservan la caché offline local de parcelas y las notificaciones locales best-effort, que no son datos inventados.
+- Correcciones incluidas: bug real de desempaquetado de tupla en la selección de estación (detectado por las nuevas pruebas), desbordamiento de 196 px en `login_screen.dart` (envuelto en `SingleChildScrollView`) y `test/widget_test.dart` roto (envuelto en `ProviderScope`).
+
+### Validación ejecutada
+
+- Backend: `31 passed` con `PYTHONPATH=backend python -m pytest backend/tests -q` (9 pruebas nuevas del servicio meteorológico).
+- Flutter: `flutter test` en verde; `flutter analyze` sin incidencias en los archivos tocados por este cambio.
+- Prueba en vivo contra RIA/IFAPA con una parcela temporal (creada y borrada después): 24,3 °C, humedad 65,1 %, estación "La Rinconada" a 9,4 km, observado el 2026-09-29, `source: ria-ifapa`.
+
+### Incidencias y limitaciones conocidas
+
+- `flutter analyze` devuelve 24 incidencias preexistentes en archivos no tocados por este cambio; el paso `flutter analyze` de CI (`.github/workflows/ci.yml`) fallará hasta corregirlas.
+- AEMET no se ha podido probar en vivo en este entorno: no existe `AEMET_API_KEY`. Su conversor solo está cubierto por pruebas unitarias con payloads de ejemplo.
+- La combinación ponderada de hasta tres estaciones y el límite de 80 km descritos en el ADR-003 quedan diferidos; el alcance real está registrado en el ADR-007.
+- Entorno de la máquina de desarrollo: Python 3.13.15 con virtualenv en `backend/.venv` (gitignored); el disco `C:` quedó con unos 3 GB libres tras limpiar cachés, por lo que no se ejecutaron compilaciones nativas ni emuladores Android.
 
 ## Pendientes de producción
 
@@ -88,14 +115,17 @@ AgroAlerta Andalucia es una aplicación Flutter responsive con backend FastAPI p
 3. Verificar Firebase Storage Rules y Firebase Auth providers.
 4. Sustituir SQLite por PostgreSQL/PostGIS en despliegue.
 5. Conectar métricas a almacenamiento o Prometheus y panel Flutter de salud.
-6. Conectar datos horarios reales de RIA/IFAPA.
+6. Conectar los datos horarios de RIA/IFAPA (los datos diarios ya están conectados mediante `/datosdiarios/forceEt0`).
 7. Verificar mecanismo de exportación o indexación legal del registro MAPA.
 8. Añadir métricas de retención y carga incremental en la gráfica Flutter.
 9. Configurar permisos nativos de cámara, ubicación, notificaciones y AdMob.
-10. Ejecutar `flutter analyze`, `flutter test`, pruebas backend y pruebas en Android, iOS y Web.
+10. Pruebas en local completadas el 2026-09-30: backend 31/31 y `flutter test` en verde; `flutter analyze` queda con 24 incidencias preexistentes. Queda ejecutar las pruebas en Android, iOS y Web.
+11. Corregir las 24 incidencias preexistentes de `flutter analyze` para dejar el paso de análisis de CI en verde.
+12. Probar AEMET en vivo con una `AEMET_API_KEY` real y verificar el mapeo de la estación más próxima.
 
 ## Última validación
 
+- Estado global a 2026-09-30: suite backend completa en verde con 31 tests, `flutter test` en verde y `flutter analyze` con 24 incidencias preexistentes en archivos no tocados. La serie siguiente registra la evolución histórica de los 6 tests originales de `test_api.py`.
 - Backend: `6 tests passed` en `backend/tests/test_api.py` tras añadir historial y aislamiento.
 - El endpoint de clima quedó protegido por propietario; la suite mantiene `6 tests passed`.
 - Tokens FCM persistidos; la suite mantiene `6 tests passed`.
@@ -108,7 +138,7 @@ AgroAlerta Andalucia es una aplicación Flutter responsive con backend FastAPI p
 - Retención configurable de snapshots; la suite mantiene `6 tests passed`.
 - Historial paginado en backend y cliente; la suite mantiene `6 tests passed`.
 - Métricas de contador y latencia media por ruta; la suite mantiene `6 tests passed`.
-- Las advertencias actuales proceden de compatibilidad futura entre Starlette y Python 3.14.
+- Las advertencias restantes proceden de compatibilidad futura entre Starlette/anyio y Python; la validación de 2026-09-30 se ejecutó con Python 3.13.15.
 
 ## Comandos previstos
 
@@ -118,4 +148,10 @@ PYTHONPATH=backend python -m pytest backend/tests -q
 PYTHONPATH=backend uvicorn app.main:app --reload --port 8000
 flutter pub get
 flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8000
+```
+
+En la máquina de desarrollo (2026-09-30) el backend se ejecuta con el entorno virtual `backend/.venv` (Python 3.13.15). En PowerShell:
+
+```powershell
+$env:PYTHONPATH='backend'; & "backend\.venv\Scripts\python.exe" -m pytest backend/tests -q
 ```

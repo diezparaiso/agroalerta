@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.security import optional_bearer_token
 from app.core.storage import Storage
+from app.core.weather_service import WeatherUnavailable, get_parcel_weather
 from app.domain.disease_rules import evaluate_risk
 from app.domain.agronomic_decision import make_agronomic_decision
 from app.domain.farm_operation_center import build_farm_center
@@ -246,17 +247,12 @@ def delete_parcel(parcel_id: str, _token: str | None = Depends(optional_bearer_t
 
 
 @app.get('/api/v1/weather/{parcel_id}')
-def get_weather(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> dict:
-    get_parcel(parcel_id, _token)
-    return {
-        'parcel_id': parcel_id,
-        'temperature_c': 18.4,
-        'relative_humidity': 87,
-        'rainfall_mm_24h': 12.2,
-        'station_distance_km': 6.4,
-        'observed_at': datetime.now(timezone.utc),
-        'source': 'demo-ria-aemet',
-    }
+async def get_weather(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> dict:
+    parcel = get_parcel(parcel_id, _token)
+    try:
+        return await get_parcel_weather(parcel)
+    except WeatherUnavailable as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
 
 
 @app.get('/api/v1/disease-risk/{parcel_id}', response_model=list[DiseaseRisk])

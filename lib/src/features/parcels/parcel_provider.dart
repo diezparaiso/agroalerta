@@ -17,7 +17,8 @@ final parcelsProvider = FutureProvider<List<ParcelSummary>>((ref) async {
     await localStore.write(userId, parcels);
     return parcels.isEmpty ? localParcels : parcels;
   } catch (_) {
-    return localParcels.isEmpty ? ParcelSummary.demo : localParcels;
+    if (localParcels.isNotEmpty) return localParcels;
+    rethrow;
   }
 });
 
@@ -31,12 +32,6 @@ class ParcelSummary {
   final String crop;
   final String place;
   final String risk;
-
-  static List<ParcelSummary> get demo => const [
-        ParcelSummary(name: 'Olivar de prueba', crop: 'Olivar', place: 'Campina de Sevilla', risk: 'Medio'),
-        ParcelSummary(name: 'Vinedo norte', crop: 'Vinedo', place: 'Montilla-Moriles', risk: 'Bajo'),
-        ParcelSummary(name: 'Huerta familiar', crop: 'Olivar', place: 'Sierra de Cordoba', risk: 'Bajo'),
-      ];
 
   factory ParcelSummary.fromJson(Map<String, dynamic> json) => ParcelSummary(
       id: json['id'] as String?,

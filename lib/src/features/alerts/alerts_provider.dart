@@ -4,24 +4,17 @@ import '../parcels/parcel_provider.dart';
 import 'alert_monitor.dart';
 
 final alertsProvider = FutureProvider<List<AlertSummary>>((ref) async {
+  final records = await ref.read(apiClientProvider).getAlerts();
+  final alerts = records.map(AlertSummary.fromJson).toList();
   try {
-    final records = await ref.read(apiClientProvider).getAlerts();
-    final alerts = records.map(AlertSummary.fromJson).toList();
     await AlertMonitor().notifyRelevantAlerts([
       for (final alert in alerts)
         RiskAlertNotification(disease: alert.title, parcel: alert.parcel, level: alert.level),
     ]);
-    return alerts;
   } catch (_) {
-    const alerts = [
-      AlertSummary(title: 'Repilo', parcelId: null, parcel: 'Olivar de prueba', level: 'Medio', value: .58),
-    ];
-    await AlertMonitor().notifyRelevantAlerts([
-      for (final alert in alerts)
-        RiskAlertNotification(disease: alert.title, parcel: alert.parcel, level: alert.level),
-    ]);
-    return alerts;
+    // Las notificaciones locales son best-effort (mismo criterio que main.dart).
   }
+  return alerts;
 });
 
 class AlertSummary {
