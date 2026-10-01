@@ -4,6 +4,7 @@ El contrato HTTP concreto se configura explícitamente: no se presupone una ruta
 ni un esquema que no se hayan confirmado con las credenciales/documentación del MAPA.
 Sin endpoint configurado, SIAR queda desactivado y no aporta datos al sistema.
 """
+from datetime import date
 from typing import Any
 import httpx
 from app.core.config import settings
@@ -40,7 +41,12 @@ class SiarClient:
             return None
         if not station.strip():
             raise ValueError("La estación SIAR es obligatoria")
-        if start_date > end_date:
+        try:
+            start = date.fromisoformat(start_date)
+            end = date.fromisoformat(end_date)
+        except ValueError as exc:
+            raise ValueError("Las fechas deben ser fechas reales en formato YYYY-MM-DD") from exc
+        if start > end:
             raise ValueError("La fecha inicial no puede superar la fecha final")
         headers = {"Accept": "application/json"}
         if self.api_key:
