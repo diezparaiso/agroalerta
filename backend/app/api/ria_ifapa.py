@@ -32,6 +32,8 @@ async def _fetch_ria(kind: str, province: str, station: str, year: int, month_st
             if kind == "daily":
                 return await client.get_daily_data(province, station, year, month_start, month_end)
             return await client.get_monthly_data(province, station, year, month_start, month_end)
+    finally:
+        await client.aclose()
 
 
 @router.get("/daily")
