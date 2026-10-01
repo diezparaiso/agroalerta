@@ -19,7 +19,8 @@ async def get_era5_hourly(
         return {
             "source": "Copernicus Climate Data Store",
             "dataset": "reanalysis-era5-single-levels",
-            "verified": True,
+            "verified": False,
+            "retrieval_completed": True,
             "note": "ERA5 es un producto de reanálisis, no una observación local en tiempo real.",
             "coordinates": {"latitude": latitude, "longitude": longitude},
             "units": {
