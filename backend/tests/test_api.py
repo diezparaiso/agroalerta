@@ -257,3 +257,23 @@ def test_ria_integration_health_does_not_claim_live_verification():
     ria = response.json()["ria_ifapa"]
     assert ria["mode"] in {"configured_not_verified", "disabled"}
     assert ria["live_connection_verified"] is False
+
+
+def test_ria_ifapa_daily_endpoint_maps_provider_timeout(monkeypatch):
+    import httpx
+    import app.api.ria_ifapa as ria_api
+
+    class FakeRiaClient:
+        async def get_daily_data(self, *args):
+            request = httpx.Request("GET", "https://ria.example.test")
+            raise httpx.ReadTimeout("provider timed out", request=request)
+
+        async def aclose(self):
+            pass
+
+    monkeypatch.setattr(ria_api, "RiaIfapaClient", FakeRiaClient)
+    response = client.get(
+        "/api/v1/ria-ifapa/daily?province=Sevilla&station=A1&year=2026&month_start=9&month_end=9"
+    )
+    assert response.status_code == 504
+    assert response.json()["detail"] == "Tiempo de espera agotado al consultar RIA/IFAPA"
