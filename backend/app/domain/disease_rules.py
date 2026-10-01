@@ -17,6 +17,9 @@ def evaluate_risk(
     crop_type: str,
     telemetry: TelemetryCreate | None = None,
 ) -> DiseaseRisk:
+    if disease not in SUPPORTED_CROPS:
+        raise ValueError(f"Enfermedad no soportada: {disease}")
+
     now = datetime.now(timezone.utc)
     status: Literal["insuficiente", "preliminar"] = "insuficiente"
     score = 0.0
