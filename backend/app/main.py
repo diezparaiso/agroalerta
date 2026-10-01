@@ -15,12 +15,14 @@ from app.schemas_push import PushTokenCreate
 from app.api.sigpac import router as sigpac_router
 from app.api.ria_ifapa import router as ria_ifapa_router
 from app.api.siar import router as siar_router
+from app.api.copernicus import router as copernicus_router
 
 
 app = FastAPI(title="AgroAlerta Andalucia API", version="1.0.0")
 app.include_router(sigpac_router)
 app.include_router(ria_ifapa_router)
 app.include_router(siar_router)
+app.include_router(copernicus_router)
 logger = logging.getLogger('agroalerta.api')
 request_metrics_data: dict[str, dict[str, float]] = {}
 app.add_middleware(
@@ -81,6 +83,12 @@ def integrations_health() -> dict[str, object]:
 
     return {
         'aemet': {'configured': bool(settings.aemet_api_key), 'mode': 'live' if settings.aemet_api_key else 'fallback'},
+        'copernicus_cds': {
+            'configured': bool(settings.copernicus_api_key),
+            'mode': 'configured_not_verified' if settings.copernicus_api_key else 'disabled',
+            'live_connection_verified': False,
+            'dataset': 'reanalysis-era5-single-levels',
+        },
         'siar_mapa': {
             'configured': bool(settings.siar_base_url and settings.siar_daily_path),
             'mode': 'configured_not_verified' if settings.siar_base_url and settings.siar_daily_path else 'disabled',
