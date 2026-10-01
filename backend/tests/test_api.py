@@ -86,3 +86,12 @@ def test_risk_history_accepts_pagination_parameters() -> None:
     history = client.get(f"/api/v1/risk-history/{parcel_id}?limit=1&offset=0")
     assert history.status_code == 200
     assert len(history.json()) <= 1
+
+
+def test_risk_response_marks_missing_weather_data_as_insufficient():
+    response = client.post('/api/v1/parcels', json={'label': 'Sin datos', 'latitude': 37.39, 'longitude': -5.99, 'crop_type': 'olivar', 'comarca': 'Sevilla'})
+    parcel_id = response.json()['id']
+    risk = client.get(f'/api/v1/disease-risk/{parcel_id}').json()[0]
+    assert risk['data_status'] == 'insuficiente'
+    assert risk['risk_score'] == 0
+    assert risk['variables_used'] == []
