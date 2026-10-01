@@ -41,10 +41,61 @@ class HomeScreen extends StatelessWidget {
 class _WeatherCard extends ConsumerWidget {
   const _WeatherCard();
   @override
-    Widget build(BuildContext context, WidgetRef ref) => _Panel(
+  Widget build(BuildContext context, WidgetRef ref) => _Panel(
         title: 'Condiciones de hoy',
         icon: Icons.wb_sunny_outlined,
-      child: ref.watch(weatherProvider).when(data: (weather) => Row(children: [Text('${weather['temperature_c'] ?? '--'}°', style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w700)), const SizedBox(width: 18), Text('Humedad ${weather['relative_humidity'] ?? '--'}%\nLluvia ${weather['rainfall_mm_24h'] ?? '--'} mm\nFuente: ${weather['source'] ?? 'estimada'}', style: const TextStyle(height: 1.6))]), loading: () => const Center(child: CircularProgressIndicator()), error: (_, __) => const Text('Clima no disponible')),
+        child: ref.watch(weatherProvider).when(
+          data: (weather) {
+            if (weather['status'] == 'no_parcel') {
+              return const Text('Añade una parcela para consultar la meteorología.');
+            }
+            final stale = weather['_cache_status'] == 'stale';
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Text('${weather['temperature_c'] ?? '--'}°',
+                      style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w700)),
+                  const SizedBox(width: 18),
+                  Expanded(child: Text(
+                    'Humedad ${weather['relative_humidity'] ?? '--'}%\n'
+                    'Lluvia ${weather['rainfall_mm_24h'] ?? '--'} mm\n'
+                    'Fuente: ${weather['source'] ?? 'no indicada'}',
+                    style: const TextStyle(height: 1.6),
+                  )),
+                ]),
+                if (stale)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8),
+                    child: Text('Mostrando datos guardados; no se ha podido actualizar ahora.',
+                        style: TextStyle(fontSize: 12)),
+                  ),
+              ],
+            );
+          },
+          loading: () => const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 12),
+              Text('Consultando la fuente meteorológica…'),
+              SizedBox(height: 6),
+              Text('Puede tardar unos segundos. Puedes seguir usando la app.',
+                  textAlign: TextAlign.center),
+            ],
+          ),
+          error: (_, __) => Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Text('Meteorología no disponible. No hay datos guardados que mostrar.'),
+              TextButton.icon(
+                onPressed: () => ref.invalidate(weatherProvider),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Reintentar'),
+              ),
+            ],
+          ),
+        ),
       );
 }
 
