@@ -1,7 +1,10 @@
 import pytest
+from datetime import datetime, timedelta, timezone
 from fastapi.testclient import TestClient
 
 from app.main import app, storage
+from app.domain.disease_rules import evaluate_risk
+from app.schemas import TelemetryCreate
 
 client = TestClient(app)
 
@@ -95,3 +98,27 @@ def test_risk_response_marks_missing_weather_data_as_insufficient():
     assert risk['data_status'] == 'insuficiente'
     assert risk['risk_score'] == 0
     assert risk['variables_used'] == []
+
+
+def test_risk_rule_marks_old_telemetry_insufficient():
+    old_reading = TelemetryCreate(
+        parcel_id="p1", device_id="s1", temperature_c=18,
+        relative_humidity=90, leaf_wetness_hours=12, soil_moisture=30,
+        battery_percent=90,
+        measured_at=datetime.now(timezone.utc) - timedelta(hours=30),
+    )
+    result = evaluate_risk("p1", "mildiu", "vinedo", old_reading)
+    assert result.data_status == "insuficiente"
+    assert result.variables_used == []
+
+
+def test_risk_rule_marks_sensor_signal_as_preliminary():
+    reading = TelemetryCreate(
+        parcel_id="p1", device_id="s1", temperature_c=20,
+        relative_humidity=90, leaf_wetness_hours=8, soil_moisture=30,
+        battery_percent=90, measured_at=datetime.now(timezone.utc),
+    )
+    result = evaluate_risk("p1", "mildiu", "vinedo", reading)
+    assert result.data_status == "preliminar"
+    assert result.risk_level == "medio"
+    assert result.confidence_level == "estimada"
