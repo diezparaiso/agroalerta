@@ -64,3 +64,14 @@ def test_siar_validates_inputs_even_when_disabled():
             with pytest.raises(ValueError, match="fechas reales"):
                 await client.get_daily_data("A1", "2026-02-30", "2026-03-01")
     asyncio.run(run())
+
+
+def test_siar_invalid_json_is_not_treated_as_observations():
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(
+            lambda request: httpx.Response(200, text="esto no es JSON")
+        )) as http:
+            client = SiarClient(client=http, base_url="https://siar.example.test", daily_path="daily")
+            with pytest.raises(ValueError):
+                await client.get_daily_data("A1", "2026-09-01", "2026-09-02")
+    asyncio.run(run())
