@@ -69,12 +69,33 @@ class _SigpacMapScreenState extends ConsumerState<SigpacMapScreen> {
 
   String _featureId(Map<String, dynamic> feature) => (feature['id'] ?? feature['properties']?['id'] ?? 'recinto-${(feature['properties'] ?? {}).hashCode}').toString();
 
-  List<LatLng> _polygonPoints(Map<String, dynamic> feature) {
+  List<List<LatLng>> _polygonRings(Map<String, dynamic> feature) {
     final geometry = feature['geometry'];
-    if (geometry is! Map || geometry['type'] != 'Polygon') return const [];
+    if (geometry is! Map) return const [];
+    final type = geometry['type'];
     final coordinates = geometry['coordinates'];
-    if (coordinates is! List || coordinates.isEmpty || coordinates.first is! List) return const [];
-    return (coordinates.first as List).whereType<List>().where((point) => point.length >= 2 && point[0] is num && point[1] is num).map((point) => LatLng((point[1] as num).toDouble(), (point[0] as num).toDouble())).toList();
+    if (coordinates is! List) return const [];
+
+    // GeoJSON Polygon: coordinates[0] is the exterior ring.
+    // GeoJSON MultiPolygon: each polygon has its own exterior ring.
+    final exteriorRings = <dynamic>[];
+    if (type == 'Polygon') {
+      if (coordinates.isNotEmpty) exteriorRings.add(coordinates.first);
+    } else if (type == 'MultiPolygon') {
+      for (final polygon in coordinates) {
+        if (polygon is List && polygon.isNotEmpty) exteriorRings.add(polygon.first);
+      }
+    } else {
+      return const [];
+    }
+
+    return exteriorRings.whereType<List>().map((ring) => ring
+      .whereType<List>()
+      .where((point) => point.length >= 2 && point[0] is num && point[1] is num)
+      .map((point) => LatLng((point[1] as num).toDouble(), (point[0] as num).toDouble()))
+      .toList())
+      .where((points) => points.length >= 3)
+      .toList();
   }
 
   @override
@@ -82,8 +103,7 @@ class _SigpacMapScreenState extends ConsumerState<SigpacMapScreen> {
     final features = (_collection?['features'] as List? ?? const []).whereType<Map<String, dynamic>>().toList();
     final polygons = <Polygon>[];
     for (final feature in features) {
-      final points = _polygonPoints(feature);
-      if (points.length >= 3) {
+      for (final points in _polygonRings(feature)) {
         polygons.add(Polygon(
           points: points,
           color: _featureId(feature) == _selectedId ? Colors.green.withValues(alpha: 0.35) : Colors.blue.withValues(alpha: 0.18),
@@ -131,7 +151,7 @@ class _SigpacMapScreenState extends ConsumerState<SigpacMapScreen> {
             ),
           ),
         const SizedBox(height: 12),
-        const Text('La selección sirve para inspeccionar un recinto en esta pantalla. El contrato actual de importación recibe un bbox e importa los resultados del área; no importa únicamente el elemento seleccionado. Los polígonos MultiPolygon no se dibujan todavía.', style: TextStyle(fontSize: 12)),
+        const Text('La selección sirve para inspeccionar un recinto en esta pantalla. El contrato actual de importación recibe un bbox e importa los resultados del área; no importa únicamente el elemento seleccionado. Se dibujan los anillos exteriores de Polygon y MultiPolygon; los huecos interiores no se representan todavía.', style: TextStyle(fontSize: 12)),
       ]),
     );
   }
