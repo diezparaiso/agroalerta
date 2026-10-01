@@ -205,14 +205,22 @@ ChatGPT de OpenAI ha asistido en la redacción y desarrollo de esta documentaci�
 
 Se incorpora `backend/app/core/async_cache.py`, una caché asíncrona genérica, acotada por número de entradas y TTL, con deduplicación de solicitudes concurrentes para la misma clave. Los resultados se copian al devolverlos para evitar que un consumidor modifique accidentalmente el objeto almacenado. Los errores del proveedor no se guardan en caché y una cancelación de un consumidor no cancela el trabajo compartido.
 
-Se integra inicialmente solo en `GET /api/v1/copernicus/era5/hourly`:
+Se integra en `GET /api/v1/copernicus/era5/hourly`, `GET /api/v1/ria-ifapa/daily`, `GET /api/v1/ria-ifapa/monthly` y `GET /api/v1/siar/daily`, con políticas separadas por fuente:
 - TTL configurado: seis horas.
 - Máximo: 128 consultas guardadas por proceso.
 - Límite: dos recuperaciones Copernicus simultáneas por proceso.
 - La clave incluye coordenadas, fechas, dataset y versión de la consulta; no contiene credenciales.
 - El SDK de Copernicus sigue aislando su operación bloqueante con `asyncio.to_thread`.
-- La respuesta informa del TTL y aclara que la caché es local al proceso; no afirma que la conectividad esté verificada.
+- Copernicus: TTL de seis horas, máximo 128 entradas y dos recuperaciones concurrentes por proceso.
+- RIA/IFAPA: TTL de una hora para agregados diarios y 24 horas para mensuales; máximo 256 entradas por caché y tres recuperaciones simultáneas por proceso.
+- SIAR: TTL de una hora, máximo 256 entradas y dos recuperaciones simultáneas por proceso.
+- Los errores de proveedor no se guardan como respuestas exitosas; los conectores siguen marcados como no verificados cuando corresponde.
 
 **Limitación de despliegue:** cada worker/proceso mantiene su propia caché y semáforo. No existe coordinación entre réplicas ni persistencia tras reinicio. Antes de desplegar múltiples réplicas o extenderlo a todas las fuentes, se debe evaluar caché compartida y configuración de límites desde entorno.
 
-Pruebas añadidas en `backend/tests/test_async_cache.py`: reutilización de resultado, aislamiento de mutaciones, deduplicación concurrente, no cachear errores y validación de límites. Estas pruebas requieren ejecución de CI para confirmar el resultado.
+Pruebas añadidas en `backend/tests/test_async_cache.py`: reutilización de resultado, aislamiento de mutaciones, deduplicación concurrente, no cachear errores y validación de límites. Las políticas de TTL son valores iniciales operativos, pendientes de validación con los ritmos reales de actualización de cada proveedor.
+
+
+## 15. Aplicación gradual de caché a RIA/IFAPA y SIAR
+
+Se ha extendido la caché a los endpoints diagnósticos RIA/IFAPA diarios y mensuales y al endpoint diario SIAR. Cada clave incorpora fuente/versión, estación, intervalo y parámetros de consulta; se usa SHA-256 para no exponer los parámetros directamente en la clave de almacenamiento. Los límites de concurrencia son por proceso, no globales. Los TTL son iniciales y deben revisarse cuando se confirme la cadencia de actualización y el contrato de cada proveedor. La respuesta cruda sigue sin normalizarse y no se debe utilizar directamente para calcular riesgo.
