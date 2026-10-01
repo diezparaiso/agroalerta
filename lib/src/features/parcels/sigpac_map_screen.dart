@@ -164,7 +164,7 @@ class _SigpacMapScreenState extends ConsumerState<SigpacMapScreen> {
             ),
           ),
         const SizedBox(height: 12),
-        const Text('La selección sirve para inspeccionar un recinto en esta pantalla. El contrato actual de importación recibe un bbox e importa los resultados del área; no importa únicamente el elemento seleccionado. Se dibujan los anillos exteriores de Polygon y MultiPolygon; los huecos interiores no se representan todavía.', style: TextStyle(fontSize: 12)),
+        const Text('Si hay un recinto seleccionado, se envía su identificador para importar solo ese recinto; sin selección, se importa el área consultada (hasta 100 resultados). Se dibujan los anillos exteriores de Polygon y MultiPolygon; los huecos interiores no se representan todavía.', style: TextStyle(fontSize: 12)),
       ]),
     );
   }
