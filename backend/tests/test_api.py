@@ -277,3 +277,15 @@ def test_ria_ifapa_daily_endpoint_maps_provider_timeout(monkeypatch):
     )
     assert response.status_code == 504
     assert response.json()["detail"] == "Tiempo de espera agotado al consultar RIA/IFAPA"
+
+
+import pytest
+
+@pytest.mark.parametrize("endpoint", ["daily", "monthly"])
+@pytest.mark.parametrize("parameter", ["province", "station"])
+def test_ria_ifapa_endpoints_reject_whitespace_only_parameters(endpoint, parameter):
+    params = {"province": "Sevilla", "station": "A1", "year": 2026, "month_start": 9, "month_end": 9}
+    params[parameter] = "   "
+    response = client.get(f"/api/v1/ria-ifapa/{endpoint}", params=params)
+    assert response.status_code == 422
+    assert response.json()["detail"] == "province y station no pueden estar vacíos"
