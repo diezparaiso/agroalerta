@@ -1,4 +1,5 @@
 """Consulta opcional de datos diarios SIAR del MAPA."""
+import json
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query
 from app.connectors.siar_client import SiarClient
@@ -28,13 +29,15 @@ async def get_daily_data(
         return {"source": "SIAR-MAPA", "verified": False, "data": data}
     except HTTPException:
         raise
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=502, detail="SIAR no devolvió JSON válido") from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except httpx.TimeoutException as exc:
         raise HTTPException(status_code=504, detail="Tiempo de espera agotado al consultar SIAR") from exc
     except httpx.HTTPStatusError as exc:
         raise HTTPException(status_code=502, detail="SIAR devolvió un error HTTP") from exc
-    except (httpx.RequestError, ValueError) as exc:
+    except httpx.RequestError as exc:
         raise HTTPException(status_code=502, detail="No se pudo obtener una respuesta JSON válida de SIAR") from exc
     finally:
         await client.aclose()
