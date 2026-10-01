@@ -94,7 +94,8 @@ def create_parcel(payload: ParcelCreate, _token: str | None = Depends(optional_b
 
 
 @app.get("/api/v1/parcels/{parcel_id}", response_model=Parcel)
-def get_parcel(parcel_id: str, owner_id: str | None = None) -> Parcel:
+def get_parcel(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> Parcel:
+    owner_id = _token or "anonymous"
     parcel = storage.get_parcel(parcel_id, owner_id)
     if parcel is None:
         raise HTTPException(status_code=404, detail="Parcela no encontrada")
@@ -118,15 +119,10 @@ def delete_parcel(parcel_id: str, _token: str | None = Depends(optional_bearer_t
 @app.get("/api/v1/weather/{parcel_id}")
 def get_weather(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> dict:
     get_parcel(parcel_id, _token or 'anonymous')
-    return {
-        "parcel_id": parcel_id,
-        "temperature_c": 18.4,
-        "relative_humidity": 87,
-        "rainfall_mm_24h": 12.2,
-        "station_distance_km": 6.4,
-        "observed_at": datetime.now(timezone.utc),
-        "source": "demo-ria-aemet",
-    }
+    raise HTTPException(
+        status_code=503,
+        detail="La integración meteorológica aún no proporciona observaciones verificadas para esta parcela.",
+    )
 
 
 @app.get("/api/v1/disease-risk/{parcel_id}", response_model=list[DiseaseRisk])
@@ -183,9 +179,10 @@ def ingest_telemetry(payload: TelemetryCreate, _token: str | None = Depends(opti
 
 
 @app.get("/api/v1/telemetry/{parcel_id}", response_model=TelemetryCreate)
-def get_latest_telemetry(parcel_id: str) -> TelemetryCreate:
-    get_parcel(parcel_id)
-    telemetry = storage.latest_telemetry(parcel_id)
+def get_latest_telemetry(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> TelemetryCreate:
+    owner_id = _token or "anonymous"
+    get_parcel(parcel_id, owner_id)
+    telemetry = storage.latest_telemetry(parcel_id, owner_id)
     if telemetry is None:
         raise HTTPException(status_code=404, detail="Sin telemetria para esta parcela")
     return telemetry
