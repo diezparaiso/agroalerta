@@ -6,7 +6,6 @@ import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-from urllib.parse import urljoin
 from uuid import uuid4
 
 import httpx
@@ -98,7 +97,7 @@ async def sigpac_health() -> dict[str, Any]:
 
 @router.get("/recintos")
 async def search_recintos(
-    bbox: str = Query(..., description="Extensión WGS84: oeste,sur,este,norte"),
+    bbox: str = Query(..., description="Extensión geográfica: oeste,sur,este,norte"),
     limit: int = Query(100, ge=1, le=1000),
 ) -> dict[str, Any]:
     """Return live SIGPAC recinto features from the HubCloud OGC API."""
@@ -106,7 +105,7 @@ async def search_recintos(
 
 
 class ImportRequest(BaseModel):
-    bbox: str = Field(description="Extensión WGS84: oeste,sur,este,norte")
+    bbox: str = Field(description="Extensión geográfica: oeste,sur,este,norte")
     limit: int = Field(default=100, ge=1, le=1000)
 
 
