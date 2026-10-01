@@ -89,7 +89,10 @@ class CopernicusClient:
                 point = dataset.sel(latitude=latitude, longitude=longitude, method="nearest")
                 rows: list[dict[str, Any]] = []
                 for timestamp in point["valid_time"].values:
-                    row: dict[str, Any] = {"timestamp": str(timestamp.astype("datetime64[s]"))}
+                    timestamp_text = str(timestamp.astype("datetime64[s]"))
+                    if not start.isoformat() <= timestamp_text[:10] <= end.isoformat():
+                        continue
+                    row: dict[str, Any] = {"timestamp": timestamp_text}
                     for variable in VARIABLES:
                         if variable in point:
                             value = point[variable].sel(valid_time=timestamp).item()
