@@ -15,7 +15,9 @@ Antes de producción, verifica con el proveedor oficial que el endpoint permite 
 ## API
 
 - `GET /api/v1/sigpac/health`: informa si el endpoint y la capa están configurados. No prueba por sí solo que el proveedor esté disponible.
-- `GET /api/v1/sigpac/recintos?bbox=-6.1,37.2,-5.8,37.5&limit=100`: consulta por extensión geográfica WGS84 y devuelve GeoJSON FeatureCollection con polígonos, atributos originales y metadatos de fuente.
+- `GET /api/v1/sigpac/recintos?bbox=-6.1,37.2,-5.8,37.5&limit=100`: consulta por extensión geográfica WGS84 y devuelve GeoJSON FeatureCollection con polígonos y atributos originales.
+- `POST /api/v1/sigpac/importar` con JSON `{"bbox":"-6.1,37.2,-5.8,37.5","limit":100}`: consulta y guarda los recintos en SQLite por usuario, actualizando los ya importados en lugar de duplicarlos.
+- `GET /api/v1/sigpac/importados?limit=100&offset=0`: devuelve los recintos importados como GeoJSON, incluyendo su geometría y propiedades originales.
 
 Respuestas:
 - `503`: proveedor sin configurar.
@@ -23,4 +25,4 @@ Respuestas:
 - `502`: error del proveedor o respuesta no GeoJSON.
 - `504`: timeout.
 
-La búsqueda por provincia/municipio/polígono/parcela, la persistencia de recintos importados y la asociación con la explotación deben implementarse tras validar los nombres y formatos de campos del servicio oficial concreto. Esta primera entrega cubre consulta espacial por bbox y recuperación de contornos, no afirma completar esos flujos adicionales.
+La búsqueda por provincia/municipio/polígono/parcela y la asociación con una explotación/campaña siguen pendientes hasta validar los nombres y formatos de campos del servicio oficial concreto. La importación persistente por bbox está implementada; no se debe considerar verificada en producción hasta probar el endpoint oficial real.
