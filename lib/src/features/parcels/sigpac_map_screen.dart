@@ -151,6 +151,20 @@ class _SigpacMapScreenState extends ConsumerState<SigpacMapScreen> {
         ))),
         const SizedBox(height: 8),
         Text('Resultados: ${features.length}', style: Theme.of(context).textTheme.titleMedium),
+        if (_collection?['truncated'] == true) ...[
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.errorContainer,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              'La consulta ha alcanzado el límite de resultados. Esta lista puede estar incompleta; reduce el área y vuelve a buscar antes de importar.',
+              style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
+            ),
+          ),
+        ],
         if (features.isEmpty && !_loading) const Padding(padding: EdgeInsets.all(12), child: Text('Todavía no hay resultados. Ajusta el área y pulsa «Buscar recintos».')),
         for (final feature in features)
           Card(
