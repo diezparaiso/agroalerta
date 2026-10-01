@@ -54,10 +54,23 @@ class _SigpacMapScreenState extends ConsumerState<SigpacMapScreen> {
     }
   }
 
+  String? _sourceFeatureId(Map<String, dynamic> feature) {
+    final properties = feature['properties'];
+    final value = feature['id'] ?? (properties is Map ? properties['id'] : null);
+    return value?.toString();
+  }
+
   Future<void> _importArea() async {
+    final features = (_collection?['features'] as List? ?? const []).whereType<Map<String, dynamic>>();
+    final selected = features.where((feature) => _featureId(feature) == _selectedId).firstOrNull;
+    final sourceId = selected == null ? null : _sourceFeatureId(selected);
+    if (_selectedId != null && sourceId == null) {
+      setState(() => _error = 'El proveedor no ha devuelto un identificador estable para este recinto. No se importará el área completa por error.');
+      return;
+    }
     setState(() { _importing = true; _error = null; _message = null; });
     try {
-      final result = await ref.read(apiClientProvider).importSigpacRecintos(bbox: _bbox, limit: 100, featureIds: _selectedId == null ? null : [_selectedId!]);
+      final result = await ref.read(apiClientProvider).importSigpacRecintos(bbox: _bbox, limit: 100, featureIds: sourceId == null ? null : [sourceId]);
       setState(() => _message = 'Importación completada: ${result['imported'] ?? 0} nuevos y ${result['updated'] ?? 0} actualizados. Se ha enviado la selección actual cuando existe; si no hay selección, se importa el área consultada.');
     } catch (error) {
       setState(() => _error = 'No se pudo importar el área: $error');
