@@ -26,10 +26,10 @@ class ApiClient {
     return response.data!;
   }
 
-  Future<Map<String, dynamic>> importSigpacRecintos({required String bbox, int limit = 100}) async {
+  Future<Map<String, dynamic>> importSigpacRecintos({required String bbox, int limit = 100, List<String>? featureIds}) async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/v1/sigpac/importar',
-      data: {'bbox': bbox, 'limit': limit},
+      data: {'bbox': bbox, 'limit': limit, if (featureIds != null) 'feature_ids': featureIds},
     );
     return response.data!;
   }
