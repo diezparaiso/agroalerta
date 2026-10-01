@@ -273,4 +273,7 @@ La API limita cada consulta a un máximo de 100 resultados desde la pantalla act
 - `d4dc99a4f60e319e985043efd4c60010e6426817` — añade prueba para impedir que el estado de salud afirme una verificación en vivo inexistente.
 - `6a820c9c307d5551a0c8efa931480214a78ce689` — documenta esta distinción en `RIA_IFAPA.md`.
 
+
+- `7ebb4ada6d247bf9fea72b26af09fed537c4df6d` — añade prueba de traducción de timeout del proveedor a HTTP 504.
+
 **Pendiente:** no hay resultados CI publicados para el commit más reciente y no se ha verificado una respuesta real del proveedor. Los tests HTTP existentes usan respuestas simuladas. No se deben usar los agregados como observaciones horarias ni alimentar el motor de riesgo hasta validar el esquema, unidades, estaciones y frescura de los datos.
