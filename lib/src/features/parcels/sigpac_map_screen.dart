@@ -62,7 +62,8 @@ class _SigpacMapScreenState extends ConsumerState<SigpacMapScreen> {
 
   Future<void> _importArea() async {
     final features = (_collection?['features'] as List? ?? const []).whereType<Map<String, dynamic>>();
-    final selected = features.where((feature) => _featureId(feature) == _selectedId).firstOrNull;
+    final matching = features.where((feature) => _featureId(feature) == _selectedId).toList();
+    final selected = matching.isEmpty ? null : matching.first;
     final sourceId = selected == null ? null : _sourceFeatureId(selected);
     if (_selectedId != null && sourceId == null) {
       setState(() => _error = 'El proveedor no ha devuelto un identificador estable para este recinto. No se importará el área completa por error.');
