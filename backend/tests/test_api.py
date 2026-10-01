@@ -167,3 +167,9 @@ def test_production_auth_requires_bearer_token(monkeypatch):
     with pytest.raises(HTTPException) as error:
         optional_bearer_token(None)
     assert error.value.status_code == 401
+
+def test_sigpac_stable_feature_id_prefers_properties_id() -> None:
+    from app.api.sigpac import _stable_feature_id
+
+    assert _stable_feature_id({"properties": {"id": "recinto-123"}, "geometry": None}) == "recinto-123"
+    assert _stable_feature_id({"id": "geojson-456", "properties": {"id": "other"}}) == "geojson-456"
