@@ -62,7 +62,7 @@ class _RiskCard extends StatelessWidget {
 class _ParcelSummaryCard extends StatelessWidget {
   const _ParcelSummaryCard();
   @override
-  Widget build(BuildContext context) => _Panel(title: 'Tus parcelas', icon: Icons.landscape_outlined, child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('3', style: TextStyle(fontSize: 42, fontWeight: FontWeight.w700)), Text('parcelas monitorizadas'), Spacer(), Text('2 con datos recientes')]));
+  Widget build(BuildContext context) => _Panel(title: 'Tus parcelas', icon: Icons.landscape_outlined, child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Resumen', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700)), Text('Consulta tus parcelas registradas'), Spacer(), Text('Los datos reales aparecerán al sincronizar tu cuenta')]));
 }
 
 class _InsightCard extends StatelessWidget {
