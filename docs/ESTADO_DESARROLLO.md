@@ -311,6 +311,16 @@ Se ha creado `docs/ARQUITECTURA_CONSULTAS_EXTERNAS.md` como referencia técnica 
 Cambio de robustez asociado:
 - `lib/src/core/network/offline_cache.dart`: la lectura elimina entradas cuyo JSON esté corrupto y devuelve una ausencia de caché en vez de propagar un error de parseo. Esto evita que una caché dañada enmascare la causa original del fallo de red. Se documenta que la caché es local, no es fuente de verdad y que la política de frescura corresponde al consumidor.
 
-**No implementado en esta entrega:** caché compartida de backend, deduplicación de llamadas en vuelo, cola de trabajos, métricas de proveedor, TTL operativo de meteorología y validación real de conectividad Copernicus/SIAR. Se mantienen como pasos separados para no simular capacidades que todavía no existen.
+**Implementación posterior de esta fase:** se añadió `backend/app/core/async_cache.py` y se conectó inicialmente al endpoint Copernicus ERA5 con TTL de seis horas, máximo de 128 entradas y límite de dos recuperaciones concurrentes por proceso. Se añadió `backend/tests/test_async_cache.py` para verificar caché, deduplicación y errores. Esta caché es por proceso, no compartida entre réplicas. Siguen pendientes caché distribuida, métricas de proveedor, TTL meteorológico de producto y validación real de conectividad Copernicus/SIAR. El CI del commit final debe confirmar los tests antes de marcarlo validado.
 
 Documentación de referencia: [Arquitectura de consultas externas](ARQUITECTURA_CONSULTAS_EXTERNAS.md), [Decisiones de arquitectura](DECISIONS.md), [Copernicus CDS](COPERNICUS_CDS.md).
+
+
+## 21. Caché TTL backend inicial para Copernicus — 1 de octubre de 2026
+
+Archivos:
+- `backend/app/core/async_cache.py`: utilidad genérica de caché TTL asíncrona, límite LRU de entradas, deduplicación de tareas en vuelo y copia defensiva de resultados.
+- `backend/app/api/copernicus.py`: aplica caché de seis horas y limita a dos las recuperaciones concurrentes por proceso para `/api/v1/copernicus/era5/hourly`. La clave depende de coordenadas, intervalo, dataset y versión del contrato.
+- `backend/tests/test_async_cache.py`: pruebas de acierto de caché, concurrencia, mutaciones, reintento tras error y validación de parámetros.
+
+**Estado de verificación:** cambios escritos en la rama. La ejecución CI iniciada para la documentación anterior estaba todavía en curso antes de estos cambios; hay que comprobar la ejecución más reciente antes de afirmar que estas pruebas pasan. No se realizó consulta en vivo a Copernicus y `verified` continúa en `false`.
