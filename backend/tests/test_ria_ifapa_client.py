@@ -38,7 +38,7 @@ def test_monthly_data_uses_monthly_endpoint():
             return await client.get_monthly_data("Córdoba", "A1", 2025, 2, 4)
 
     assert asyncio.run(run()) == {"datos": []}
-    assert seen == ["/datosmensuales/C%C3%B3rdoba/A1/2025/2/4"]
+    assert seen == ["/datosmensuales/Córdoba/A1/2025/2/4"]
 
 
 @pytest.mark.parametrize(
