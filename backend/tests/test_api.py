@@ -273,7 +273,7 @@ def test_ria_ifapa_daily_endpoint_maps_provider_timeout(monkeypatch):
 
     monkeypatch.setattr(ria_api, "RiaIfapaClient", FakeRiaClient)
     response = client.get(
-        "/api/v1/ria-ifapa/daily?province=Sevilla&station=A1&year=2026&month_start=9&month_end=9"
+        "/api/v1/ria-ifapa/daily?province=Sevilla&station=TIMEOUT-UNIQUE&year=2026&month_start=9&month_end=9"
     )
     assert response.status_code == 504
     assert response.json()["detail"] == "Tiempo de espera agotado al consultar RIA/IFAPA"
