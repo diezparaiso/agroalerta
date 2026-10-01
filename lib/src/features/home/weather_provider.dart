@@ -21,7 +21,7 @@ final weatherProvider = FutureProvider<Map<String, dynamic>>((ref) async {
       'data': result,
     });
     return {...result, '_cache_status': 'fresh'};
-  } catch (error) {
+  } catch (_) {
     final cached = await cache.read(cacheKey);
     if (cached is Map && cached['data'] is Map) {
       return {
