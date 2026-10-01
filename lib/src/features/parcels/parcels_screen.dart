@@ -26,11 +26,11 @@ Future<void> _showCreateDialog(BuildContext context, WidgetRef ref) async {
       content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
         TextField(controller: labelController, decoration: const InputDecoration(labelText: 'Nombre')),
         const SizedBox(height: 12),
-        DropdownButtonFormField<String>(value: cropType, decoration: const InputDecoration(labelText: 'Cultivo'), items: const [DropdownMenuItem(value: 'olivar', child: Text('Olivar')), DropdownMenuItem(value: 'vinedo', child: Text('Vinedo'))], onChanged: (value) => setState(() => cropType = value ?? 'olivar')),
+        DropdownButtonFormField<String>(initialValue: cropType, decoration: const InputDecoration(labelText: 'Cultivo'), items: const [DropdownMenuItem(value: 'olivar', child: Text('Olivar')), DropdownMenuItem(value: 'viñedo', child: Text('Viñedo'))], onChanged: (value) => setState(() => cropType = value ?? 'olivar')),
         const SizedBox(height: 12),
         TextField(controller: comarcaController, decoration: const InputDecoration(labelText: 'Comarca')),
         const SizedBox(height: 12),
-        OutlinedButton.icon(onPressed: () async { final position = await LocationService().currentPosition(); if (position != null) { setState(() { latitudeController.text = position.latitude.toStringAsFixed(6); longitudeController.text = position.longitude.toStringAsFixed(6); }); } }, icon: const Icon(Icons.my_location), label: const Text('Usar mi ubicacion actual')),
+        OutlinedButton.icon(onPressed: () async { final position = await LocationService().currentPosition(); if (position != null) { setState(() { latitudeController.text = position.latitude.toStringAsFixed(6); longitudeController.text = position.longitude.toStringAsFixed(6); }); } }, icon: const Icon(Icons.my_location), label: const Text('Usar mi ubicación actual')),
         const SizedBox(height: 12),
         Row(children: [Expanded(child: TextField(controller: latitudeController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Latitud'))), const SizedBox(width: 8), Expanded(child: TextField(controller: longitudeController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Longitud')))]),
       ])),
