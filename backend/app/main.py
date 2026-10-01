@@ -14,11 +14,13 @@ from app.core.security import optional_bearer_token
 from app.schemas_push import PushTokenCreate
 from app.api.sigpac import router as sigpac_router
 from app.api.ria_ifapa import router as ria_ifapa_router
+from app.api.siar import router as siar_router
 
 
 app = FastAPI(title="AgroAlerta Andalucia API", version="1.0.0")
 app.include_router(sigpac_router)
 app.include_router(ria_ifapa_router)
+app.include_router(siar_router)
 logger = logging.getLogger('agroalerta.api')
 request_metrics_data: dict[str, dict[str, float]] = {}
 app.add_middleware(
@@ -79,6 +81,11 @@ def integrations_health() -> dict[str, object]:
 
     return {
         'aemet': {'configured': bool(settings.aemet_api_key), 'mode': 'live' if settings.aemet_api_key else 'fallback'},
+        'siar_mapa': {
+            'configured': bool(settings.siar_base_url and settings.siar_daily_path),
+            'mode': 'configured_not_verified' if settings.siar_base_url and settings.siar_daily_path else 'disabled',
+            'live_connection_verified': False,
+        },
         'ria_ifapa': {
             'configured': bool(settings.ria_base_url),
             'mode': 'configured_not_verified' if settings.ria_base_url else 'disabled',
