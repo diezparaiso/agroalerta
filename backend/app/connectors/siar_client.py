@@ -37,8 +37,6 @@ class SiarClient:
         self, station: str, start_date: str, end_date: str
     ) -> Any | None:
         """Devuelve datos crudos; None significa que SIAR no está configurado."""
-        if not self.base_url or not self.daily_path.strip():
-            return None
         if not station.strip():
             raise ValueError("La estación SIAR es obligatoria")
         try:
@@ -48,6 +46,8 @@ class SiarClient:
             raise ValueError("Las fechas deben ser fechas reales en formato YYYY-MM-DD") from exc
         if start > end:
             raise ValueError("La fecha inicial no puede superar la fecha final")
+        if not self.base_url or not self.daily_path.strip():
+            return None
         headers = {"Accept": "application/json"}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
