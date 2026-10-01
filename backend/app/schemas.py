@@ -48,7 +48,6 @@ class DiseaseRisk(BaseModel):
     calculated_at: datetime
     valid_until: datetime
     data_status: Literal["insuficiente", "preliminar"] = "insuficiente"
-    data_status: Literal["insuficiente", "preliminar"] = "insuficiente"
 
 
 class Product(BaseModel):
