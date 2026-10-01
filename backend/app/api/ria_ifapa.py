@@ -22,6 +22,8 @@ async def get_daily_observations(
     _token: str | None = Depends(optional_bearer_token),
 ) -> object:
     """Consulta agregados diarios crudos para verificar estaciones y esquema."""
+    if not province.strip() or not station.strip():
+        raise HTTPException(status_code=422, detail="province y station no pueden estar vacíos")
     if month_start > month_end:
         raise HTTPException(status_code=422, detail="month_start no puede superar month_end")
 
@@ -56,6 +58,8 @@ async def get_monthly_observations(
     _token: str | None = Depends(optional_bearer_token),
 ) -> object:
     """Consulta agregados mensuales crudos para verificar el contrato del proveedor."""
+    if not province.strip() or not station.strip():
+        raise HTTPException(status_code=422, detail="province y station no pueden estar vacíos")
     if month_start > month_end:
         raise HTTPException(status_code=422, detail="month_start no puede superar month_end")
 
