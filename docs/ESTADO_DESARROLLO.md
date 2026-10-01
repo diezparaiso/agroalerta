@@ -193,3 +193,14 @@ Una funcionalidad solo se marcará como terminada cuando el código esté guarda
 ---
 
 **Mantenimiento de esta memoria:** actualizarla en cada entrega con fecha, responsable, archivos afectados, hash de commit, pruebas ejecutadas, enlace CI, incidencias y decisión de aceptación. No registrar como verificado ningún resultado sin evidencia.
+
+
+## 10. Actualización de verificación CI — 1 de octubre de 2026
+
+Se ha comprobado en GitHub Actions la ejecución **#465** del flujo `AgroAlerta CI`, asociada al commit `0952e01333323c858dc1d5591ec6beead6696a46` de esta rama.
+
+- Trabajo `flutter`: **success**. Los pasos `flutter pub get`, `flutter analyze` y `flutter test` finalizaron correctamente.
+- Trabajo `backend`: **success**. La instalación de `backend/requirements.txt` y `PYTHONPATH=backend python -m pytest backend/tests -q` finalizaron correctamente.
+- Ejecución: https://github.com/diezparaiso/agroalerta/actions/runs/36843152565
+
+Esta evidencia confirma esos pasos para ese commit concreto. No equivale a validación agronómica, prueba con datos SIGPAC en vivo, auditoría de seguridad, ni garantía de funcionamiento en todos los dispositivos o entornos. Una modificación posterior requiere volver a comprobar su CI.
