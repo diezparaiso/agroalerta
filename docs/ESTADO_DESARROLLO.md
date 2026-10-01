@@ -231,3 +231,14 @@ Cambios adicionales en la rama:
 - `ce489f5552600b8cc4f9c1f76a35bd2f9546b5cd` — pruebas para el rechazo por configuración de autenticación ausente en producción y para exigir token.
 
 **Estado de validación:** estas pruebas aún no se han ejecutado en una CI visible para los commits recientes. La prueba de autenticación configurada comprueba el rechazo por ausencia de token sin realizar una verificación real contra Firebase. La configuración de credenciales de producción, los permisos de los endpoints públicos y una auditoría integral siguen requiriendo revisión operativa.
+
+## 13. Corrección de CI y selección SIGPAC — 1 de octubre de 2026
+
+- `519e7016b40e514a9b0a798cdb29a84297dc64f4` — se elimina una variable local sin uso detectada por `flutter analyze` en `sigpac_map_screen.dart`.
+- `82946da8f6ec2a4cf26ec936e929612dd8a3e8eb` — el backend reconoce también `properties.id` como identificador estable SIGPAC cuando el GeoJSON no contiene `feature.id`. Esto alinea la selección que envía Flutter con el filtrado de importación del backend.
+- `ca90adb7f7d1f0d2716195b67949a5a07606f5d1` — prueba unitaria para la prioridad de identificadores GeoJSON y `properties.id`.
+- `01bf1e65bb93283435f717d97a522d8ec47678a5` — una configuración Firebase Admin inválida devuelve un error controlado `503` en lugar de propagarse como error interno durante la inicialización.
+
+**CI comprobado:** ejecución #474, https://github.com/diezparaiso/agroalerta/actions/runs/36847188541, finalizó con los trabajos `backend` y `flutter` en **success**. El análisis Flutter y los tests Flutter pasaron; también pasó `PYTHONPATH=backend python -m pytest backend/tests -q`. Esta ejecución se lanzó para el commit `519e7016...`; los commits posteriores de backend descritos arriba todavía necesitan una ejecución CI propia antes de considerarse verificados.
+
+**Riesgos/pendientes detectados en revisión:** la ruta `/health/metrics` expone métricas de rutas sin autenticación y debe evaluarse según el despliegue; las rutas públicas de salud, catálogo y consulta SIGPAC deben documentarse como decisiones deliberadas. La autenticación de producción sólo protege rutas que declaran la dependencia, por lo que aún hace falta una auditoría completa del inventario de rutas y una prueba de integración con tokens Firebase reales. No se ha verificado en esta sesión la disponibilidad en vivo del proveedor SIGPAC.
