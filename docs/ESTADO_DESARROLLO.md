@@ -204,3 +204,21 @@ Se ha comprobado en GitHub Actions la ejecución **#465** del flujo `AgroAlerta 
 - Ejecución: https://github.com/diezparaiso/agroalerta/actions/runs/36843152565
 
 Esta evidencia confirma esos pasos para ese commit concreto. No equivale a validación agronómica, prueba con datos SIGPAC en vivo, auditoría de seguridad, ni garantía de funcionamiento en todos los dispositivos o entornos. Una modificación posterior requiere volver a comprobar su CI.
+
+
+## 11. Revisión funcional y de aislamiento — 1 de octubre de 2026
+
+**Responsable de la ejecución:** asistencia de desarrollo ChatGPT (OpenAI), a petición de la persona responsable del proyecto. No consta revisión humana independiente.
+
+Cambios aplicados en la rama de trabajo:
+- `b089a5a27e27f8b1200ed0555f62a6f78cf70a7a` — el detalle de parcela deja de aceptar `owner_id` como parámetro de consulta controlado por el cliente; ahora deriva el propietario de la identidad resuelta por la dependencia Bearer. La lectura de telemetría también comprueba el propietario y filtra por él.
+- `61b5acb3691a7aa7987e7fbe73fef21b5a1858cd` — se elimina la lista de parcelas ficticias que aparecía cuando no había parcelas locales ni respuesta del backend. Un fallo de red ya no debe presentar parcelas de demostración como reales.
+- `da741b864d984ff985c3f2443985b18efae7ed62` — se añaden pruebas para impedir que el parámetro `owner_id` permita consultar una parcela ajena y para comprobar el aislamiento de la lectura de telemetría.
+- `f2c5b193083aa9c65bc97dda5eaa85023bc1e2df` — el formulario de parcelas usa el código de cultivo backend `vinedo` en vez de enviar el texto localizado `viñedo`.
+- `3e629fe734b970a3e90a4c4e85bd1def32aef8bf` — la consulta SIGPAC ya no marca automáticamente el primer recinto como seleccionado; importar un recinto individual requiere selección explícita. Sin selección, el botón permite importar el área consultada.
+
+**Verificación pendiente para esta revisión:** los cambios se han escrito en la rama y se han comprobado los SHA de los commits; en el momento de actualizar esta sección no hay un resultado CI asociado al último commit. Por tanto, las pruebas nuevas y el análisis Flutter de esta revisión están **pendientes de ejecución confirmada**.
+
+**Límites de seguridad que siguen pendientes:** el modo sin Firebase configurado admite identidad basada en el token Bearer recibido, por lo que no debe considerarse autenticación de producción. Hay que decidir explícitamente el modo de desarrollo frente al de producción, exigir verificación criptográfica de identidad en producción y revisar todos los endpoints y tablas para asegurar aislamiento consistente. Esta revisión parcial no es una auditoría de seguridad completa.
+
+**Datos todavía no operativos:** el endpoint meteorológico ya no devuelve las cifras de demostración como si fueran observaciones; responde `503` mientras no existan observaciones verificadas para esa parcela. El catálogo MAPA sigue siendo un marcador de integración pendiente, no un catálogo oficial sincronizado.
