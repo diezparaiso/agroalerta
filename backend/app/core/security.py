@@ -11,8 +11,15 @@ def _verify_with_firebase(token: str) -> str | None:
     import firebase_admin
     from firebase_admin import auth, credentials
 
-    if not firebase_admin._apps:
-        firebase_admin.initialize_app(credentials.Certificate(json.loads(credentials_json)))
+    try:
+        if not firebase_admin._apps:
+            firebase_admin.initialize_app(credentials.Certificate(json.loads(credentials_json)))
+    except Exception as exception:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail='Configuración de autenticación Firebase inválida',
+        ) from exception
+
     try:
         return auth.verify_id_token(token)['uid']
     except Exception as exception:
