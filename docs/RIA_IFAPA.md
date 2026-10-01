@@ -20,7 +20,7 @@ No se requiere API key según la especificación del proyecto. La respuesta debe
 
 ## Endpoint de diagnóstico
 
-Se han añadido `GET /api/v1/ria-ifapa/daily?province=Sevilla&station=CODIGO&year=2026&month_start=9&month_end=9` y `GET /api/v1/ria-ifapa/monthly?province=Sevilla&station=CODIGO&year=2026&month_start=9&month_end=9`. Consultan los agregados diarios y mensuales y devuelven el JSON crudo del proveedor para facilitar la verificación del esquema. Los parámetros se validan y los fallos del proveedor se traducen a errores HTTP 502/504. El endpoint no resuelve automáticamente la estación de una parcela y todavía no alimenta `/api/v1/weather/{parcel_id}` ni el motor de riesgo. Requiere autenticación en producción según la política general de la API.
+Se han añadido `GET /api/v1/ria-ifapa/daily?province=Sevilla&station=CODIGO&year=2026&month_start=9&month_end=9` y `GET /api/v1/ria-ifapa/monthly?province=Sevilla&station=CODIGO&year=2026&month_start=9&month_end=9`. Consultan los agregados diarios y mensuales y devuelven el JSON crudo del proveedor para facilitar la verificación del esquema. Los parámetros se validan y los fallos del proveedor se traducen a errores HTTP 502/504. El indicador `/health/integrations` ya no presenta la conexión RIA como `live` por el mero hecho de tener una URL configurada: indica `configured_not_verified` y `live_connection_verified: false` hasta que exista una comprobación real. El endpoint no resuelve automáticamente la estación de una parcela y todavía no alimenta `/api/v1/weather/{parcel_id}` ni el motor de riesgo. Requiere autenticación en producción según la política general de la API.
 
 ## Código
 
