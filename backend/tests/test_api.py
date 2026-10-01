@@ -122,3 +122,25 @@ def test_risk_rule_marks_sensor_signal_as_preliminary():
     assert result.data_status == "preliminar"
     assert result.risk_level == "medio"
     assert result.confidence_level == "estimada"
+
+
+def test_parcel_detail_does_not_trust_owner_id_query_parameter() -> None:
+    created = client.post(
+        "/api/v1/parcels",
+        headers={"Authorization": "Bearer user-a"},
+        json={"label": "Privada", "latitude": 37.39, "longitude": -5.99, "crop_type": "olivar", "comarca": "Sevilla"},
+    )
+    parcel_id = created.json()["id"]
+    response = client.get(f"/api/v1/parcels/{parcel_id}?owner_id=user-a")
+    assert response.status_code == 404
+
+
+def test_telemetry_read_is_scoped_to_authenticated_owner() -> None:
+    created = client.post(
+        "/api/v1/parcels",
+        headers={"Authorization": "Bearer user-a"},
+        json={"label": "Telemetría privada", "latitude": 37.39, "longitude": -5.99, "crop_type": "olivar", "comarca": "Sevilla"},
+    )
+    parcel_id = created.json()["id"]
+    response = client.get(f"/api/v1/telemetry/{parcel_id}")
+    assert response.status_code == 404
