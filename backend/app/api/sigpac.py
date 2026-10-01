@@ -134,6 +134,8 @@ def _stable_feature_id(feature: dict[str, Any]) -> str:
     if feature.get("id") is not None:
         return str(feature["id"])
     properties = feature.get("properties") or {}
+    if isinstance(properties, dict) and properties.get("id") is not None:
+        return str(properties["id"])
     geometry = feature.get("geometry")
     return "derived:" + hashlib.sha256(
         json.dumps([properties, geometry], sort_keys=True, ensure_ascii=False).encode("utf-8")
