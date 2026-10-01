@@ -1,8 +1,23 @@
+import json
 from typing import Any
 
 import httpx
 
 from app.core.config import settings
+
+
+def _load_json(response: httpx.Response) -> Any:
+    """JSON de AEMET respetando el charset declarado.
+
+    AEMET OpenData sirve sus cuerpos con charset=ISO-8859-15, no UTF-8
+    (verificado en vivo el 2026-10-01); decodificar como UTF-8 falla con
+    los acentos de los textos de la agencia.
+    """
+    try:
+        text = response.text  # httpx usa el charset de la cabecera Content-Type
+    except UnicodeDecodeError:
+        text = response.content.decode('iso-8859-15')
+    return json.loads(text)
 
 
 class AemetClient:
@@ -18,13 +33,13 @@ class AemetClient:
             headers={'api_key': settings.aemet_api_key},
         )
         response.raise_for_status()
-        metadata = response.json()
+        metadata = _load_json(response)
         data_url = metadata.get('datos')
         if not data_url:
             raise RuntimeError('AEMET no devolvio una URL de datos')
         data_response = await self.client.get(data_url)
         data_response.raise_for_status()
-        return data_response.json()
+        return _load_json(data_response)
 
     async def aclose(self) -> None:
         if self._owns_client:

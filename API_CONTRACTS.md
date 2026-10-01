@@ -42,7 +42,7 @@ Alta:
 - `GET /api/v1/alerts`
 - `GET /api/v1/risk-history/{parcel_id}?limit=100&offset=0`
 
-El clima usa datos reales: consulta primero la estación RIA-IFAPA activa más cercana a la parcela y, si no responde, la predicción AEMET del municipio de referencia (requiere `AEMET_API_KEY`). Devuelve `parcel_id`, `temperature_c`, `relative_humidity`, `rainfall_mm_24h`, `station_distance_km`, `observed_at`, `station_name` y `source` (`ria-ifapa` o `aemet`). Si ninguna fuente está disponible responde `503` con el motivo; nunca devuelve valores ficticios.
+El clima usa datos reales: consulta primero la estación RIA-IFAPA activa más cercana a la parcela y, si no responde, la predicción AEMET del municipio de referencia (requiere `AEMET_API_KEY`). Devuelve `parcel_id`, `temperature_c`, `relative_humidity`, `rainfall_mm_24h`, `station_distance_km`, `observed_at`, `station_name` y `source` (`ria-ifapa` o `aemet`). Con `source: aemet`, `rainfall_mm_24h`, `station_name` y `station_distance_km` pueden ser `null` (el diario de AEMET no publica milímetros y es predicción municipal, no estación). Si ninguna fuente está disponible responde `503` con el motivo; nunca devuelve valores ficticios.
 
 El riesgo devuelve puntuación, nivel, confianza, variables utilizadas, fechas y recomendación orientativa.
 

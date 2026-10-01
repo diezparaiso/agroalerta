@@ -43,11 +43,11 @@ CI ejecuta backend y Flutter en cada push y pull request. El resultado de CI for
 El endpoint `GET /api/v1/weather/{parcel_id}` consulta las fuentes en este orden:
 
 1. **RIA/IFAPA** (sin credenciales): estación activa no plástica más próxima a la parcela mediante distancia haversine sobre el catálogo en vivo de `GET {ria_base_url}/estaciones`, y observaciones de `GET {ria_base_url}/datosdiarios/forceEt0/{provincia}/{estacion}/{desde}/{hasta}`.
-2. **AEMET** (solo si existe `AEMET_API_KEY`): estación meteorológica de la capital andaluza del INE más próxima a la parcela. Es una aproximación documentada, no la estación real más cercana.
+2. **AEMET** (solo si existe `AEMET_API_KEY`): predicción diaria del municipio de referencia, resuelto a la capital andaluza del INE más próxima a la parcela. Es una aproximación documentada (un municipio, no la estación real más cercana); el diario de AEMET no publica milímetros, así que `rainfall_mm_24h` queda `null` en esta fuente.
 3. Si ninguna fuente está disponible o responde, se devuelve **HTTP 503** con el motivo real. Nunca se inventan valores, en línea con el ADR-002 y la regla 3 de `docs/ENGINEERING_GUIDELINES.md`.
 
 La respuesta conserva `temperature_c`, `relative_humidity`, `rainfall_mm_24h`, `station_distance_km` y `observed_at`, y añade `station_name` y `source` (`ria-ifapa` o `aemet`) para que el cliente sepa de dónde procede cada observación.
 
 **Respecto al ADR-003:** esta primera versión implementada usa el catálogo en vivo de estaciones (no un catálogo canónico en repositorio) y selecciona únicamente la estación más próxima, sin límite de 80 km ni combinación ponderada de hasta tres estaciones. Esas ampliaciones quedan como evolución pendiente; el cambio de alcance se registra aquí conforme al ADR-004.
 
-**Validación (2026-09-30):** 9 pruebas nuevas en `backend/tests/test_weather_service.py` (31 en total, todas en verde), prueba en vivo contra RIA/IFAPA con datos reales y ninguna incidencia de `flutter analyze` en los archivos tocados. AEMET no ha podido probarse en vivo por falta de `AEMET_API_KEY`.
+**Validación:** 9 pruebas nuevas en `backend/tests/test_weather_service.py` el 2026-09-30 (31 en total, en verde), prueba en vivo contra RIA/IFAPA con datos reales y ninguna incidencia de `flutter analyze` en los archivos tocados. AEMET completado el 2026-10-01 con `AEMET_API_KEY` real guardada en `.env` (gitignored; caduca el 2027-01-09): predicción diaria de Sevilla en vivo (26,0 °C y 65 % de humedad), fallback completo con RIA caída con `source: aemet` y `GET /health/integrations` respondiendo `aemet: live`; se añadieron 2 pruebas (33 en total) para el charset `ISO-8859-15` y la estructura `prediccion.dia` reales.

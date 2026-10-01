@@ -14,7 +14,7 @@ Incluye un vertical slice funcional:
 - Backend FastAPI con parcelas, clima real (RIA/IFAPA primero y AEMET como respaldo), riesgo de repilo/mildiu, productos y reportes.
 - Historial de riesgo recuperable desde Flutter para gráficas por parcela.
 - Persistencia SQLite local para parcelas y reportes, con CRUD completo.
-- Conectores aislados para AEMET y RIA/IFAPA (RIA/IFAPA verificado en vivo; AEMET requiere `AEMET_API_KEY`), más importador CSV versionado para MAPA.
+- Conectores aislados para AEMET y RIA/IFAPA (ambos verificados en vivo; AEMET requiere `AEMET_API_KEY` en `.env`), más importador CSV versionado para MAPA.
 - Tarea de ingesta preparada para ejecutarse desde cron, Celery o Cloud Run Jobs.
 - Motor de riesgo MVP determinista con respuesta trazable y nivel de confianza estimado.
 - Estados de error explícitos cuando una fuente real no está disponible: la app no muestra datos de demostración.

@@ -79,7 +79,8 @@ def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 
 def _as_float(value: Any) -> float | None:
     if isinstance(value, dict):
-        value = value.get('valor')
+        # RIA usa 'valor'; las series horarias de AEMET usan 'value'.
+        value = value.get('valor', value.get('value'))
     if isinstance(value, str):
         value = value.strip().replace(',', '.')
     try:
@@ -188,25 +189,63 @@ def _nearest_capital(latitude: float, longitude: float) -> tuple[str, str]:
     return ine, name
 
 
+def _first_aemet_day(payload: Any) -> dict[str, Any] | None:
+    """Primer dia de prediccion del payload real de AEMET.
+
+    Formato oficial verificado en vivo el 2026-10-01:
+    [{'prediccion': {'dia': [{'fecha': ..., 'temperatura': {'maxima': ..,
+    'minima': .., 'dato': [...]}, ...}]}}]
+    Tambien admite la forma plana [{'fecha': ..., 'temperatura': [...]}].
+    """
+    if isinstance(payload, list):
+        container = next((item for item in payload if isinstance(item, dict)), None)
+    elif isinstance(payload, dict):
+        container = payload
+    else:
+        return None
+    if container is None:
+        return None
+    prediction = container.get('prediccion')
+    if isinstance(prediction, dict) and isinstance(prediction.get('dia'), list):
+        return next((day for day in prediction['dia'] if isinstance(day, dict)), None)
+    return container
+
+
+def _aemet_series(value: Any) -> list[float]:
+    """Valores de una variable diaria de AEMET.
+
+    Forma real {'maxima': 90, 'minima': 40, 'dato': [{'value': .., 'hora': ..}]}:
+    se usa la media de maxima y minima (aproximacion documentada en ADR-007);
+    si falta alguna, se recurre a la serie horaria. Las formas planas de lista
+    o escalar se procesan igual que antes.
+    """
+    if isinstance(value, dict) and ('maxima' in value or 'minima' in value or 'dato' in value):
+        extremes = [v for v in (_as_float(value.get('maxima')), _as_float(value.get('minima'))) if v is not None]
+        if len(extremes) == 2:
+            return [sum(extremes) / 2]
+        hourly = _values_of(value.get('dato'))
+        return hourly if hourly else extremes
+    if isinstance(value, dict):
+        return _values_of(value.get('valor'))
+    return _values_of(value)
+
+
 def _parse_aemet_forecast(payload: Any) -> dict[str, Any] | None:
     """Extrae la prediccion del primer dia del formato diario de AEMET."""
-    if isinstance(payload, list):
-        day = next((item for item in payload if isinstance(item, dict)), None)
-    elif isinstance(payload, dict):
-        day = payload
-    else:
-        day = None
+    day = _first_aemet_day(payload)
     if day is None:
         return None
-    temperatures = _values_of(day.get('temperatura'))
+    temperatures = _aemet_series(day.get('temperatura'))
     if not temperatures:
         tmax = _as_float(day.get('tempMaxima'))
         tmin = _as_float(day.get('tempMinima'))
         if tmax is not None and tmin is not None:
             temperatures = [(tmax + tmin) / 2]
-    humidities = _values_of(day.get('humedadRelativa'))
+    humidities = _aemet_series(day.get('humedadRelativa'))
     if not temperatures or not humidities:
         return None
+    # AEMET no publica milimetros en el diario; 'precipitacion' solo existe en
+    # la forma plana. No se usa 'probPrecipitacion' porque es probabilidad, no mm.
     rainfalls = _values_of(day.get('precipitacion'))
     return {
         'temperature_c': round(sum(temperatures) / len(temperatures), 1),

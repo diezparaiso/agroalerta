@@ -121,6 +121,15 @@ Este cambio se realizó en la rama `feature/complete-agronomic-workflows` sin ab
 - Validación: 31/31 pruebas backend, `flutter test` en verde, `flutter analyze` sin incidencias en los archivos tocados y prueba en vivo con datos reales de RIA/IFAPA.
 - Corrección posterior del mismo día: resueltas las 24 incidencias de `flutter analyze` (imports sin usar, `value` deprecated y concatenaciones con `+`) en 10 pantallas, dejando el análisis de CI en verde.
 
+### Cambio local 2026-10-01 — AEMET verificado en vivo
+
+Desbloqueo de la `AEMET_API_KEY` (pendiente 11 de `DEVELOPMENT_NOTES.md` en su momento), también en `feature/complete-agronomic-workflows` sin abrir PR:
+
+- `backend/app/core/config.py` migrado a `pydantic-settings` con `env_file` en la raíz del proyecto: `.env.example` existía pero nada cargaba `.env`. La clave real se guarda en `.env` (gitignored).
+- `backend/app/connectors/aemet_client.py` decodifica el charset que declara AEMET (`ISO-8859-15`, no UTF-8); antes el cuerpo con acentos fallaba al parsearse como JSON.
+- `backend/app/core/weather_service.py` entiende la estructura real del diario (`prediccion.dia` con `{'maxima', 'minima', 'dato'}`) además de la forma plana; `rainfall_mm_24h` queda `null` porque el diario no publica milímetros.
+- Validación: 33/33 pruebas backend (2 nuevas), prueba en vivo con predicción de Sevilla, fallback completo con RIA caída (`source: aemet`) y `GET /health/integrations` con `ria_ifapa: live` y `aemet: live`.
+
 ## 3. Modelo funcional consolidado
 
 ### Parcela
@@ -254,7 +263,7 @@ No se debe interpretar que un PR abierto está integrado en `main` hasta que Git
 ## 10. Límites conocidos
 
 - SQLite sigue siendo el almacenamiento de desarrollo.
-- Conectores externos: RIA/IFAPA está verificado en vivo (2026-09-30); AEMET requiere `AEMET_API_KEY` y sigue pendiente de validación productiva; el catálogo MAPA continúa siendo importación CSV versionada.
+- Conectores externos: RIA/IFAPA y AEMET verificados en vivo (2026-09-30 y 2026-10-01); la clave `AEMET_API_KEY` vive en `.env` (gitignored, caduca el 2027-01-09) y el catálogo MAPA continúa siendo importación CSV versionada.
 - Los resultados productivos son datos introducidos por el operador; el sistema no inventa kilos ni superficie.
 - Las decisiones agronómicas son de apoyo y trazabilidad, no sustituyen etiqueta oficial ni asesoramiento técnico.
 - El registro de tratamiento actualmente aprovecha la actividad agronómica; una trazabilidad normativa completa de producto, materia activa, dosis y plazo de seguridad requiere un módulo específico de tratamientos.

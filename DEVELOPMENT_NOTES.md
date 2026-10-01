@@ -73,7 +73,7 @@ AgroAlerta Andalucia es una aplicación Flutter responsive con backend FastAPI p
 - Orquestador `app/core/weather_service.py` y endpoint `GET /api/v1/weather/{parcel_id}`: RIA/IFAPA primero, AEMET con `AEMET_API_KEY` y error 503 explícito cuando no hay fuente disponible.
 - Cliente RIA/IFAPA reescrito sobre los endpoints oficiales verificados en vivo (`/estaciones` y `/datosdiarios/forceEt0/{provincia}/{estacion}/{desde}/{hasta}`).
 - Nuevos campos de respuesta `station_name` y `source` (`ria-ifapa` o `aemet`) junto a `temperature_c`, `relative_humidity`, `rainfall_mm_24h`, `station_distance_km` y `observed_at`.
-- 9 pruebas nuevas del servicio meteorológico en `backend/tests/test_weather_service.py` (31 tests en total en la suite backend).
+- 9 pruebas nuevas del servicio meteorológico en `backend/tests/test_weather_service.py` (31 tests en total entonces; 33 desde el 2026-10-01).
 
 ## Decisiones técnicas
 
@@ -94,17 +94,19 @@ AgroAlerta Andalucia es una aplicación Flutter responsive con backend FastAPI p
 - Selección de estación: la estación activa no plástica más próxima a la parcela por distancia haversine sobre el catálogo en vivo; para AEMET, la capital andaluza del INE más próxima (aproximación documentada en ADR-007).
 - Flutter: eliminados todos los datos ficticios de `weather_provider.dart`, `alerts_provider.dart`, `parcel_provider.dart` (getter demo), `alert_detail_screen.dart` (puntuación, métricas, nombre de parcela y gráfica inventados) y `risk_history_chart.dart` (serie por defecto). Se conservan la caché offline local de parcelas y las notificaciones locales best-effort, que no son datos inventados.
 - Correcciones incluidas: bug real de desempaquetado de tupla en la selección de estación (detectado por las nuevas pruebas), desbordamiento de 196 px en `login_screen.dart` (envuelto en `SingleChildScrollView`) y `test/widget_test.dart` roto (envuelto en `ProviderScope`).
+- Desbloqueo 2026-10-01 (`AEMET_API_KEY`): `config.py` migrado a `pydantic-settings` con `env_file` apuntando a la raíz del proyecto (el `.env.example` existía pero nada cargaba el `.env`); la clave real vive en `.env` (gitignored). El conector AEMET decodifica ahora el charset declarado por la API (`ISO-8859-15`, no UTF-8) y el parser acepta la estructura real del diario (`prediccion.dia` con `{'maxima', 'minima', 'dato'}`).
 
 ### Validación ejecutada
 
-- Backend: `31 passed` con `PYTHONPATH=backend python -m pytest backend/tests -q` (9 pruebas nuevas del servicio meteorológico).
+- Backend: `31 passed` con `PYTHONPATH=backend python -m pytest backend/tests -q` el 2026-09-30 (9 pruebas nuevas del servicio meteorológico) y `33 passed` desde el 2026-10-01 con las 2 pruebas nuevas de AEMET.
 - Flutter: `flutter test` en verde; `flutter analyze` sin incidencias en los archivos tocados por este cambio y en todo el proyecto tras corregir las 24 incidencias preexistentes el mismo día.
 - Prueba en vivo contra RIA/IFAPA con una parcela temporal (creada y borrada después): 24,3 °C, humedad 65,1 %, estación "La Rinconada" a 9,4 km, observado el 2026-09-29, `source: ria-ifapa`.
+- Prueba en vivo de AEMET el 2026-10-01 con la clave real: predicción diaria de Sevilla (INE 41091) con 26,0 °C, humedad 65,0 %, `rainfall_mm_24h: null` y `observed_at: 2026-09-30`; el fallback completo con RIA caída devuelve `source: aemet`; `GET /health/integrations` responde `ria_ifapa: live` y `aemet: live`.
 
 ### Incidencias y limitaciones conocidas
 
 - Las 24 incidencias preexistentes de `flutter analyze` (imports sin usar, `value` deprecated en `DropdownButtonFormField` y concatenaciones con `+`) se corrigieron el 2026-09-30; `flutter analyze` queda en 0 incidencias y el paso de análisis de CI pasa.
-- AEMET no se ha podido probar en vivo en este entorno: no existe `AEMET_API_KEY`. Su conversor solo está cubierto por pruebas unitarias con payloads de ejemplo.
+- AEMET quedó verificado en vivo el 2026-10-01 con `AEMET_API_KEY` real guardada en `.env` (caduca el 2027-01-09). La API declara `charset=ISO-8859-15` (no UTF-8) y su diario devuelve `prediccion.dia` con `{'maxima', 'minima', 'dato'}`; conector y parser ya cubren esos formatos. En fuente AEMET, `rainfall_mm_24h`, `station_name` y `station_distance_km` quedan `null` por ser predicción municipal sin milímetros publicados: ausencia explícita, no valores inventados.
 - La combinación ponderada de hasta tres estaciones y el límite de 80 km descritos en el ADR-003 quedan diferidos; el alcance real está registrado en el ADR-007.
 - Entorno de la máquina de desarrollo: Python 3.13.15 con virtualenv en `backend/.venv` (gitignored) y ~8 GB de RAM. La compilación nativa Android se intentó el 2026-10-01: el daemon JVM de Gradle crasheaba por memoria con los valores por defecto de la plantilla (`-Xmx8G`), ya corregidos en `android/gradle.properties`, y el proceso quedó después bloqueado por disco lleno (quedaban ~733 MB). Falta reanudar `flutter build apk --debug` cuando haya espacio.
 
@@ -119,13 +121,12 @@ AgroAlerta Andalucia es una aplicación Flutter responsive con backend FastAPI p
 7. Verificar mecanismo de exportación o indexación legal del registro MAPA.
 8. Añadir métricas de retención y carga incremental en la gráfica Flutter.
 9. Configurar permisos nativos de cámara, ubicación, notificaciones y AdMob.
-10. Pruebas en local completadas el 2026-09-30: backend 31/31, `flutter test` en verde y `flutter analyze` sin incidencias. Queda ejecutar las pruebas en Android, iOS y Web.
-11. Probar AEMET en vivo con una `AEMET_API_KEY` real y verificar el mapeo de la estación más próxima.
-12. Reanudar la compilación Android (`flutter build apk --debug`) cuando haya disco libre y completar el manifest de release: permisos `INTERNET`, ubicación y notificaciones, más el meta-data `APPLICATION_ID` de AdMob.
+10. Pruebas en local completadas: backend 33/33 (2026-10-01), `flutter test` en verde y `flutter analyze` sin incidencias. Queda ejecutar las pruebas en Android, iOS y Web.
+11. Reanudar la compilación Android (`flutter build apk --debug`) cuando haya disco libre y completar el manifest de release: permisos `INTERNET`, ubicación y notificaciones, más el meta-data `APPLICATION_ID` de AdMob.
 
 ## Última validación
 
-- Estado global a 2026-09-30: suite backend completa en verde con 31 tests, `flutter test` en verde y `flutter analyze` sin incidencias (tras corregir las 24 preexistentes del mismo día). La serie siguiente registra la evolución histórica de los 6 tests originales de `test_api.py`.
+- Estado global a 2026-10-01: suite backend completa en verde con 33 tests (31 el 2026-09-30 y 2 de AEMET añadidas el 2026-10-01), `flutter test` en verde y `flutter analyze` sin incidencias (las 24 preexistentes se corrigieron el 2026-09-30). La serie siguiente registra la evolución histórica de los 6 tests originales de `test_api.py`.
 - Backend: `6 tests passed` en `backend/tests/test_api.py` tras añadir historial y aislamiento.
 - El endpoint de clima quedó protegido por propietario; la suite mantiene `6 tests passed`.
 - Tokens FCM persistidos; la suite mantiene `6 tests passed`.

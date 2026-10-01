@@ -237,3 +237,37 @@ def test_weather_endpoint_returns_503_without_real_sources(monkeypatch: pytest.M
     body = response.json()
     assert 'Sin datos climaticos reales' in body['detail']
     assert 'temperature_c' not in body
+
+
+def test_parse_aemet_forecast_handles_real_aemet_structure() -> None:
+    # Forma real del endpoint diario de AEMET, verificada en vivo el 2026-10-01:
+    # lista con 'prediccion.dia' y variables como {'maxima', 'minima', 'dato'}.
+    payload = [{
+        'origen': {'productor': 'Agencia Estatal de Meteorologia - AEMET'},
+        'prediccion': {
+            'dia': [
+                {
+                    'fecha': '2026-09-30T00:00:00',
+                    'temperatura': {'maxima': 33, 'minima': 19, 'dato': [{'value': 0, 'hora': 6}]},
+                    'humedadRelativa': {'maxima': 90, 'minima': 40, 'dato': [{'value': 0, 'hora': 6}]},
+                    'probPrecipitacion': {'maxima': 10, 'minima': 0},
+                },
+                {
+                    'fecha': '2026-10-01T00:00:00',
+                    'temperatura': {'maxima': 30, 'minima': 17},
+                    'humedadRelativa': {'maxima': 80, 'minima': 30},
+                },
+            ],
+        },
+    }]
+
+    reading = weather_service._parse_aemet_forecast(payload)
+
+    assert reading is not None
+    assert reading['source'] == 'aemet'
+    assert reading['temperature_c'] == 26.0  # media de maxima 33 y minima 19
+    assert reading['relative_humidity'] == 65.0  # media de maxima 90 y minima 40
+    assert reading['rainfall_mm_24h'] is None  # el diario de AEMET no publica mm
+    assert reading['observed_at'] == datetime(2026, 9, 30, tzinfo=timezone.utc)
+    assert reading['station_name'] is None
+    assert reading['station_distance_km'] is None
