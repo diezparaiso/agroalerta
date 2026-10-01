@@ -77,3 +77,41 @@ def test_provider_http_errors_are_not_hidden():
                 await client.get_daily_data("Sevilla", "A1", 2026, 1, 1)
 
     asyncio.run(run())
+
+
+
+def test_aclose_does_not_close_injected_client():
+    async def run():
+        async with httpx.AsyncClient(
+            transport=httpx.MockTransport(lambda request: httpx.Response(200, json={}))
+        ) as http:
+            client = RiaIfapaClient(client=http, base_url="https://ria.example.test")
+            await client.aclose()
+            assert not http.is_closed
+
+    asyncio.run(run())
+
+
+def test_aclose_closes_client_owned_by_connector():
+    async def run():
+        client = RiaIfapaClient(base_url="https://ria.example.test")
+        http = client.client
+        assert not http.is_closed
+        await client.aclose()
+        assert http.is_closed
+
+    asyncio.run(run())
+
+
+def test_invalid_json_response_is_reported_to_caller():
+    async def run():
+        async with httpx.AsyncClient(
+            transport=httpx.MockTransport(
+                lambda request: httpx.Response(200, text="not-json")
+            )
+        ) as http:
+            client = RiaIfapaClient(client=http, base_url="https://ria.example.test")
+            with pytest.raises(ValueError):
+                await client.get_daily_data("Sevilla", "A1", 2026, 1, 1)
+
+    asyncio.run(run())
