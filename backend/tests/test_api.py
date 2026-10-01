@@ -279,8 +279,6 @@ def test_ria_ifapa_daily_endpoint_maps_provider_timeout(monkeypatch):
     assert response.json()["detail"] == "Tiempo de espera agotado al consultar RIA/IFAPA"
 
 
-import pytest
-
 @pytest.mark.parametrize("endpoint", ["daily", "monthly"])
 @pytest.mark.parametrize("parameter", ["province", "station"])
 def test_ria_ifapa_endpoints_reject_whitespace_only_parameters(endpoint, parameter):
