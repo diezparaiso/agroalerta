@@ -41,7 +41,9 @@ async def request_metrics(request, call_next):
 
 
 @app.get('/health/metrics')
-def metrics() -> dict[str, dict[str, float]]:
+def metrics(_token: str | None = Depends(optional_bearer_token)) -> dict[str, dict[str, float]]:
+    # Route-level request metrics can reveal internal traffic patterns. In production,
+    # reuse the same Firebase-backed authentication policy as other protected routes.
     return {path: {'count': values['count'], 'avg_ms': round(values['total_ms'] / values['count'], 2)} for path, values in request_metrics_data.items()}
 
 
