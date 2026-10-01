@@ -286,3 +286,12 @@ La API limita cada consulta a un máximo de 100 resultados desde la pantalla act
 - `f93f51d0ac1d594fff95e7c0324b1e4723d66c83` — limpia el import de pytest duplicado en el archivo de pruebas.
 
 **Validación pendiente:** no se ha ejecutado la suite en este entorno; revisar el resultado de CI del PR cuando esté disponible.
+
+
+## 19. Integración opcional SIAR/MAPA
+
+- Añadidos cliente configurable y endpoint diagnóstico `/api/v1/siar/daily`.
+- SIAR permanece desactivado por defecto; sin host y ruta configurados, la consulta devuelve 503 y no aporta datos ficticios.
+- La respuesta conserva el JSON del proveedor y se marca como no verificada. No se conecta al motor de riesgo hasta confirmar contrato, unidades, calidad y conexión real.
+- Variables: `SIAR_BASE_URL`, `SIAR_DAILY_PATH`, `SIAR_API_KEY`.
+- Pruebas de cliente con transporte HTTP simulado añadidas; aún no ejecutadas en este entorno. El contrato HTTP oficial y el acceso real siguen pendientes de confirmar.
