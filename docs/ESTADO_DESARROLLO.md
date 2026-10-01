@@ -256,3 +256,12 @@ Cambios adicionales en la rama:
 - `c070273e562519564c6a9a6bffe06886a67ae212` — la pantalla de selección SIGPAC muestra un aviso visible cuando el backend indica `truncated=true`, explicando que la consulta puede estar incompleta y recomendando reducir el área antes de importar.
 
 La API limita cada consulta a un máximo de 100 resultados desde la pantalla actual; el aviso reduce el riesgo de interpretar esa lista como exhaustiva. No añade paginación automática ni demuestra cobertura completa. **CI para este cambio pendiente de confirmación.**
+
+
+## 16. Primer avance del cliente RIA/IFAPA — 1 de octubre de 2026
+
+- `3431179e7817cfdf2a92911b2f0c976f041edd77` — el cliente RIA/IFAPA admite agregados diarios y mensuales, permite inyectar el cliente HTTP/base URL para pruebas, valida provincia/estación y rango de meses, configura timeout y propaga errores HTTP.
+- `e0dea1b105ed836d88757536e89a33d7ce192eb2` — pruebas para rutas diarias/mensuales, validación de parámetros y errores HTTP usando transporte simulado.
+- `f39312cea46937f7eb1edd191026b1dd69592ad0` — documentación del contrato conocido y de las limitaciones horarias en [RIA_IFAPA.md](RIA_IFAPA.md).
+
+**No declarar integración completa todavía:** el contrato documentado para agregados diarios/mensuales es el único implementado; no se ha acreditado una consulta real en vivo ni se ha confirmado un endpoint horario para mojado foliar. Las pruebas creadas usan respuestas simuladas y requieren ejecución CI para confirmar que pasan.
