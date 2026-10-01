@@ -144,3 +144,26 @@ def test_telemetry_read_is_scoped_to_authenticated_owner() -> None:
     parcel_id = created.json()["id"]
     response = client.get(f"/api/v1/telemetry/{parcel_id}")
     assert response.status_code == 404
+
+
+
+def test_production_auth_fails_closed_without_firebase(monkeypatch):
+    from fastapi import HTTPException
+    from app.core.security import optional_bearer_token
+
+    monkeypatch.setenv('ENVIRONMENT', 'production')
+    monkeypatch.delenv('FIREBASE_SERVICE_ACCOUNT_JSON', raising=False)
+    with pytest.raises(HTTPException) as error:
+        optional_bearer_token(None)
+    assert error.value.status_code == 503
+
+
+def test_production_auth_requires_bearer_token(monkeypatch):
+    from fastapi import HTTPException
+    from app.core.security import optional_bearer_token
+
+    monkeypatch.setenv('ENVIRONMENT', 'production')
+    monkeypatch.setenv('FIREBASE_SERVICE_ACCOUNT_JSON', '{"project_id":"configured"}')
+    with pytest.raises(HTTPException) as error:
+        optional_bearer_token(None)
+    assert error.value.status_code == 401
