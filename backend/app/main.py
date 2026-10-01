@@ -79,7 +79,11 @@ def integrations_health() -> dict[str, object]:
 
     return {
         'aemet': {'configured': bool(settings.aemet_api_key), 'mode': 'live' if settings.aemet_api_key else 'fallback'},
-        'ria_ifapa': {'configured': bool(settings.ria_base_url), 'mode': 'live'},
+        'ria_ifapa': {
+            'configured': bool(settings.ria_base_url),
+            'mode': 'configured_not_verified' if settings.ria_base_url else 'disabled',
+            'live_connection_verified': False,
+        },
         'firebase_admin': {'configured': bool(os.getenv('FIREBASE_SERVICE_ACCOUNT_JSON')), 'mode': 'live' if os.getenv('FIREBASE_SERVICE_ACCOUNT_JSON') else 'disabled'},
         'mapa': {'configured': False, 'mode': 'catalog-import'},
     }
