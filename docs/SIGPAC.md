@@ -49,7 +49,7 @@ Errores principales: `422` bbox inválida, `502` respuesta/error del proveedor y
 
 ### Cambios de esta etapa
 - Añadida prueba de widget inicial en `test/features/parcels/sigpac_map_screen_test.dart` para verificar controles y campos de búsqueda (creada, aún no ejecutada).
-- Añadida pantalla Flutter `SigpacMapScreen` en la carpeta existente `lib/src/features/parcels/`, con búsqueda por bbox, visualización de polígonos GeoJSON Polygon, selección para inspección y lista de atributos.
+- Añadida pantalla Flutter `SigpacMapScreen` en la carpeta existente `lib/src/features/parcels/`, con búsqueda por bbox, visualización de anillos exteriores de Polygon y MultiPolygon, selección para inspección y lista de atributos.
 - Añadida ruta `/parcels/sigpac` en GoRouter y acceso desde la pantalla de parcelas.
 - Añadidos métodos SIGPAC a `ApiClient`; Flutter llama únicamente a la API de AgroAlerta, no al proveedor externo directamente.
 - La acción de importar utiliza el contrato ya existente `POST /api/v1/sigpac/importar` y comunica que importa el área, no solo la selección.
@@ -62,6 +62,7 @@ Errores principales: `422` bbox inválida, `502` respuesta/error del proveedor y
 
 ### Verificación y límites
 - **Implementado en código:** pantalla, ruta, métodos del cliente y enlace desde Parcelas.
-- **No ejecutado en este entorno:** `flutter analyze`, pruebas Flutter y pruebas backend para esta nueva rama. No se afirma que compile ni que pase CI.
+- **CI de esta rama (ejecución asociada a un commit anterior a los últimos cambios):** backend completado correctamente; Flutter falla en `flutter analyze` por 22 incidencias. Las incidencias listadas por el analizador están en pantallas existentes (alertas, inicio, parcelas, productos, ajustes, dispositivos e informes); la pantalla SIGPAC solo tenía un import sin uso, eliminado en un commit posterior. `flutter test` se omitió porque el análisis falló antes.
+- **Pendiente de ejecutar tras el último commit:** `flutter analyze`, prueba de widget, suite Flutter y suite backend en el estado final de la rama. No se afirma que compile ni que pase CI.
 - **Pendiente:** validar con una respuesta real del endpoint `items`; probar en móvil/web; dibujar MultiPolygon y huecos; zoom automático a resultados; importar recintos seleccionados individualmente (el contrato actual solo permite importar por bbox); enlazar los recintos importados con la entidad de parcela del agricultor; gestionar paginación completa y límites del proveedor.
 - **Limitación de privacidad:** el backend actual utiliza su mecanismo existente de token opcional; revisar la autorización y el aislamiento por usuario antes de usar la importación con datos de producción.
