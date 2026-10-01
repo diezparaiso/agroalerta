@@ -20,7 +20,7 @@ No se requiere API key según la especificación del proyecto. La respuesta debe
 
 ## Endpoint de diagnóstico
 
-Se ha añadido `GET /api/v1/ria-ifapa/daily?province=Sevilla&station=CODIGO&year=2026&month_start=9&month_end=9`. Consulta los agregados diarios y devuelve el JSON crudo del proveedor para facilitar la verificación del esquema. Los parámetros se validan y los fallos del proveedor se traducen a errores HTTP 502/504. El endpoint no resuelve automáticamente la estación de una parcela y todavía no alimenta `/api/v1/weather/{parcel_id}` ni el motor de riesgo. Requiere autenticación en producción según la política general de la API.
+Se han añadido `GET /api/v1/ria-ifapa/daily?province=Sevilla&station=CODIGO&year=2026&month_start=9&month_end=9` y `GET /api/v1/ria-ifapa/monthly?province=Sevilla&station=CODIGO&year=2026&month_start=9&month_end=9`. Consultan los agregados diarios y mensuales y devuelven el JSON crudo del proveedor para facilitar la verificación del esquema. Los parámetros se validan y los fallos del proveedor se traducen a errores HTTP 502/504. El endpoint no resuelve automáticamente la estación de una parcela y todavía no alimenta `/api/v1/weather/{parcel_id}` ni el motor de riesgo. Requiere autenticación en producción según la política general de la API.
 
 ## Código
 
@@ -37,7 +37,7 @@ No se considera confirmado el contrato horario de RIA-Web/RIAWS. Por tanto, esta
 
 ## Pendiente para completar la integración
 
-1. Ejecutar las pruebas del cliente y la suite backend en CI.
+1. Ejecutar las pruebas del cliente y la suite backend en CI; se han añadido casos de API para agregados mensuales y mapeo de errores del proveedor.
 2. Hacer una consulta real desde un entorno con acceso HTTPS al servicio y guardar un ejemplo de respuesta anonimizado/no sensible.
 3. Confirmar códigos de provincia y estación y el esquema real de los campos.
 4. Resolver la estación adecuada para cada parcela y la estrategia de actualización/caché.
