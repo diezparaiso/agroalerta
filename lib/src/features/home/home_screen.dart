@@ -12,8 +12,8 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AppPage(
-      title: 'Buenos dias, agricultor',
-      subtitle: 'Andalucia · datos actualizados hace 12 min',
+      title: 'Buenos días, agricultor',
+      subtitle: 'Andalucía · resumen de actividad',
       actions: [IconButton(onPressed: () {}, icon: const Icon(Icons.notifications_none))],
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -55,7 +55,7 @@ class _RiskCard extends StatelessWidget {
         title: 'Aviso prioritario',
         icon: Icons.warning_amber_rounded,
         color: Colors.amber.shade100,
-        child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Riesgo medio de repilo', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700)), SizedBox(height: 10), LinearProgressIndicator(value: .58), SizedBox(height: 10), Text('Olivar de prueba · confianza estimada')]),
+        child: const Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Ejemplo: riesgo medio de repilo', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700)), SizedBox(height: 10), LinearProgressIndicator(value: .58), SizedBox(height: 10), Text('Datos de demostración · validar con observaciones de campo')]),
       );
 }
 
@@ -68,7 +68,7 @@ class _ParcelSummaryCard extends StatelessWidget {
 class _InsightCard extends StatelessWidget {
   const _InsightCard();
   @override
-  Widget build(BuildContext context) => _Panel(title: 'Recomendacion', icon: Icons.lightbulb_outline, child: const Text('Revisa las hojas bajas del olivar tras el episodio de lluvia. La alerta es orientativa y debe contrastarse con un tecnico.'));
+  Widget build(BuildContext context) => _Panel(title: 'Recomendación', icon: Icons.lightbulb_outline, child: const Text('Revisa las hojas bajas del olivar tras el episodio de lluvia. La alerta es orientativa y debe contrastarse con un tecnico.'));
 }
 
 class _MapCard extends StatelessWidget {
@@ -83,7 +83,7 @@ class _TelemetryCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) => _Panel(title: 'Estado del sensor', icon: Icons.sensors_outlined, child: ref.watch(telemetryProvider).when(data: (telemetry) {
-        if (telemetry == null) return const Text('Sin sensores conectados\nLos datos se estimaran con la estación agroclimática más cercana.');
+        if (telemetry == null) return const Text('Sin sensores conectados\nLos datos podrán estimarse con la estación agroclimática más cercana.');
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('${telemetry['temperature_c'] ?? '--'} °C', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700)), const SizedBox(height: 8), Text('Humedad ${telemetry['relative_humidity'] ?? '--'}%'), Text('Mojado foliar ${telemetry['leaf_wetness_hours'] ?? '--'} h'), const Spacer(), Row(children: [const Icon(Icons.battery_5_bar, size: 18), const SizedBox(width: 6), Text('${telemetry['battery_percent'] ?? '--'}% de batería')])]);
       }, loading: () => const Center(child: CircularProgressIndicator()), error: (_, __) => const Text('Telemetría no disponible')));
 }
@@ -96,7 +96,7 @@ class AppPage extends StatelessWidget {
   final List<Widget>? actions;
   final bool showAds;
   @override
-  Widget build(BuildContext context) => Padding(padding: const EdgeInsets.fromLTRB(24, 24, 24, 12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)), if (subtitle != null) Text(subtitle!, style: Theme.of(context).textTheme.bodyMedium)])), ...?actions]), const SizedBox(height: 24), Expanded(child: child), if (showAds) const Padding(padding: EdgeInsets.only(top: 12), child: Center(child: AdBanner()))]));
+  Widget build(BuildContext context) => LayoutBuilder(builder: (context, constraints) { final compact = constraints.maxWidth < 600; return Padding(padding: EdgeInsets.fromLTRB(compact ? 16 : 24, compact ? 16 : 24, compact ? 16 : 24, 12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)), if (subtitle != null) Padding(padding: const EdgeInsets.only(top: 4), child: Text(subtitle!, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)))])), if (actions != null) ...actions!]), SizedBox(height: compact ? 16 : 24), Expanded(child: child), if (showAds) const Padding(padding: EdgeInsets.only(top: 12), child: Center(child: AdBanner()))])); }) ;
 }
 
 class _Panel extends StatelessWidget {
