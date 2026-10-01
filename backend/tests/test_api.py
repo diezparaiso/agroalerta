@@ -184,3 +184,28 @@ def test_metrics_endpoint_requires_authentication_in_production(monkeypatch):
 def test_risk_rule_rejects_unsupported_disease_code():
     with pytest.raises(ValueError, match='Enfermedad no soportada'):
         evaluate_risk('p1', 'roya' , 'olivar', None)
+
+
+def test_ria_ifapa_daily_endpoint_returns_provider_payload(monkeypatch):
+    import app.api.ria_ifapa as ria_api
+
+    class FakeRiaClient:
+        async def get_daily_data(self, province, station, year, month_start, month_end):
+            return {"datos": [{"fecha": "2026-09-01", "temperatura_media": 22.1}]}
+
+        async def aclose(self):
+            pass
+
+    monkeypatch.setattr(ria_api, "RiaIfapaClient", FakeRiaClient)
+    response = client.get(
+        "/api/v1/ria-ifapa/daily?province=Sevilla&station=A1&year=2026&month_start=9&month_end=9"
+    )
+    assert response.status_code == 200
+    assert response.json()["datos"][0]["temperatura_media"] == 22.1
+
+
+def test_ria_ifapa_daily_endpoint_rejects_reversed_month_range():
+    response = client.get(
+        "/api/v1/ria-ifapa/daily?province=Sevilla&station=A1&year=2026&month_start=10&month_end=2"
+    )
+    assert response.status_code == 422
