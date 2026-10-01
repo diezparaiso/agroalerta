@@ -249,3 +249,11 @@ def test_ria_ifapa_daily_endpoint_maps_provider_http_error(monkeypatch):
     )
     assert response.status_code == 502
     assert response.json()["detail"] == "RIA/IFAPA devolvió un error HTTP"
+
+
+def test_ria_integration_health_does_not_claim_live_verification():
+    response = client.get("/health/integrations")
+    assert response.status_code == 200
+    ria = response.json()["ria_ifapa"]
+    assert ria["mode"] in {"configured_not_verified", "disabled"}
+    assert ria["live_connection_verified"] is False
