@@ -47,6 +47,7 @@ class DiseaseRisk(BaseModel):
     variables_used: list[RiskVariable]
     calculated_at: datetime
     valid_until: datetime
+    data_status: Literal["insuficiente", "preliminar"] = "insuficiente"
 
 
 class Product(BaseModel):
