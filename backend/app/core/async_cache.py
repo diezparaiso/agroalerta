@@ -42,14 +42,20 @@ class AsyncTTLCache:
             if task is None:
                 task = asyncio.create_task(factory())
                 self._in_flight[key] = task
-                task.add_done_callback(
-                    lambda completed, cache_key=key: asyncio.create_task(
-                        self._finish(cache_key, completed)
-                    )
-                )
 
         # One caller being cancelled must not cancel work shared by other callers.
-        return deepcopy(await asyncio.shield(task))
+        try:
+            result = await asyncio.shield(task)
+        except asyncio.CancelledError:
+            # Distinguish caller cancellation from a factory that cancelled itself.
+            if task.done() and task.cancelled():
+                await self._finish(key, task)
+            raise
+        except Exception:
+            await self._finish(key, task)
+            raise
+        await self._finish(key, task)
+        return deepcopy(result)
 
     async def _finish(self, key: str, task: asyncio.Task[Any]) -> None:
         async with self._lock:
