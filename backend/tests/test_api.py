@@ -173,3 +173,9 @@ def test_sigpac_stable_feature_id_prefers_properties_id() -> None:
 
     assert _stable_feature_id({"properties": {"id": "recinto-123"}, "geometry": None}) == "recinto-123"
     assert _stable_feature_id({"id": "geojson-456", "properties": {"id": "other"}}) == "geojson-456"
+
+def test_metrics_endpoint_requires_authentication_in_production(monkeypatch):
+    monkeypatch.setenv('ENVIRONMENT', 'production')
+    monkeypatch.setenv('FIREBASE_SERVICE_ACCOUNT_JSON', '{"project_id":"configured"}')
+    response = client.get('/health/metrics')
+    assert response.status_code == 401
