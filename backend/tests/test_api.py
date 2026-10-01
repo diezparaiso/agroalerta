@@ -179,3 +179,8 @@ def test_metrics_endpoint_requires_authentication_in_production(monkeypatch):
     monkeypatch.setenv('FIREBASE_SERVICE_ACCOUNT_JSON', '{"project_id":"configured"}')
     response = client.get('/health/metrics')
     assert response.status_code == 401
+
+
+def test_risk_rule_rejects_unsupported_disease_code():
+    with pytest.raises(ValueError, match='Enfermedad no soportada'):
+        evaluate_risk('p1', 'roya' , 'olivar', None)
