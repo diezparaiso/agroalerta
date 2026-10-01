@@ -295,3 +295,11 @@ La API limita cada consulta a un máximo de 100 resultados desde la pantalla act
 - La respuesta conserva el JSON del proveedor y se marca como no verificada. No se conecta al motor de riesgo hasta confirmar contrato, unidades, calidad y conexión real.
 - Variables: `SIAR_BASE_URL`, `SIAR_DAILY_PATH`, `SIAR_API_KEY`.
 - Pruebas de cliente con transporte HTTP simulado añadidas; aún no ejecutadas en este entorno. El contrato HTTP oficial y el acceso real siguen pendientes de confirmar.
+
+### 4.4 Consultas externas y experiencia de carga
+- Se ha retirado el fallback meteorológico con valores fijos de demostración del proveedor Flutter: la ausencia de datos no se presenta como una observación real.
+- El proveedor meteorológico guarda respuestas correctas en caché local y puede mostrar la última respuesta guardada si falla la actualización, señalándola como antigua.
+- La tarjeta meteorológica muestra un mensaje explicativo durante la carga y ofrece reintento si no hay datos disponibles.
+- Se ha registrado ADR-007 para establecer carga progresiva, caché por fuente/ubicación/intervalo, deduplicación, límites de concurrencia y actualización programada como requisitos de escalado.
+
+**Limitaciones:** el endpoint meteorológico por parcela todavía devuelve 503 hasta disponer de evidencia meteorológica integrada. La caché actual es local al dispositivo y no implementa todavía caducidad automática; no sustituye una caché compartida del backend. La interfaz no bloquea la navegación durante la consulta, pero no se ha implementado aún un gestor genérico de trabajos de larga duración.
