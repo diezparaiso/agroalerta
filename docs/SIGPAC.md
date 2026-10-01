@@ -57,12 +57,12 @@ Errores principales: `422` bbox inválida, `502` respuesta/error del proveedor y
 
 ### Contratos utilizados
 - `GET /api/v1/sigpac/recintos?bbox=oeste,sur,este,norte&limit=100` devuelve una FeatureCollection GeoJSON.
-- `POST /api/v1/sigpac/importar` recibe `{"bbox":"oeste,sur,este,norte","limit":100}`.
+- `POST /api/v1/sigpac/importar` recibe `{"bbox":"oeste,sur,este,norte","limit":100}` y admite opcionalmente `feature_ids` (1–100 identificadores de la respuesta) para importar solo recintos seleccionados; los identificadores deben pertenecer a los resultados del área consultada.
 - Se conserva `GET /api/v1/sigpac/importados?limit=100&offset=0` en el cliente API para el siguiente paso de asociación y consulta de los recintos guardados.
 
 ### Verificación y límites
 - **Implementado en código:** pantalla, ruta, métodos del cliente y enlace desde Parcelas.
 - **CI de esta rama (ejecución asociada a un commit anterior a los últimos cambios):** backend completado correctamente; Flutter falla en `flutter analyze` por 22 incidencias. Las incidencias listadas por el analizador están en pantallas existentes (alertas, inicio, parcelas, productos, ajustes, dispositivos e informes); la pantalla SIGPAC solo tenía un import sin uso, eliminado en un commit posterior. `flutter test` se omitió porque el análisis falló antes.
 - **Pendiente de ejecutar tras el último commit:** `flutter analyze`, prueba de widget, suite Flutter y suite backend en el estado final de la rama. No se afirma que compile ni que pase CI.
-- **Pendiente:** validar con una respuesta real del endpoint `items`; probar en móvil/web; dibujar MultiPolygon y huecos; zoom automático a resultados; importar recintos seleccionados individualmente (el contrato actual solo permite importar por bbox); enlazar los recintos importados con la entidad de parcela del agricultor; gestionar paginación completa y límites del proveedor.
+- **Pendiente:** validar con una respuesta real del endpoint `items`; probar en móvil/web; dibujar MultiPolygon y huecos; zoom automático a resultados; probar en CI la importación por `feature_ids` y su respuesta 422 para IDs fuera del bbox; enlazar los recintos importados con la entidad de parcela del agricultor; gestionar paginación completa y límites del proveedor.
 - **Limitación de privacidad:** el backend actual utiliza su mecanismo existente de token opcional; revisar la autorización y el aislamiento por usuario antes de usar la importación con datos de producción.
