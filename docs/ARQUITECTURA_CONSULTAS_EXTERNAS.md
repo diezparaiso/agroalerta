@@ -224,3 +224,16 @@ Pruebas añadidas en `backend/tests/test_async_cache.py`: reutilización de resu
 ## 15. Aplicación gradual de caché a RIA/IFAPA y SIAR
 
 Se ha extendido la caché a los endpoints diagnósticos RIA/IFAPA diarios y mensuales y al endpoint diario SIAR. Cada clave incorpora fuente/versión, estación, intervalo y parámetros de consulta; se usa SHA-256 para no exponer los parámetros directamente en la clave de almacenamiento. Los límites de concurrencia son por proceso, no globales. Los TTL son iniciales y deben revisarse cuando se confirme la cadencia de actualización y el contrato de cada proveedor. La respuesta cruda sigue sin normalizarse y no se debe utilizar directamente para calcular riesgo.
+
+
+## 15. Aplicación gradual de caché a RIA/IFAPA y SIAR
+
+Se ha extendido la caché a los endpoints diagnósticos RIA/IFAPA diarios y mensuales y al endpoint diario SIAR. Cada clave incorpora fuente/versión, estación y parámetros temporales; se usa SHA-256 para no exponer los parámetros directamente en la clave. Los límites de concurrencia son por proceso, no globales. Los TTL son valores iniciales y deben revisarse cuando se confirme la cadencia real de actualización y el contrato de cada proveedor. La respuesta cruda sigue sin normalizarse y no se debe utilizar directamente para calcular riesgo.
+
+Configuración inicial:
+- RIA/IFAPA diario: TTL de 1 hora, máximo 256 entradas.
+- RIA/IFAPA mensual: TTL de 24 horas, máximo 256 entradas.
+- SIAR diario: TTL de 1 hora, máximo 256 entradas.
+- Límite simultáneo: RIA/IFAPA 3 y SIAR 2 recuperaciones por proceso.
+
+La caché no demuestra que los proveedores estén disponibles ni verificados. Los errores de proveedor no se guardan como resultados exitosos.
