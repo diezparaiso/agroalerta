@@ -242,3 +242,10 @@ Cambios adicionales en la rama:
 **CI comprobado:** ejecución #474, https://github.com/diezparaiso/agroalerta/actions/runs/36847188541, finalizó con los trabajos `backend` y `flutter` en **success**. El análisis Flutter y los tests Flutter pasaron; también pasó `PYTHONPATH=backend python -m pytest backend/tests -q`. Esta ejecución se lanzó para el commit `519e7016...`; los commits posteriores de backend descritos arriba todavía necesitan una ejecución CI propia antes de considerarse verificados.
 
 **Riesgos/pendientes detectados en revisión:** la ruta `/health/metrics` expone métricas de rutas sin autenticación y debe evaluarse según el despliegue; las rutas públicas de salud, catálogo y consulta SIGPAC deben documentarse como decisiones deliberadas. La autenticación de producción sólo protege rutas que declaran la dependencia, por lo que aún hace falta una auditoría completa del inventario de rutas y una prueba de integración con tokens Firebase reales. No se ha verificado en esta sesión la disponibilidad en vivo del proveedor SIGPAC.
+
+## 14. Protección de métricas — 1 de octubre de 2026
+
+- `1cd855ed89fb9abd04eda6ab6a2f825bc524c33e` — el endpoint `/health/metrics` usa la dependencia de autenticación compartida. En producción requiere token Bearer verificado por Firebase; en desarrollo mantiene el comportamiento previo.
+- `593ba9a23e50b81b5883eb229a995ac9940b8300` — prueba de integración que confirma que una petición sin token a `/health/metrics` recibe HTTP 401 en modo producción cuando Firebase está configurado.
+
+**Pendiente de verificación:** estos cambios se acaban de registrar y todavía no hay una ejecución CI confirmada para el último commit. Las rutas de salud e integraciones siguen siendo públicas deliberadamente para facilitar la comprobación de disponibilidad; antes de producción debe confirmarse que la información que exponen es apropiada para el despliegue.
