@@ -24,7 +24,8 @@ No se requiere API key según la especificación del proyecto. La respuesta debe
 - Pruebas: `backend/tests/test_ria_ifapa_client.py`
 - Base URL configurable con `RIA_BASE_URL`; valor predeterminado definido en `backend/app/core/config.py`.
 - Incluye validación de provincia/estación y rango de meses, soporte de datos diarios y mensuales, timeout HTTP configurable y propagación explícita de errores HTTP.
-- Permite inyectar un `httpx.AsyncClient` para pruebas deterministas sin llamadas de red.
+- Permite inyectar un `httpx.AsyncClient` para pruebas deterministas sin llamadas de red. El método `aclose()` cierra solo el cliente creado por el conector; respeta el ciclo de vida de los clientes inyectados.
+- Las pruebas también cubren la propagación de errores HTTP y el rechazo de respuestas que no contienen JSON válido, sin ocultar fallos del proveedor.
 
 ## Límite importante: datos horarios
 
