@@ -277,3 +277,12 @@ La API limita cada consulta a un máximo de 100 resultados desde la pantalla act
 - `7ebb4ada6d247bf9fea72b26af09fed537c4df6d` — añade prueba de traducción de timeout del proveedor a HTTP 504.
 
 **Pendiente:** no hay resultados CI publicados para el commit más reciente y no se ha verificado una respuesta real del proveedor. Los tests HTTP existentes usan respuestas simuladas. No se deben usar los agregados como observaciones horarias ni alimentar el motor de riesgo hasta validar el esquema, unidades, estaciones y frescura de los datos.
+
+
+## 18. Validación de parámetros RIA/IFAPA en la API — 1 de octubre de 2026
+
+- `43111e8d8deb246a325b8ad55789b57c192623d6` — los endpoints diarios y mensuales responden HTTP 422 cuando provincia o estación contienen solo espacios, en vez de clasificar la entrada inválida como error del proveedor.
+- `e89393e09cf6ef03aa41faa14d411b20be56a66c` — añade pruebas parametrizadas para ambos endpoints y ambos parámetros.
+- `f93f51d0ac1d594fff95e7c0324b1e4723d66c83` — limpia el import de pytest duplicado en el archivo de pruebas.
+
+**Validación pendiente:** no se ha ejecutado la suite en este entorno; revisar el resultado de CI del PR cuando esté disponible.
