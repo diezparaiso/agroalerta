@@ -41,3 +41,26 @@ La consulta por bbox devuelve una página limitada por `limit`; si el resultado 
 Ejecutar desde un entorno con salida HTTPS al proveedor una petición real, por ejemplo `GET https://sigpac-hubcloud.es/ogcapi/collections/recintos/items?f=json&bbox=-6.1,37.2,-5.8,37.5&limit=3`, verificar que devuelve una FeatureCollection con al menos una geometría y después probar `POST /api/v1/sigpac/importar` y consultar `/api/v1/sigpac/importados`. Hasta completar ese paso, la importación de datos reales se considera pendiente.
 
 Errores principales: `422` bbox inválida, `502` respuesta/error del proveedor y `504` timeout.
+
+
+## Etapa SIGPAC visual — rama `feature/sigpac-map-selection` (1 de octubre de 2026)
+
+**Autoría:** cambios implementados por ChatGPT (OpenAI) a petición del responsable del proyecto.
+
+### Cambios de esta etapa
+- Añadida pantalla Flutter `SigpacMapScreen` en la carpeta existente `lib/src/features/parcels/`, con búsqueda por bbox, visualización de polígonos GeoJSON Polygon, selección para inspección y lista de atributos.
+- Añadida ruta `/parcels/sigpac` en GoRouter y acceso desde la pantalla de parcelas.
+- Añadidos métodos SIGPAC a `ApiClient`; Flutter llama únicamente a la API de AgroAlerta, no al proveedor externo directamente.
+- La acción de importar utiliza el contrato ya existente `POST /api/v1/sigpac/importar` y comunica que importa el área, no solo la selección.
+- La consulta usa un máximo de 100 resultados en la interfaz para evitar presentar una consulta parcial como descarga completa.
+
+### Contratos utilizados
+- `GET /api/v1/sigpac/recintos?bbox=oeste,sur,este,norte&limit=100` devuelve una FeatureCollection GeoJSON.
+- `POST /api/v1/sigpac/importar` recibe `{"bbox":"oeste,sur,este,norte","limit":100}`.
+- Se conserva `GET /api/v1/sigpac/importados?limit=100&offset=0` en el cliente API para el siguiente paso de asociación y consulta de los recintos guardados.
+
+### Verificación y límites
+- **Implementado en código:** pantalla, ruta, métodos del cliente y enlace desde Parcelas.
+- **No ejecutado en este entorno:** `flutter analyze`, pruebas Flutter y pruebas backend para esta nueva rama. No se afirma que compile ni que pase CI.
+- **Pendiente:** validar con una respuesta real del endpoint `items`; probar en móvil/web; dibujar MultiPolygon y huecos; zoom automático a resultados; importar recintos seleccionados individualmente (el contrato actual solo permite importar por bbox); enlazar los recintos importados con la entidad de parcela del agricultor; gestionar paginación completa y límites del proveedor.
+- **Limitación de privacidad:** el backend actual utiliza su mecanismo existente de token opcional; revisar la autorización y el aislamiento por usuario antes de usar la importación con datos de producción.
