@@ -249,3 +249,10 @@ Cambios adicionales en la rama:
 - `593ba9a23e50b81b5883eb229a995ac9940b8300` — prueba de integración que confirma que una petición sin token a `/health/metrics` recibe HTTP 401 en modo producción cuando Firebase está configurado.
 
 **Pendiente de verificación:** estos cambios se acaban de registrar y todavía no hay una ejecución CI confirmada para el último commit. Las rutas de salud e integraciones siguen siendo públicas deliberadamente para facilitar la comprobación de disponibilidad; antes de producción debe confirmarse que la información que exponen es apropiada para el despliegue.
+
+
+## 15. Aviso de resultados SIGPAC potencialmente incompletos — 1 de octubre de 2026
+
+- `c070273e562519564c6a9a6bffe06886a67ae212` — la pantalla de selección SIGPAC muestra un aviso visible cuando el backend indica `truncated=true`, explicando que la consulta puede estar incompleta y recomendando reducir el área antes de importar.
+
+La API limita cada consulta a un máximo de 100 resultados desde la pantalla actual; el aviso reduce el riesgo de interpretar esa lista como exhaustiva. No añade paginación automática ni demuestra cobertura completa. **CI para este cambio pendiente de confirmación.**
