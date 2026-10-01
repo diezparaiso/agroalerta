@@ -209,3 +209,43 @@ def test_ria_ifapa_daily_endpoint_rejects_reversed_month_range():
         "/api/v1/ria-ifapa/daily?province=Sevilla&station=A1&year=2026&month_start=10&month_end=2"
     )
     assert response.status_code == 422
+
+
+def test_ria_ifapa_monthly_endpoint_returns_provider_payload(monkeypatch):
+    import app.api.ria_ifapa as ria_api
+
+    class FakeRiaClient:
+        async def get_monthly_data(self, province, station, year, month_start, month_end):
+            return {"datos": [{"mes": "2026-09", "precipitacion": 12.4}]}
+
+        async def aclose(self):
+            pass
+
+    monkeypatch.setattr(ria_api, "RiaIfapaClient", FakeRiaClient)
+    response = client.get(
+        "/api/v1/ria-ifapa/monthly?province=Sevilla&station=A1&year=2026&month_start=9&month_end=9"
+    )
+    assert response.status_code == 200
+    assert response.json()["datos"][0]["precipitacion"] == 12.4
+
+
+def test_ria_ifapa_daily_endpoint_maps_provider_http_error(monkeypatch):
+    import asyncio
+    import httpx
+    import app.api.ria_ifapa as ria_api
+
+    class FakeRiaClient:
+        async def get_daily_data(self, *args):
+            request = httpx.Request("GET", "https://ria.example.test")
+            response = httpx.Response(503, request=request)
+            raise httpx.HTTPStatusError("unavailable", request=request, response=response)
+
+        async def aclose(self):
+            pass
+
+    monkeypatch.setattr(ria_api, "RiaIfapaClient", FakeRiaClient)
+    response = client.get(
+        "/api/v1/ria-ifapa/daily?province=Sevilla&station=A1&year=2026&month_start=9&month_end=9"
+    )
+    assert response.status_code == 502
+    assert response.json()["detail"] == "RIA/IFAPA devolvió un error HTTP"
