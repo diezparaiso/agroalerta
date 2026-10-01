@@ -42,3 +42,25 @@ def test_siar_rejects_invalid_station_or_period(args):
             return await client.get_daily_data(*args)
     with pytest.raises(ValueError):
         asyncio.run(run())
+
+
+def test_siar_rejects_impossible_calendar_date():
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(
+            lambda request: (_ for _ in ()).throw(AssertionError("no debe consultar"))
+        )) as http:
+            client = SiarClient(client=http, base_url="https://siar.example.test", daily_path="daily")
+            with pytest.raises(ValueError, match="fechas reales"):
+                await client.get_daily_data("A1", "2026-02-30", "2026-03-01")
+    asyncio.run(run())
+
+
+def test_siar_validates_inputs_even_when_disabled():
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(
+            lambda request: (_ for _ in ()).throw(AssertionError("no debe consultar"))
+        )) as http:
+            client = SiarClient(client=http, base_url="", daily_path="")
+            with pytest.raises(ValueError, match="fechas reales"):
+                await client.get_daily_data("A1", "2026-02-30", "2026-03-01")
+    asyncio.run(run())
