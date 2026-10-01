@@ -189,8 +189,8 @@ No mostrar spinner permanente sin explicación. El reintento debe volver a ejecu
 
 1. **Ahora:** mantener los estados de carga/error y la caché meteorológica local sin datos inventados; hacer que la lectura de caché corrupta no oculte el error de red original.
 2. **Siguiente:** definir y probar una política de antigüedad meteorológica visible; cubrir UI con tests.
-3. **Después:** implementar una capa backend reutilizable para caché TTL y deduplicación en vuelo, con tests de concurrencia y alcance de propietario.
-4. **Luego:** añadir límites por proveedor y métricas básicas.
+3. **Implementado inicialmente para Copernicus:** caché TTL en proceso y deduplicación en vuelo; se limita a dos recuperaciones simultáneas por proceso. Aún debe ampliarse y validarse antes de aplicarlo a otras fuentes.
+4. **Siguiente:** añadir límites por proveedor y métricas básicas.
 5. **Más adelante:** trabajos de ingesta programados y cola persistente solo cuando el volumen y el despliegue lo requieran.
 6. **Antes de conectar al riesgo:** validar en vivo los contratos y unidades de Copernicus/RIA/SIAR, y usar series temporales verificadas.
 
@@ -199,3 +199,20 @@ No mostrar spinner permanente sin explicación. El reintento debe volver a ejecu
 Cada desarrollo nuevo debe documentar: problema, alcance, decisión arquitectónica, flujo de datos, configuración, archivos afectados, contratos, límites, seguridad, pruebas, estado de CI, evidencia de conectividad real, deuda técnica y reversión posible. Actualizar también `docs/DECISIONS.md` si se introduce una decisión duradera y `docs/ESTADO_DESARROLLO.md` con el commit y estado real.
 
 ChatGPT de OpenAI ha asistido en la redacción y desarrollo de esta documentación y código a petición del responsable del proyecto. Esta asistencia no implica certificación, titularidad ni garantía por parte de OpenAI o de los proveedores de datos.
+
+
+## 14. Implementación inicial de caché backend — 1 de octubre de 2026
+
+Se incorpora `backend/app/core/async_cache.py`, una caché asíncrona genérica, acotada por número de entradas y TTL, con deduplicación de solicitudes concurrentes para la misma clave. Los resultados se copian al devolverlos para evitar que un consumidor modifique accidentalmente el objeto almacenado. Los errores del proveedor no se guardan en caché y una cancelación de un consumidor no cancela el trabajo compartido.
+
+Se integra inicialmente solo en `GET /api/v1/copernicus/era5/hourly`:
+- TTL configurado: seis horas.
+- Máximo: 128 consultas guardadas por proceso.
+- Límite: dos recuperaciones Copernicus simultáneas por proceso.
+- La clave incluye coordenadas, fechas, dataset y versión de la consulta; no contiene credenciales.
+- El SDK de Copernicus sigue aislando su operación bloqueante con `asyncio.to_thread`.
+- La respuesta informa del TTL y aclara que la caché es local al proceso; no afirma que la conectividad esté verificada.
+
+**Limitación de despliegue:** cada worker/proceso mantiene su propia caché y semáforo. No existe coordinación entre réplicas ni persistencia tras reinicio. Antes de desplegar múltiples réplicas o extenderlo a todas las fuentes, se debe evaluar caché compartida y configuración de límites desde entorno.
+
+Pruebas añadidas en `backend/tests/test_async_cache.py`: reutilización de resultado, aislamiento de mutaciones, deduplicación concurrente, no cachear errores y validación de límites. Estas pruebas requieren ejecución de CI para confirmar el resultado.
