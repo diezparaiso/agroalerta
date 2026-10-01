@@ -1,5 +1,5 @@
+import asyncio
 import httpx
-import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -24,8 +24,7 @@ def test_sigpac_recintos_rejects_invalid_bbox(monkeypatch):
         assert response.status_code == 422
 
 
-@pytest.mark.asyncio
-async def test_sigpac_recintos_queries_ogc_api_and_returns_geojson(monkeypatch):
+def test_sigpac_recintos_queries_ogc_api_and_returns_geojson(monkeypatch):
     monkeypatch.setenv("SIGPAC_OGC_API_URL", "https://sigpac-hubcloud.es/ogcapi")
     monkeypatch.setenv("SIGPAC_OGC_COLLECTION", "recintos")
     feature_collection = {
@@ -63,7 +62,7 @@ async def test_sigpac_recintos_queries_ogc_api_and_returns_geojson(monkeypatch):
             return await self.client.get(*args, **kwargs)
 
     monkeypatch.setattr("app.api.sigpac.httpx.AsyncClient", MockAsyncClient)
-    result = await search_recintos(bbox="-6.1,37,-5.8,37.5", limit=100)
+    result = asyncio.run(search_recintos(bbox="-6.1,37,-5.8,37.5", limit=100))
     assert result["type"] == "FeatureCollection"
     assert result["numberReturned"] == 1
     assert result["source"] == "sigpac-hubcloud-ogcapi"
