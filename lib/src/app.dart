@@ -45,7 +45,7 @@ class AgroAlertaApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
-      title: 'AgroAlerta Andalucia',
+      title: 'AgroAlerta Andalucía',
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
@@ -101,7 +101,7 @@ class AppShell extends StatelessWidget {
               selectedIndex: selected < 0 ? 0 : selected,
               onDestinationSelected: (index) => context.go(destinations[index].path),
               destinations: [
-                for (final item in destinations.take(4))
+                for (final item in destinations)
                   NavigationDestination(icon: Icon(item.icon), label: item.label),
               ],
             )
