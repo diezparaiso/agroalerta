@@ -303,3 +303,14 @@ La API limita cada consulta a un máximo de 100 resultados desde la pantalla act
 - Se ha registrado ADR-007 para establecer carga progresiva, caché por fuente/ubicación/intervalo, deduplicación, límites de concurrencia y actualización programada como requisitos de escalado.
 
 **Limitaciones:** el endpoint meteorológico por parcela todavía devuelve 503 hasta disponer de evidencia meteorológica integrada. La caché actual es local al dispositivo y no implementa todavía caducidad automática; no sustituye una caché compartida del backend. La interfaz no bloquea la navegación durante la consulta, pero no se ha implementado aún un gestor genérico de trabajos de larga duración.
+
+## 20. Arquitectura de consultas externas, caché y carga progresiva — 1 de octubre de 2026
+
+Se ha creado `docs/ARQUITECTURA_CONSULTAS_EXTERNAS.md` como referencia técnica ampliada para nuevos conectores y para la evolución de las consultas multi-API. Describe el flujo Flutter → API FastAPI → servicio de aplicación → caché/deduplicación → adaptador externo; separa las capacidades ya presentes de las previstas; y fija criterios de TTL, concurrencia, errores parciales, trazabilidad, seguridad, contratos, pruebas y futuras tareas de larga duración.
+
+Cambio de robustez asociado:
+- `lib/src/core/network/offline_cache.dart`: la lectura elimina entradas cuyo JSON esté corrupto y devuelve una ausencia de caché en vez de propagar un error de parseo. Esto evita que una caché dañada enmascare la causa original del fallo de red. Se documenta que la caché es local, no es fuente de verdad y que la política de frescura corresponde al consumidor.
+
+**No implementado en esta entrega:** caché compartida de backend, deduplicación de llamadas en vuelo, cola de trabajos, métricas de proveedor, TTL operativo de meteorología y validación real de conectividad Copernicus/SIAR. Se mantienen como pasos separados para no simular capacidades que todavía no existen.
+
+Documentación de referencia: [Arquitectura de consultas externas](ARQUITECTURA_CONSULTAS_EXTERNAS.md), [Decisiones de arquitectura](DECISIONS.md), [Copernicus CDS](COPERNICUS_CDS.md).
