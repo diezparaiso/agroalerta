@@ -222,3 +222,12 @@ Cambios aplicados en la rama de trabajo:
 **Límites de seguridad que siguen pendientes:** el modo sin Firebase configurado admite identidad basada en el token Bearer recibido, por lo que no debe considerarse autenticación de producción. Hay que decidir explícitamente el modo de desarrollo frente al de producción, exigir verificación criptográfica de identidad en producción y revisar todos los endpoints y tablas para asegurar aislamiento consistente. Esta revisión parcial no es una auditoría de seguridad completa.
 
 **Datos todavía no operativos:** el endpoint meteorológico ya no devuelve las cifras de demostración como si fueran observaciones; responde `503` mientras no existan observaciones verificadas para esa parcela. El catálogo MAPA sigue siendo un marcador de integración pendiente, no un catálogo oficial sincronizado.
+
+
+## 12. Autenticación en modo producción — 1 de octubre de 2026
+
+Cambios adicionales en la rama:
+- `ae9c09efd0d547216b3626f7674a294b99b0173a` — `optional_bearer_token` falla de forma cerrada si `ENVIRONMENT=production` y no hay credenciales de Firebase Admin; también exige cabecera Bearer en producción y verifica el token mediante Firebase cuando las credenciales están configuradas.
+- `ce489f5552600b8cc4f9c1f76a35bd2f9546b5cd` — pruebas para el rechazo por configuración de autenticación ausente en producción y para exigir token.
+
+**Estado de validación:** estas pruebas aún no se han ejecutado en una CI visible para los commits recientes. La prueba de autenticación configurada comprueba el rechazo por ausencia de token sin realizar una verificación real contra Firebase. La configuración de credenciales de producción, los permisos de los endpoints públicos y una auditoría integral siguen requiriendo revisión operativa.
