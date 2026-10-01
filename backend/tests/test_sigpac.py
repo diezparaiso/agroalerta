@@ -76,3 +76,50 @@ async def test_sigpac_recintos_returns_geojson_from_upstream(monkeypatch):
     assert result["type"] == "FeatureCollection"
     assert result["numberReturned"] == 1
     assert result["features"][0]["geometry"]["type"] == "Polygon"
+
+
+
+def test_sigpac_import_persists_and_deduplicates_features(monkeypatch, tmp_path):
+    from app.api import sigpac
+
+    monkeypatch.setenv("AGROALERTA_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("SIGPAC_WFS_URL", "https://sigpac.example.test/wfs")
+    monkeypatch.setenv("SIGPAC_WFS_TYPENAME", "sigpac:recintos")
+    feature_collection = {
+        "type": "FeatureCollection",
+        "features": [{
+            "type": "Feature",
+            "id": "recinto.123",
+            "geometry": {"type": "Polygon", "coordinates": []},
+            "properties": {"provincia": "Sevilla", "recinto": 123},
+        }],
+    }
+
+    async def fake_search_recintos(bbox, limit):
+        return {**feature_collection, "numberReturned": 1, "bbox": [-6.1, 37.0, -5.8, 37.5]}
+
+    monkeypatch.setattr(sigpac, "search_recintos", fake_search_recintos)
+    first = client.post(
+        "/api/v1/sigpac/importar",
+        json={"bbox": "-6.1,37.0,-5.8,37.5", "limit": 100},
+        headers={"Authorization": "Bearer test-owner"},
+    )
+    assert first.status_code == 200
+    assert first.json()["imported"] == 1
+    assert first.json()["updated"] == 0
+
+    second = client.post(
+        "/api/v1/sigpac/importar",
+        json={"bbox": "-6.1,37.0,-5.8,37.5", "limit": 100},
+        headers={"Authorization": "Bearer test-owner"},
+    )
+    assert second.status_code == 200
+    assert second.json()["imported"] == 0
+    assert second.json()["updated"] == 1
+
+    listed = client.get("/api/v1/sigpac/importados", headers={"Authorization": "Bearer test-owner"})
+    assert listed.status_code == 200
+    body = listed.json()
+    assert body["total"] == 1
+    assert body["features"][0]["geometry"]["type"] == "Polygon"
+    assert body["features"][0]["properties"]["provincia"] == "Sevilla"
