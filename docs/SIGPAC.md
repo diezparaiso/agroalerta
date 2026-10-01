@@ -48,6 +48,7 @@ Errores principales: `422` bbox inválida, `502` respuesta/error del proveedor y
 **Autoría:** cambios implementados por ChatGPT (OpenAI) a petición del responsable del proyecto.
 
 ### Cambios de esta etapa
+- Añadida prueba de widget inicial en `test/features/parcels/sigpac_map_screen_test.dart` para verificar controles y campos de búsqueda (creada, aún no ejecutada).
 - Añadida pantalla Flutter `SigpacMapScreen` en la carpeta existente `lib/src/features/parcels/`, con búsqueda por bbox, visualización de polígonos GeoJSON Polygon, selección para inspección y lista de atributos.
 - Añadida ruta `/parcels/sigpac` en GoRouter y acceso desde la pantalla de parcelas.
 - Añadidos métodos SIGPAC a `ApiClient`; Flutter llama únicamente a la API de AgroAlerta, no al proveedor externo directamente.
