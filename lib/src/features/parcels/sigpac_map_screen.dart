@@ -44,7 +44,6 @@ class _SigpacMapScreenState extends ConsumerState<SigpacMapScreen> {
       }
       setState(() {
         _collection = result;
-        final features = result['features'] as List;
         _selectedId = null;
       });
     } catch (error) {
