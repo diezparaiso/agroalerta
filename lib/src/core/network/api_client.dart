@@ -18,6 +18,30 @@ class ApiClient {
 
   final Dio _dio;
 
+  Future<Map<String, dynamic>> searchSigpacRecintos({required String bbox, int limit = 100}) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/v1/sigpac/recintos',
+      queryParameters: {'bbox': bbox, 'limit': limit},
+    );
+    return response.data!;
+  }
+
+  Future<Map<String, dynamic>> importSigpacRecintos({required String bbox, int limit = 100, List<String>? featureIds}) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/sigpac/importar',
+      data: {'bbox': bbox, 'limit': limit, if (featureIds != null) 'feature_ids': featureIds},
+    );
+    return response.data!;
+  }
+
+  Future<Map<String, dynamic>> getImportedSigpacRecintos({int limit = 100, int offset = 0}) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/v1/sigpac/importados',
+      queryParameters: {'limit': limit, 'offset': offset},
+    );
+    return response.data!;
+  }
+
   Future<List<Map<String, dynamic>>> getParcels() async {
     final response = await _dio.get<List<dynamic>>('/api/v1/parcels');
     return response.data!.cast<Map<String, dynamic>>();

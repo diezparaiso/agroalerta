@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:go_router/go_router.dart';
 
 import '../home/home_screen.dart';
 import '../../core/location/location_service.dart';
@@ -9,7 +10,7 @@ import 'parcel_provider.dart';
 class ParcelsScreen extends ConsumerWidget {
   const ParcelsScreen({super.key});
   @override
-  Widget build(BuildContext context, WidgetRef ref) => AppPage(title: 'Parcelas', subtitle: 'Gestiona los puntos que quieres monitorizar', actions: [FilledButton.icon(onPressed: () => _showCreateDialog(context, ref), icon: const Icon(Icons.add), label: const Text('Nueva parcela'))], child: ref.watch(parcelsProvider).when(data: (parcels) => LayoutBuilder(builder: (context, constraints) { final columns = constraints.maxWidth > 900 ? 3 : constraints.maxWidth > 560 ? 2 : 1; return GridView.count(crossAxisCount: columns, crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1.45, children: [for (final parcel in parcels) _ParcelCard(name: parcel.name, crop: parcel.crop, place: parcel.place, risk: parcel.risk)]); }), loading: () => const Center(child: CircularProgressIndicator()), error: (error, stack) => Center(child: Text('No se pudieron cargar las parcelas: $error')));
+  Widget build(BuildContext context, WidgetRef ref) => AppPage(title: 'Parcelas', subtitle: 'Gestiona los puntos que quieres monitorizar', actions: [OutlinedButton.icon(onPressed: () => context.go('/parcels/sigpac'), icon: const Icon(Icons.map_outlined), label: const Text('Importar desde SIGPAC')), FilledButton.icon(onPressed: () => _showCreateDialog(context, ref), icon: const Icon(Icons.add), label: const Text('Nueva parcela'))], child: ref.watch(parcelsProvider).when(data: (parcels) => LayoutBuilder(builder: (context, constraints) { final columns = constraints.maxWidth > 900 ? 3 : constraints.maxWidth > 560 ? 2 : 1; return GridView.count(crossAxisCount: columns, crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1.45, children: [for (final parcel in parcels) _ParcelCard(name: parcel.name, crop: parcel.crop, place: parcel.place, risk: parcel.risk)]); }), loading: () => const Center(child: CircularProgressIndicator()), error: (error, stack) => Center(child: Text('No se pudieron cargar las parcelas: $error'))));
 }
 
 Future<void> _showCreateDialog(BuildContext context, WidgetRef ref) async {
@@ -25,11 +26,11 @@ Future<void> _showCreateDialog(BuildContext context, WidgetRef ref) async {
       content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
         TextField(controller: labelController, decoration: const InputDecoration(labelText: 'Nombre')),
         const SizedBox(height: 12),
-        DropdownButtonFormField<String>(value: cropType, decoration: const InputDecoration(labelText: 'Cultivo'), items: const [DropdownMenuItem(value: 'olivar', child: Text('Olivar')), DropdownMenuItem(value: 'vinedo', child: Text('Vinedo'))], onChanged: (value) => setState(() => cropType = value ?? 'olivar')),
+        DropdownButtonFormField<String>(initialValue: cropType, decoration: const InputDecoration(labelText: 'Cultivo'), items: const [DropdownMenuItem(value: 'olivar', child: Text('Olivar')), DropdownMenuItem(value: 'vinedo', child: Text('Viñedo'))], onChanged: (value) => setState(() => cropType = value ?? 'olivar')),
         const SizedBox(height: 12),
         TextField(controller: comarcaController, decoration: const InputDecoration(labelText: 'Comarca')),
         const SizedBox(height: 12),
-        OutlinedButton.icon(onPressed: () async { final position = await LocationService().currentPosition(); if (position != null) { setState(() { latitudeController.text = position.latitude.toStringAsFixed(6); longitudeController.text = position.longitude.toStringAsFixed(6); }); } }, icon: const Icon(Icons.my_location), label: const Text('Usar mi ubicacion actual')),
+        OutlinedButton.icon(onPressed: () async { final position = await LocationService().currentPosition(); if (position != null) { setState(() { latitudeController.text = position.latitude.toStringAsFixed(6); longitudeController.text = position.longitude.toStringAsFixed(6); }); } }, icon: const Icon(Icons.my_location), label: const Text('Usar mi ubicación actual')),
         const SizedBox(height: 12),
         Row(children: [Expanded(child: TextField(controller: latitudeController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Latitud'))), const SizedBox(width: 8), Expanded(child: TextField(controller: longitudeController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Longitud')))]),
       ])),

@@ -107,6 +107,7 @@ async def search_recintos(
 class ImportRequest(BaseModel):
     bbox: str = Field(description="Extensión geográfica: oeste,sur,este,norte")
     limit: int = Field(default=100, ge=1, le=1000)
+    feature_ids: list[str] | None = Field(default=None, min_length=1, max_length=100)
 
 
 def _database_path() -> Path:
@@ -133,6 +134,8 @@ def _stable_feature_id(feature: dict[str, Any]) -> str:
     if feature.get("id") is not None:
         return str(feature["id"])
     properties = feature.get("properties") or {}
+    if isinstance(properties, dict) and properties.get("id") is not None:
+        return str(properties["id"])
     geometry = feature.get("geometry")
     return "derived:" + hashlib.sha256(
         json.dumps([properties, geometry], sort_keys=True, ensure_ascii=False).encode("utf-8")
@@ -146,10 +149,17 @@ async def import_recintos(
 ) -> dict[str, Any]:
     data = await search_recintos(bbox=payload.bbox, limit=payload.limit)
     owner_id = _token or "anonymous"
+    selected_ids = set(payload.feature_ids or [])
+    features = data["features"]
+    if selected_ids:
+        features = [feature for feature in features if isinstance(feature, dict) and _stable_feature_id(feature) in selected_ids]
+        missing_ids = selected_ids - {_stable_feature_id(feature) for feature in features}
+        if missing_ids:
+            raise HTTPException(status_code=422, detail="Uno o más recintos seleccionados no están presentes en los resultados del área consultada.")
     path = _database_path()
     imported = updated = 0
     with sqlite3.connect(path) as connection:
-        for feature in data["features"]:
+        for feature in features:
             if not isinstance(feature, dict):
                 continue
             properties = feature.get("properties") or {}

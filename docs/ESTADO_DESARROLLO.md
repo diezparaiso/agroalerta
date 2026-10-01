@@ -1,0 +1,337 @@
+# AgroAlerta Andalucía — memoria de desarrollo y estado
+
+**Fecha:** 1 de octubre de 2026  
+**Repositorio:** [diezparaiso/agroalerta](https://github.com/diezparaiso/agroalerta)  
+**Rama de trabajo:** `feature/sigpac-map-selection`  
+**PR relacionado:** [#15](https://github.com/diezparaiso/agroalerta/pull/15)  
+**PR SIGPAC:** [#14](https://github.com/diezparaiso/agroalerta/pull/14)
+
+## 1. Quién participa y responsabilidades
+
+- **Responsable del proyecto/producto:** la persona que dirige AgroAlerta Andalucía y solicita los cambios. Su nombre no consta en los datos disponibles, por lo que no se inventa.
+- **Asistencia de desarrollo:** ChatGPT, de OpenAI, ha ayudado a redactar documentación y modificar código a petición del responsable del proyecto. Esta atribución no significa que OpenAI sea propietario del producto ni garantice el código.
+- **Revisión humana independiente:** no consta una revisión formal completada en esta actualización.
+- **Validación agronómica:** pendiente. Los indicadores actuales no son predicciones validadas.
+- **Validación técnica:** solo se considera confirmada cuando existe una ejecución comprobable de pruebas o CI. Guardar un commit no demuestra que compile ni que pase las pruebas.
+
+## 2. Resumen del proyecto
+
+AgroAlerta Andalucía es una aplicación Flutter con backend FastAPI orientada a la gestión de parcelas y avisos de riesgo fitosanitario, inicialmente para repilo en olivar y mildiu en viñedo. El alcance de referencia incluye fuentes meteorológicas y agroclimáticas, SIGPAC, consulta de productos del registro MAPA, notificaciones y reportes de campo.
+
+El repositorio contiene una aplicación navegable, API propia, integración SIGPAC en desarrollo y un motor inicial de indicadores. **No debe considerarse todavía un sistema agronómico validado ni un servicio de producción plenamente verificado.**
+
+## 3. Arquitectura observada
+
+### Cliente
+- Flutter/Dart, Material 3 y tema compartido.
+- Riverpod para estado y carga asíncrona.
+- go_router para navegación.
+- Dio para llamadas HTTP al backend propio.
+- fl_chart para gráficos e histórico.
+- Integración de Firebase presente parcialmente; el funcionamiento debe comprobarse en cada entorno.
+- Navegación adaptable: barra inferior en pantallas estrechas y NavigationRail en pantallas anchas.
+
+El diseño de referencia indica que Flutter no debe llamar directamente a AEMET, RIA/IFAPA, SIGPAC o MAPA; debe hacerlo a través de la API propia.
+
+### Backend
+- FastAPI como API HTTP.
+- Pydantic para esquemas.
+- SQLite en los módulos trabajados.
+- Motor de reglas en `backend/app/domain/disease_rules.py`.
+- Esquemas en `backend/app/schemas.py`.
+- API SIGPAC en `backend/app/api/sigpac.py` y su cliente asociado.
+- Pruebas en `backend/tests/test_api.py`.
+
+La arquitectura de referencia contempla también ingesta horaria, trabajos programados, caché offline avanzada, calibración y otras integraciones. No se consideran completas sin código, configuración y pruebas verificables.
+
+## 4. Trabajo desarrollado
+
+### 4.1 SIGPAC
+- Se documentó el uso de SIGPAC HubCloud mediante OGC API – Features, colección predeterminada `recintos`.
+- Hay endpoints internos para comprobar la integración, consultar recintos por extensión geográfica e importar recintos seleccionados.
+- Se contempla guardar geometría GeoJSON y atributos en SQLite, con deduplicación.
+- La interfaz permite delimitar una extensión y seleccionar identificadores de recintos.
+- El mapa representa anillos exteriores de geometrías Polygon y MultiPolygon.
+
+**Pendiente/limitaciones:** no se ha acreditado aquí conectividad en vivo en todos los entornos; no asumir paginación exhaustiva, tratamiento de huecos interiores o autoencuadre completo; la importación no implica necesariamente crear y vincular una parcela de negocio; tampoco está garantizado el acceso a campañas históricas.
+
+Referencia: [docs/SIGPAC.md](SIGPAC.md), [PR #14](https://github.com/diezparaiso/agroalerta/pull/14).
+
+### 4.2 Interfaz y navegación
+- Ajustes al tema compartido Material 3 y estilos de componentes.
+- Correcciones de textos, acentos y detalles en pantallas de acceso, parcelas, dispositivos e informes.
+- Navegación adaptable por anchura de pantalla.
+- Revisión de algunos textos del inicio para evitar presentar cifras de demostración como si fueran datos operativos.
+
+**Pendiente:** comprobar móvil, tableta y escritorio; accesibilidad; rutas; estados de carga, error y vacío; consistencia visual. La navegación principal no representa necesariamente todas las pantallas previstas en la arquitectura.
+
+### 4.3 Motor inicial de riesgo
+Archivo principal: `backend/app/domain/disease_rules.py`.
+
+La lógica actual:
+- Relaciona repilo con olivar y mildiu con viñedo.
+- Devuelve datos insuficientes cuando falta telemetría utilizable, la lectura tiene más de 24 horas, está fechada en el futuro o no corresponde al cultivo.
+- Marca como `preliminar` los cálculos basados en telemetría reciente.
+- Para repilo, usa como señal preliminar temperatura entre 15 y 20 °C y mojado foliar reportado de al menos 24 horas.
+- Para mildiu, usa como señal provisional temperatura entre 10 y 25 °C, humedad relativa de al menos 85 % y mojado reportado de al menos 6 horas.
+- Devuelve puntuación, nivel, confianza estimada, variables usadas, fecha de cálculo, caducidad y estado de los datos.
+- Explica que el resultado no es una predicción validada y que no se debe tratar el cultivo basándose únicamente en el indicador.
+
+**Precaución agronómica:** los umbrales de mildiu son provisionales. Una lectura aislada no demuestra mojado foliar continuo ni periodo de incubación. Se requiere serie temporal y validación con fuentes técnicas y especialistas; no usar el indicador por sí solo para decidir tratamientos.
+
+### 4.4 Esquema de respuesta
+En `backend/app/schemas.py`, `DiseaseRisk` incluye:
+- `parcel_id`, `disease_code`
+- `risk_score` de 0 a 1 y `risk_level` bajo/medio/alto
+- `confidence_level` alta/estimada
+- `recommendation_text`, `variables_used`
+- `calculated_at`, `valid_until`
+- `data_status`: `insuficiente` o `preliminar`
+
+Se corrigió una duplicación de `data_status`; debe existir una sola definición y los clientes deben manejar ambos estados.
+
+### 4.5 Lista de avisos
+- La lista consume los registros del backend mediante ApiClient.
+- Se eliminó el aviso ficticio de respaldo “Olivar de prueba” que aparecía si fallaba la API; ahora el error se propaga a la interfaz.
+- Se muestra si el resultado es preliminar o si faltan datos.
+- Se añadió un estado vacío explícito cuando la API devuelve cero avisos.
+
+Esto diferencia una respuesta válida sin avisos de un fallo de red/API.
+
+### 4.6 Detalle del aviso
+Archivo: `lib/src/features/alerts/alert_detail_screen.dart`.
+
+Se sustituyeron valores de demostración fijos —como lluvia 12,2 mm, temperatura 18,4 °C e índice 0,58— por la consulta de riesgo a la API. La pantalla:
+- Filtra el resultado por código de enfermedad.
+- Muestra nivel, puntuación, estado de datos, variables y explicación devueltos por el backend.
+- Incluye estados de carga, error y ausencia de resultado.
+- No presenta el gráfico de muestra como histórico real cuando no hay datos.
+- Mantiene un aviso de que el indicador no es diagnóstico ni instrucción de tratamiento.
+
+**Pendiente de comprobación importante:** la ruta debe pasar el ID de parcela del servidor, no su etiqueta visible. Hay que confirmar que los códigos de enfermedad de la ruta coinciden exactamente con `repilo` y `mildiu`, y que la API devuelve el cálculo esperado para esa parcela.
+
+## 5. Registro de los cambios más recientes
+
+| Commit | Cambio |
+|---|---|
+| `9991773` | Reemplaza datos ficticios del detalle por datos de la API. |
+| `77d2ea5` | Ajusta el tipo numérico del indicador y el manejo de errores. |
+| `4aa1025` | Añade estado vacío cuando no existen avisos. |
+
+Estos commits se guardaron en `feature/sigpac-map-selection`. El mensaje de un commit acredita que se registró un cambio, no que haya superado las pruebas. El historial de la rama contiene además cambios previos en SIGPAC, presentación, esquema de riesgo, reglas preliminares y tratamiento de errores.
+
+## 6. Pruebas y validación
+
+**Presente en el repositorio:** pruebas en `backend/tests/test_api.py`, incluyendo flujo de parcela/riesgo, salud de API e integraciones. También se añadieron casos para datos insuficientes, telemetría antigua e indicador preliminar de mildiu.
+
+**No confirmado en esta actualización:**
+- No se ejecutó localmente la suite completa durante esta iteración.
+- No se encontró una ejecución CI asociada al último commit consultado.
+- No se puede afirmar que Flutter compile o que `flutter analyze` y `flutter test` pasen.
+- No se puede afirmar que todos los tests backend pasen.
+- No se ha acreditado una prueba end-to-end en dispositivos ni conectividad estable con fuentes externas en vivo.
+
+**Validación necesaria:**
+1. Ejecutar tests backend en el entorno del proyecto.
+2. Ejecutar `flutter pub get`, `flutter analyze` y `flutter test`.
+3. Probar el flujo lista → detalle con un ID real de parcela y ambos códigos de enfermedad.
+4. Registrar enlaces/resultados CI y corregir fallos antes de declarar terminada la fase.
+
+## 7. Deuda técnica y riesgos pendientes
+
+1. Validar agronómicamente los umbrales por enfermedad, cultivo y zona.
+2. Construir series temporales con fuente, marca temporal, calidad, estación y distancia a parcela.
+3. Verificar contratos, disponibilidad y licencias de AEMET y RIA/IFAPA; no inventar endpoints.
+4. Mostrar procedencia, hora de observación y antigüedad de datos.
+5. Verificar que Flutter pasa el ID de parcela correcto, no el nombre.
+6. Normalizar códigos de enfermedad entre interfaz y API.
+7. Definir persistencia y semántica del histórico, y distinguir ausencia de datos de errores.
+8. Completar paginación y geometrías complejas SIGPAC si lo exige el alcance, y vincular recinto importado con parcela.
+9. Verificar autenticación y aislamiento de datos por propietario en cada entorno.
+10. En productos MAPA, conservar fecha de consulta/versión de la fuente y no presentar dosis o plazos como actuales sin comprobar el registro.
+11. Verificar de forma real el modo offline, caché, antigüedad y sincronización; que figure en la arquitectura no prueba que esté terminado.
+12. Valorar separar la rama actual en PR temáticos: SIGPAC, UI y motor de riesgo, para facilitar revisión y reversión.
+
+## 8. Plan de trabajo propuesto
+
+### Prioridad 1 — Validación técnica
+- Ejecutar tests backend, análisis Flutter y pruebas de interfaz.
+- Corregir fallos y añadir tests para el detalle y los estados vacíos.
+- Confirmar rutas, IDs de parcela y códigos de enfermedad.
+- Obtener CI verificable.
+
+### Prioridad 2 — Datos agroclimáticos
+- Definir esquema de observaciones temporales con procedencia y calidad.
+- Integrar fuentes documentadas y gestionar datos ausentes/obsoletos.
+- Registrar distancia de estación y vigencia de cada observación.
+- No inferir continuidad con una lectura aislada.
+
+### Prioridad 3 — Motor de riesgo
+- Validar umbrales con fuentes técnicas y especialistas.
+- Probar con series históricas verificadas y casos negativos.
+- Separar alerta heurística de modelo de incubación.
+- Mantener recomendaciones no prescriptivas mientras no esté validado.
+
+### Prioridad 4 — Integración del producto
+- Vincular recintos SIGPAC con parcelas.
+- Completar trazabilidad y estado de actualización en la UI.
+- Verificar privacidad, permisos, notificaciones y despliegue.
+- Registrar quién revisa y acepta cada entrega.
+
+## 9. Criterios para considerar una funcionalidad terminada
+
+Una funcionalidad solo se marcará como terminada cuando el código esté guardado, las pruebas pertinentes pasen con evidencia conservada, el flujo de interfaz se haya probado cuando corresponda, los estados de error/sin datos estén cubiertos, las limitaciones estén documentadas y una persona responsable revise y acepte el resultado.
+
+## 10. Referencias
+- [Repositorio](https://github.com/diezparaiso/agroalerta)
+- [PR #14 — SIGPAC](https://github.com/diezparaiso/agroalerta/pull/14)
+- [PR #15 — rama de trabajo](https://github.com/diezparaiso/agroalerta/pull/15)
+- [Documentación SIGPAC](SIGPAC.md)
+- Documento base: `AgroAlerta_Andalucia_Arquitectura_v2.docx`.
+- Guía de desarrollo: `AgroAlerta_Andalucia_MasterPrompt_Desarrollo.docx`.
+
+---
+
+**Mantenimiento de esta memoria:** actualizarla en cada entrega con fecha, responsable, archivos afectados, hash de commit, pruebas ejecutadas, enlace CI, incidencias y decisión de aceptación. No registrar como verificado ningún resultado sin evidencia.
+
+
+## 10. Actualización de verificación CI — 1 de octubre de 2026
+
+Se ha comprobado en GitHub Actions la ejecución **#465** del flujo `AgroAlerta CI`, asociada al commit `0952e01333323c858dc1d5591ec6beead6696a46` de esta rama.
+
+- Trabajo `flutter`: **success**. Los pasos `flutter pub get`, `flutter analyze` y `flutter test` finalizaron correctamente.
+- Trabajo `backend`: **success**. La instalación de `backend/requirements.txt` y `PYTHONPATH=backend python -m pytest backend/tests -q` finalizaron correctamente.
+- Ejecución: https://github.com/diezparaiso/agroalerta/actions/runs/36843152565
+
+Esta evidencia confirma esos pasos para ese commit concreto. No equivale a validación agronómica, prueba con datos SIGPAC en vivo, auditoría de seguridad, ni garantía de funcionamiento en todos los dispositivos o entornos. Una modificación posterior requiere volver a comprobar su CI.
+
+
+## 11. Revisión funcional y de aislamiento — 1 de octubre de 2026
+
+**Responsable de la ejecución:** asistencia de desarrollo ChatGPT (OpenAI), a petición de la persona responsable del proyecto. No consta revisión humana independiente.
+
+Cambios aplicados en la rama de trabajo:
+- `b089a5a27e27f8b1200ed0555f62a6f78cf70a7a` — el detalle de parcela deja de aceptar `owner_id` como parámetro de consulta controlado por el cliente; ahora deriva el propietario de la identidad resuelta por la dependencia Bearer. La lectura de telemetría también comprueba el propietario y filtra por él.
+- `61b5acb3691a7aa7987e7fbe73fef21b5a1858cd` — se elimina la lista de parcelas ficticias que aparecía cuando no había parcelas locales ni respuesta del backend. Un fallo de red ya no debe presentar parcelas de demostración como reales.
+- `da741b864d984ff985c3f2443985b18efae7ed62` — se añaden pruebas para impedir que el parámetro `owner_id` permita consultar una parcela ajena y para comprobar el aislamiento de la lectura de telemetría.
+- `f2c5b193083aa9c65bc97dda5eaa85023bc1e2df` — el formulario de parcelas usa el código de cultivo backend `vinedo` en vez de enviar el texto localizado `viñedo`.
+- `3e629fe734b970a3e90a4c4e85bd1def32aef8bf` — la consulta SIGPAC ya no marca automáticamente el primer recinto como seleccionado; importar un recinto individual requiere selección explícita. Sin selección, el botón permite importar el área consultada.
+
+**Verificación pendiente para esta revisión:** los cambios se han escrito en la rama y se han comprobado los SHA de los commits; en el momento de actualizar esta sección no hay un resultado CI asociado al último commit. Por tanto, las pruebas nuevas y el análisis Flutter de esta revisión están **pendientes de ejecución confirmada**.
+
+**Límites de seguridad que siguen pendientes:** el modo sin Firebase configurado admite identidad basada en el token Bearer recibido, por lo que no debe considerarse autenticación de producción. Hay que decidir explícitamente el modo de desarrollo frente al de producción, exigir verificación criptográfica de identidad en producción y revisar todos los endpoints y tablas para asegurar aislamiento consistente. Esta revisión parcial no es una auditoría de seguridad completa.
+
+**Datos todavía no operativos:** el endpoint meteorológico ya no devuelve las cifras de demostración como si fueran observaciones; responde `503` mientras no existan observaciones verificadas para esa parcela. El catálogo MAPA sigue siendo un marcador de integración pendiente, no un catálogo oficial sincronizado.
+
+
+## 12. Autenticación en modo producción — 1 de octubre de 2026
+
+Cambios adicionales en la rama:
+- `ae9c09efd0d547216b3626f7674a294b99b0173a` — `optional_bearer_token` falla de forma cerrada si `ENVIRONMENT=production` y no hay credenciales de Firebase Admin; también exige cabecera Bearer en producción y verifica el token mediante Firebase cuando las credenciales están configuradas.
+- `ce489f5552600b8cc4f9c1f76a35bd2f9546b5cd` — pruebas para el rechazo por configuración de autenticación ausente en producción y para exigir token.
+
+**Estado de validación:** estas pruebas aún no se han ejecutado en una CI visible para los commits recientes. La prueba de autenticación configurada comprueba el rechazo por ausencia de token sin realizar una verificación real contra Firebase. La configuración de credenciales de producción, los permisos de los endpoints públicos y una auditoría integral siguen requiriendo revisión operativa.
+
+## 13. Corrección de CI y selección SIGPAC — 1 de octubre de 2026
+
+- `519e7016b40e514a9b0a798cdb29a84297dc64f4` — se elimina una variable local sin uso detectada por `flutter analyze` en `sigpac_map_screen.dart`.
+- `82946da8f6ec2a4cf26ec936e929612dd8a3e8eb` — el backend reconoce también `properties.id` como identificador estable SIGPAC cuando el GeoJSON no contiene `feature.id`. Esto alinea la selección que envía Flutter con el filtrado de importación del backend.
+- `ca90adb7f7d1f0d2716195b67949a5a07606f5d1` — prueba unitaria para la prioridad de identificadores GeoJSON y `properties.id`.
+- `01bf1e65bb93283435f717d97a522d8ec47678a5` — una configuración Firebase Admin inválida devuelve un error controlado `503` en lugar de propagarse como error interno durante la inicialización.
+
+**CI comprobado:** ejecución #474, https://github.com/diezparaiso/agroalerta/actions/runs/36847188541, finalizó con los trabajos `backend` y `flutter` en **success**. El análisis Flutter y los tests Flutter pasaron; también pasó `PYTHONPATH=backend python -m pytest backend/tests -q`. Esta ejecución se lanzó para el commit `519e7016...`; los commits posteriores de backend descritos arriba todavía necesitan una ejecución CI propia antes de considerarse verificados.
+
+**Riesgos/pendientes detectados en revisión:** la ruta `/health/metrics` expone métricas de rutas sin autenticación y debe evaluarse según el despliegue; las rutas públicas de salud, catálogo y consulta SIGPAC deben documentarse como decisiones deliberadas. La autenticación de producción sólo protege rutas que declaran la dependencia, por lo que aún hace falta una auditoría completa del inventario de rutas y una prueba de integración con tokens Firebase reales. No se ha verificado en esta sesión la disponibilidad en vivo del proveedor SIGPAC.
+
+## 14. Protección de métricas — 1 de octubre de 2026
+
+- `1cd855ed89fb9abd04eda6ab6a2f825bc524c33e` — el endpoint `/health/metrics` usa la dependencia de autenticación compartida. En producción requiere token Bearer verificado por Firebase; en desarrollo mantiene el comportamiento previo.
+- `593ba9a23e50b81b5883eb229a995ac9940b8300` — prueba de integración que confirma que una petición sin token a `/health/metrics` recibe HTTP 401 en modo producción cuando Firebase está configurado.
+
+**Pendiente de verificación:** estos cambios se acaban de registrar y todavía no hay una ejecución CI confirmada para el último commit. Las rutas de salud e integraciones siguen siendo públicas deliberadamente para facilitar la comprobación de disponibilidad; antes de producción debe confirmarse que la información que exponen es apropiada para el despliegue.
+
+
+## 15. Aviso de resultados SIGPAC potencialmente incompletos — 1 de octubre de 2026
+
+- `c070273e562519564c6a9a6bffe06886a67ae212` — la pantalla de selección SIGPAC muestra un aviso visible cuando el backend indica `truncated=true`, explicando que la consulta puede estar incompleta y recomendando reducir el área antes de importar.
+
+La API limita cada consulta a un máximo de 100 resultados desde la pantalla actual; el aviso reduce el riesgo de interpretar esa lista como exhaustiva. No añade paginación automática ni demuestra cobertura completa. **CI para este cambio pendiente de confirmación.**
+
+
+## 16. Primer avance del cliente RIA/IFAPA — 1 de octubre de 2026
+
+- `3431179e7817cfdf2a92911b2f0c976f041edd77` — el cliente RIA/IFAPA admite agregados diarios y mensuales, permite inyectar el cliente HTTP/base URL para pruebas, valida provincia/estación y rango de meses, configura timeout y propaga errores HTTP.
+- `e0dea1b105ed836d88757536e89a33d7ce192eb2` — pruebas para rutas diarias/mensuales, validación de parámetros y errores HTTP usando transporte simulado.
+- `f39312cea46937f7eb1edd191026b1dd69592ad0` — documentación del contrato conocido y de las limitaciones horarias en [RIA_IFAPA.md](RIA_IFAPA.md).
+
+**No declarar integración completa todavía:** el contrato documentado para agregados diarios/mensuales es el único implementado; no se ha acreditado una consulta real en vivo ni se ha confirmado un endpoint horario para mojado foliar. Las pruebas creadas usan respuestas simuladas y requieren ejecución CI para confirmar que pasan.
+
+
+## 17. Estado explícito de RIA/IFAPA y endpoints de diagnóstico — 1 de octubre de 2026
+
+- `cfc1cafb21e375b01dad846f335e6877b3bded75` — `/health/integrations` deja de etiquetar RIA/IFAPA como `live` por tener una URL configurada. Expone `configured_not_verified` y `live_connection_verified: false`.
+- `d4dc99a4f60e319e985043efd4c60010e6426817` — añade prueba para impedir que el estado de salud afirme una verificación en vivo inexistente.
+- `6a820c9c307d5551a0c8efa931480214a78ce689` — documenta esta distinción en `RIA_IFAPA.md`.
+
+
+- `7ebb4ada6d247bf9fea72b26af09fed537c4df6d` — añade prueba de traducción de timeout del proveedor a HTTP 504.
+
+**Pendiente:** no hay resultados CI publicados para el commit más reciente y no se ha verificado una respuesta real del proveedor. Los tests HTTP existentes usan respuestas simuladas. No se deben usar los agregados como observaciones horarias ni alimentar el motor de riesgo hasta validar el esquema, unidades, estaciones y frescura de los datos.
+
+
+## 18. Validación de parámetros RIA/IFAPA en la API — 1 de octubre de 2026
+
+- `43111e8d8deb246a325b8ad55789b57c192623d6` — los endpoints diarios y mensuales responden HTTP 422 cuando provincia o estación contienen solo espacios, en vez de clasificar la entrada inválida como error del proveedor.
+- `e89393e09cf6ef03aa41faa14d411b20be56a66c` — añade pruebas parametrizadas para ambos endpoints y ambos parámetros.
+- `f93f51d0ac1d594fff95e7c0324b1e4723d66c83` — limpia el import de pytest duplicado en el archivo de pruebas.
+
+**Validación pendiente:** no se ha ejecutado la suite en este entorno; revisar el resultado de CI del PR cuando esté disponible.
+
+
+## 19. Integración opcional SIAR/MAPA
+
+- Añadidos cliente configurable y endpoint diagnóstico `/api/v1/siar/daily`.
+- SIAR permanece desactivado por defecto; sin host y ruta configurados, la consulta devuelve 503 y no aporta datos ficticios.
+- La respuesta conserva el JSON del proveedor y se marca como no verificada. No se conecta al motor de riesgo hasta confirmar contrato, unidades, calidad y conexión real.
+- Variables: `SIAR_BASE_URL`, `SIAR_DAILY_PATH`, `SIAR_API_KEY`.
+- Pruebas de cliente con transporte HTTP simulado añadidas; aún no ejecutadas en este entorno. El contrato HTTP oficial y el acceso real siguen pendientes de confirmar.
+
+### 4.4 Consultas externas y experiencia de carga
+- Se ha retirado el fallback meteorológico con valores fijos de demostración del proveedor Flutter: la ausencia de datos no se presenta como una observación real.
+- El proveedor meteorológico guarda respuestas correctas en caché local y puede mostrar la última respuesta guardada si falla la actualización, señalándola como antigua.
+- La tarjeta meteorológica muestra un mensaje explicativo durante la carga y ofrece reintento si no hay datos disponibles.
+- Se ha registrado ADR-007 para establecer carga progresiva, caché por fuente/ubicación/intervalo, deduplicación, límites de concurrencia y actualización programada como requisitos de escalado.
+
+**Limitaciones:** el endpoint meteorológico por parcela todavía devuelve 503 hasta disponer de evidencia meteorológica integrada. La caché actual es local al dispositivo y no implementa todavía caducidad automática; no sustituye una caché compartida del backend. La interfaz no bloquea la navegación durante la consulta, pero no se ha implementado aún un gestor genérico de trabajos de larga duración.
+
+## 20. Arquitectura de consultas externas, caché y carga progresiva — 1 de octubre de 2026
+
+Se ha creado `docs/ARQUITECTURA_CONSULTAS_EXTERNAS.md` como referencia técnica ampliada para nuevos conectores y para la evolución de las consultas multi-API. Describe el flujo Flutter → API FastAPI → servicio de aplicación → caché/deduplicación → adaptador externo; separa las capacidades ya presentes de las previstas; y fija criterios de TTL, concurrencia, errores parciales, trazabilidad, seguridad, contratos, pruebas y futuras tareas de larga duración.
+
+Cambio de robustez asociado:
+- `lib/src/core/network/offline_cache.dart`: la lectura elimina entradas cuyo JSON esté corrupto y devuelve una ausencia de caché en vez de propagar un error de parseo. Esto evita que una caché dañada enmascare la causa original del fallo de red. Se documenta que la caché es local, no es fuente de verdad y que la política de frescura corresponde al consumidor.
+
+**Implementación posterior de esta fase:** se añadió `backend/app/core/async_cache.py` y se conectó inicialmente al endpoint Copernicus ERA5 con TTL de seis horas, máximo de 128 entradas y límite de dos recuperaciones concurrentes por proceso. Se añadió `backend/tests/test_async_cache.py` para verificar caché, deduplicación y errores. Esta caché es por proceso, no compartida entre réplicas. Siguen pendientes caché distribuida, métricas de proveedor, TTL meteorológico de producto y validación real de conectividad Copernicus/SIAR. El CI del commit final debe confirmar los tests antes de marcarlo validado.
+
+Documentación de referencia: [Arquitectura de consultas externas](ARQUITECTURA_CONSULTAS_EXTERNAS.md), [Decisiones de arquitectura](DECISIONS.md), [Copernicus CDS](COPERNICUS_CDS.md).
+
+
+## 21. Caché TTL backend inicial para Copernicus — 1 de octubre de 2026
+
+Archivos:
+- `backend/app/core/async_cache.py`: utilidad genérica de caché TTL asíncrona, límite LRU de entradas, deduplicación de tareas en vuelo y copia defensiva de resultados.
+- `backend/app/api/copernicus.py`: aplica caché de seis horas y limita a dos las recuperaciones concurrentes por proceso para `/api/v1/copernicus/era5/hourly`. La clave depende de coordenadas, intervalo, dataset y versión del contrato.
+- `backend/tests/test_async_cache.py`: pruebas de acierto de caché, concurrencia, mutaciones, reintento tras error y validación de parámetros.
+
+**Estado de verificación:** cambios escritos en la rama. La ejecución CI iniciada para la documentación anterior estaba todavía en curso antes de estos cambios; hay que comprobar la ejecución más reciente antes de afirmar que estas pruebas pasan. No se realizó consulta en vivo a Copernicus y `verified` continúa en `false`.
+
+
+## 23. Caché y límites iniciales para RIA/IFAPA y SIAR — 1 de octubre de 2026
+
+Se añadió caché TTL con deduplicación de solicitudes en curso a los endpoints RIA/IFAPA diarios y mensuales y SIAR diario, reutilizando `backend/app/core/async_cache.py`.
+- RIA/IFAPA diario: TTL 1 hora; mensual: TTL 24 horas; hasta 256 entradas por caché.
+- SIAR diario: TTL 1 hora; hasta 256 entradas.
+- Concurrencia máxima por proceso: RIA/IFAPA 3 y SIAR 2 recuperaciones.
+- Las claves se derivan de la fuente/versión y los parámetros de consulta. Las respuestas se mantienen crudas y no verificadas; no conectarlas al motor de riesgo hasta validar contratos y unidades.
+
+**Limitaciones:** límites y caché no se comparten entre workers ni réplicas. Los TTL son iniciales y deben revisarse con datos reales de frecuencia de publicación. La ejecución CI asociada a estos cambios se encuentra en curso; no se declara validación hasta comprobar el resultado final.

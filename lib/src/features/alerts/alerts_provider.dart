@@ -10,24 +10,24 @@ final alertsProvider = FutureProvider<List<AlertSummary>>((ref) async {
     await AlertMonitor().notifyRelevantAlerts([for (final alert in alerts) RiskAlertNotification(disease: alert.title, parcel: alert.parcel, level: alert.level)]);
     return alerts;
   } catch (_) {
-    const alerts = [AlertSummary(title: 'Repilo', parcel: 'Olivar de prueba', level: 'Medio', value: .58)];
-    await AlertMonitor().notifyRelevantAlerts([for (final alert in alerts) RiskAlertNotification(disease: alert.title, parcel: alert.parcel, level: alert.level)]);
-    return alerts;
+    rethrow;
   }
 });
 
 class AlertSummary {
-  const AlertSummary({required this.title, required this.parcel, required this.level, required this.value});
+  const AlertSummary({required this.title, required this.parcel, required this.level, required this.value, required this.dataStatus});
 
   final String title;
   final String parcel;
   final String level;
   final double value;
+  final String dataStatus;
 
   factory AlertSummary.fromJson(Map<String, dynamic> json) => AlertSummary(
         title: json['disease_code'] as String? ?? 'Riesgo',
         parcel: json['parcel_id'] as String? ?? 'Parcela',
         level: json['risk_level'] as String? ?? 'Bajo',
         value: (json['risk_score'] as num?)?.toDouble() ?? 0,
+        dataStatus: json['data_status'] as String? ?? 'insuficiente',
       );
 }

@@ -13,10 +13,16 @@ from app.schemas import Device, DeviceCreate, DiseaseRisk, FieldReportCreate, Pa
 from app.core.security import optional_bearer_token
 from app.schemas_push import PushTokenCreate
 from app.api.sigpac import router as sigpac_router
+from app.api.ria_ifapa import router as ria_ifapa_router
+from app.api.siar import router as siar_router
+from app.api.copernicus import router as copernicus_router
 
 
 app = FastAPI(title="AgroAlerta Andalucia API", version="1.0.0")
 app.include_router(sigpac_router)
+app.include_router(ria_ifapa_router)
+app.include_router(siar_router)
+app.include_router(copernicus_router)
 logger = logging.getLogger('agroalerta.api')
 request_metrics_data: dict[str, dict[str, float]] = {}
 app.add_middleware(
@@ -41,7 +47,9 @@ async def request_metrics(request, call_next):
 
 
 @app.get('/health/metrics')
-def metrics() -> dict[str, dict[str, float]]:
+def metrics(_token: str | None = Depends(optional_bearer_token)) -> dict[str, dict[str, float]]:
+    # Route-level request metrics can reveal internal traffic patterns. In production,
+    # reuse the same Firebase-backed authentication policy as other protected routes.
     return {path: {'count': values['count'], 'avg_ms': round(values['total_ms'] / values['count'], 2)} for path, values in request_metrics_data.items()}
 
 
@@ -75,7 +83,22 @@ def integrations_health() -> dict[str, object]:
 
     return {
         'aemet': {'configured': bool(settings.aemet_api_key), 'mode': 'live' if settings.aemet_api_key else 'fallback'},
-        'ria_ifapa': {'configured': bool(settings.ria_base_url), 'mode': 'live'},
+        'copernicus_cds': {
+            'configured': bool(settings.copernicus_api_key),
+            'mode': 'configured_not_verified' if settings.copernicus_api_key else 'disabled',
+            'live_connection_verified': False,
+            'dataset': 'reanalysis-era5-single-levels',
+        },
+        'siar_mapa': {
+            'configured': bool(settings.siar_base_url and settings.siar_daily_path),
+            'mode': 'configured_not_verified' if settings.siar_base_url and settings.siar_daily_path else 'disabled',
+            'live_connection_verified': False,
+        },
+        'ria_ifapa': {
+            'configured': bool(settings.ria_base_url),
+            'mode': 'configured_not_verified' if settings.ria_base_url else 'disabled',
+            'live_connection_verified': False,
+        },
         'firebase_admin': {'configured': bool(os.getenv('FIREBASE_SERVICE_ACCOUNT_JSON')), 'mode': 'live' if os.getenv('FIREBASE_SERVICE_ACCOUNT_JSON') else 'disabled'},
         'mapa': {'configured': False, 'mode': 'catalog-import'},
     }
@@ -94,7 +117,8 @@ def create_parcel(payload: ParcelCreate, _token: str | None = Depends(optional_b
 
 
 @app.get("/api/v1/parcels/{parcel_id}", response_model=Parcel)
-def get_parcel(parcel_id: str, owner_id: str | None = None) -> Parcel:
+def get_parcel(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> Parcel:
+    owner_id = _token or "anonymous"
     parcel = storage.get_parcel(parcel_id, owner_id)
     if parcel is None:
         raise HTTPException(status_code=404, detail="Parcela no encontrada")
@@ -118,15 +142,10 @@ def delete_parcel(parcel_id: str, _token: str | None = Depends(optional_bearer_t
 @app.get("/api/v1/weather/{parcel_id}")
 def get_weather(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> dict:
     get_parcel(parcel_id, _token or 'anonymous')
-    return {
-        "parcel_id": parcel_id,
-        "temperature_c": 18.4,
-        "relative_humidity": 87,
-        "rainfall_mm_24h": 12.2,
-        "station_distance_km": 6.4,
-        "observed_at": datetime.now(timezone.utc),
-        "source": "demo-ria-aemet",
-    }
+    raise HTTPException(
+        status_code=503,
+        detail="La integración meteorológica aún no proporciona observaciones verificadas para esta parcela.",
+    )
 
 
 @app.get("/api/v1/disease-risk/{parcel_id}", response_model=list[DiseaseRisk])
@@ -183,9 +202,10 @@ def ingest_telemetry(payload: TelemetryCreate, _token: str | None = Depends(opti
 
 
 @app.get("/api/v1/telemetry/{parcel_id}", response_model=TelemetryCreate)
-def get_latest_telemetry(parcel_id: str) -> TelemetryCreate:
-    get_parcel(parcel_id)
-    telemetry = storage.latest_telemetry(parcel_id)
+def get_latest_telemetry(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> TelemetryCreate:
+    owner_id = _token or "anonymous"
+    get_parcel(parcel_id, owner_id)
+    telemetry = storage.latest_telemetry(parcel_id, owner_id)
     if telemetry is None:
         raise HTTPException(status_code=404, detail="Sin telemetria para esta parcela")
     return telemetry

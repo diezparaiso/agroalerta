@@ -1,0 +1,189 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:latlong2/latlong.dart';
+
+import 'parcel_provider.dart';
+
+class SigpacMapScreen extends ConsumerStatefulWidget {
+  const SigpacMapScreen({super.key});
+
+  @override
+  ConsumerState<SigpacMapScreen> createState() => _SigpacMapScreenState();
+}
+
+class _SigpacMapScreenState extends ConsumerState<SigpacMapScreen> {
+  final _west = TextEditingController(text: '-6.1');
+  final _south = TextEditingController(text: '37.2');
+  final _east = TextEditingController(text: '-5.8');
+  final _north = TextEditingController(text: '37.5');
+  Map<String, dynamic>? _collection;
+  String? _selectedId;
+  bool _loading = false;
+  bool _importing = false;
+  String? _error;
+  String? _message;
+
+  @override
+  void dispose() {
+    _west.dispose();
+    _south.dispose();
+    _east.dispose();
+    _north.dispose();
+    super.dispose();
+  }
+
+  String get _bbox => '${_west.text.trim()},${_south.text.trim()},${_east.text.trim()},${_north.text.trim()}';
+
+  Future<void> _search() async {
+    setState(() { _loading = true; _error = null; _message = null; });
+    try {
+      final result = await ref.read(apiClientProvider).searchSigpacRecintos(bbox: _bbox, limit: 100);
+      if (result['type'] != 'FeatureCollection' || result['features'] is! List) {
+        throw const FormatException('La API no devolvió una FeatureCollection GeoJSON válida.');
+      }
+      setState(() {
+        _collection = result;
+        _selectedId = null;
+      });
+    } catch (error) {
+      setState(() { _collection = null; _error = 'No se pudieron consultar los recintos. Comprueba la extensión, el backend y la conexión. Detalle: $error'; });
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  String? _sourceFeatureId(Map<String, dynamic> feature) {
+    final properties = feature['properties'];
+    final value = feature['id'] ?? (properties is Map ? properties['id'] : null);
+    return value?.toString();
+  }
+
+  Future<void> _importArea() async {
+    final features = (_collection?['features'] as List? ?? const []).whereType<Map<String, dynamic>>();
+    final matching = features.where((feature) => _featureId(feature) == _selectedId).toList();
+    final selected = matching.isEmpty ? null : matching.first;
+    final sourceId = selected == null ? null : _sourceFeatureId(selected);
+    if (_selectedId != null && sourceId == null) {
+      setState(() => _error = 'El proveedor no ha devuelto un identificador estable para este recinto. No se importará el área completa por error.');
+      return;
+    }
+    setState(() { _importing = true; _error = null; _message = null; });
+    try {
+      final result = await ref.read(apiClientProvider).importSigpacRecintos(bbox: _bbox, limit: 100, featureIds: sourceId == null ? null : [sourceId]);
+      setState(() => _message = 'Importación completada: ${result['imported'] ?? 0} nuevos y ${result['updated'] ?? 0} actualizados. Se ha enviado la selección actual cuando existe; si no hay selección, se importa el área consultada.');
+    } catch (error) {
+      setState(() => _error = 'No se pudo importar el área: $error');
+    } finally {
+      if (mounted) setState(() => _importing = false);
+    }
+  }
+
+  String _featureId(Map<String, dynamic> feature) => (feature['id'] ?? feature['properties']?['id'] ?? 'recinto-${(feature['properties'] ?? {}).hashCode}').toString();
+
+  List<List<LatLng>> _polygonRings(Map<String, dynamic> feature) {
+    final geometry = feature['geometry'];
+    if (geometry is! Map) return const [];
+    final type = geometry['type'];
+    final coordinates = geometry['coordinates'];
+    if (coordinates is! List) return const [];
+
+    // GeoJSON Polygon: coordinates[0] is the exterior ring.
+    // GeoJSON MultiPolygon: each polygon has its own exterior ring.
+    final exteriorRings = <dynamic>[];
+    if (type == 'Polygon') {
+      if (coordinates.isNotEmpty) exteriorRings.add(coordinates.first);
+    } else if (type == 'MultiPolygon') {
+      for (final polygon in coordinates) {
+        if (polygon is List && polygon.isNotEmpty) exteriorRings.add(polygon.first);
+      }
+    } else {
+      return const [];
+    }
+
+    return exteriorRings.whereType<List>().map((ring) => ring
+      .whereType<List>()
+      .where((point) => point.length >= 2 && point[0] is num && point[1] is num)
+      .map((point) => LatLng((point[1] as num).toDouble(), (point[0] as num).toDouble()))
+      .toList())
+      .where((points) => points.length >= 3)
+      .toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final features = (_collection?['features'] as List? ?? const []).whereType<Map<String, dynamic>>().toList();
+    final polygons = <Polygon>[];
+    for (final feature in features) {
+      for (final points in _polygonRings(feature)) {
+        polygons.add(Polygon(
+          points: points,
+          color: _featureId(feature) == _selectedId ? Colors.green.withValues(alpha: 0.35) : Colors.blue.withValues(alpha: 0.18),
+          borderColor: _featureId(feature) == _selectedId ? Colors.green.shade800 : Colors.blue.shade700,
+          borderStrokeWidth: _featureId(feature) == _selectedId ? 3 : 1.5,
+        ));
+      }
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Importar recintos SIGPAC')),
+      body: ListView(padding: const EdgeInsets.all(16), children: [
+        const Text('Consulta por extensión geográfica (WGS84). La búsqueda está limitada a 100 resultados por petición.', style: TextStyle(fontSize: 14)),
+        const SizedBox(height: 12),
+        Wrap(spacing: 8, runSpacing: 8, children: [
+          _coordinateField('Oeste', _west), _coordinateField('Sur', _south),
+          _coordinateField('Este', _east), _coordinateField('Norte', _north),
+        ]),
+        const SizedBox(height: 12),
+        Wrap(spacing: 8, children: [
+          FilledButton.icon(onPressed: _loading ? null : _search, icon: const Icon(Icons.search), label: Text(_loading ? 'Consultando…' : 'Buscar recintos')),
+          FilledButton.tonalIcon(onPressed: _importing ? null : _importArea, icon: const Icon(Icons.download), label: Text(_importing ? 'Importando…' : (_selectedId == null ? 'Importar área' : 'Importar seleccionado'))),
+        ]),
+        if (_error != null) ...[const SizedBox(height: 12), Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error))],
+        if (_message != null) ...[const SizedBox(height: 12), Text(_message!, style: TextStyle(color: Theme.of(context).colorScheme.primary))],
+        const SizedBox(height: 12),
+        SizedBox(height: 360, child: ClipRRect(borderRadius: BorderRadius.circular(12), child: FlutterMap(
+          options: const MapOptions(initialCenter: LatLng(37.35, -5.95), initialZoom: 10),
+          children: [
+            TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'es.agroalerta.andalucia'),
+            PolygonLayer(polygons: polygons),
+          ],
+        ))),
+        const SizedBox(height: 8),
+        Text('Resultados: ${features.length}', style: Theme.of(context).textTheme.titleMedium),
+        if (_collection?['truncated'] == true) ...[
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.errorContainer,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              'La consulta ha alcanzado el límite de resultados. Esta lista puede estar incompleta; reduce el área y vuelve a buscar antes de importar.',
+              style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer),
+            ),
+          ),
+        ],
+        if (features.isEmpty && !_loading) const Padding(padding: EdgeInsets.all(12), child: Text('Todavía no hay resultados. Ajusta el área y pulsa «Buscar recintos».')),
+        for (final feature in features)
+          Card(
+            child: ListTile(
+              selected: _featureId(feature) == _selectedId,
+              leading: Icon(_featureId(feature) == _selectedId ? Icons.radio_button_checked : Icons.radio_button_unchecked),
+              title: Text((feature['properties']?['recinto'] ?? feature['id'] ?? 'Recinto sin identificador').toString()),
+              subtitle: Text((feature['properties'] ?? {}).entries.take(3).map((entry) => '${entry.key}: ${entry.value}').join(' · ')),
+              onTap: () => setState(() => _selectedId = _featureId(feature)),
+            ),
+          ),
+        const SizedBox(height: 12),
+        const Text('Si hay un recinto seleccionado, se envía su identificador para importar solo ese recinto; sin selección, se importa el área consultada (hasta 100 resultados). Se dibujan los anillos exteriores de Polygon y MultiPolygon; los huecos interiores no se representan todavía.', style: TextStyle(fontSize: 12)),
+      ]),
+    );
+  }
+
+  Widget _coordinateField(String label, TextEditingController controller) => SizedBox(
+    width: 130,
+    child: TextField(controller: controller, keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true), decoration: InputDecoration(labelText: label, border: const OutlineInputBorder())),
+  );
+}

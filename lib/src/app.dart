@@ -8,6 +8,7 @@ import 'features/alerts/alerts_screen.dart';
 import 'features/alerts/alert_detail_screen.dart';
 import 'features/home/home_screen.dart';
 import 'features/parcels/parcels_screen.dart';
+import 'features/parcels/sigpac_map_screen.dart';
 import 'features/products/products_screen.dart';
 import 'features/reports/report_screen.dart';
 import 'features/devices/devices_screen.dart';
@@ -23,6 +24,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
           GoRoute(path: '/parcels', builder: (_, __) => const ParcelsScreen()),
+          GoRoute(path: '/parcels/sigpac', builder: (_, __) => const SigpacMapScreen()),
           GoRoute(path: '/alerts', builder: (_, __) => const AlertsScreen()),
           GoRoute(path: '/alerts/:disease', builder: (_, state) => AlertDetailScreen(disease: state.pathParameters['disease'] ?? 'riesgo', parcelId: state.uri.queryParameters['parcelId'])),
           GoRoute(path: '/products', builder: (_, __) => const ProductsScreen()),
@@ -43,7 +45,7 @@ class AgroAlertaApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
-      title: 'AgroAlerta Andalucia',
+      title: 'AgroAlerta Andalucía',
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
@@ -99,7 +101,7 @@ class AppShell extends StatelessWidget {
               selectedIndex: selected < 0 ? 0 : selected,
               onDestinationSelected: (index) => context.go(destinations[index].path),
               destinations: [
-                for (final item in destinations.take(4))
+                for (final item in destinations)
                   NavigationDestination(icon: Icon(item.icon), label: item.label),
               ],
             )
