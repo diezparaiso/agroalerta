@@ -45,7 +45,7 @@ class _SigpacMapScreenState extends ConsumerState<SigpacMapScreen> {
       setState(() {
         _collection = result;
         final features = result['features'] as List;
-        _selectedId = features.isEmpty ? null : _featureId(features.first as Map<String, dynamic>);
+        _selectedId = null;
       });
     } catch (error) {
       setState(() { _collection = null; _error = 'No se pudieron consultar los recintos. Comprueba la extensión, el backend y la conexión. Detalle: $error'; });
