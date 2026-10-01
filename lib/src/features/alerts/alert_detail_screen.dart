@@ -27,7 +27,7 @@ class AlertDetailScreen extends ConsumerWidget {
       else
         ref.watch(parcelRiskProvider(parcelId!)).when(
           loading: () => const Card(child: Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator()))),
-          error: (error, _) => const _InfoCard(message: 'No se pudo cargar el riesgo de esta parcela. Comprueba la conexión y vuelve a intentarlo.'),
+          error: (_, __) => const _InfoCard(message: 'No se pudo cargar el riesgo de esta parcela. Comprueba la conexión y vuelve a intentarlo.'),
           data: (records) {
             final code = disease.toLowerCase();
             final matches = records.where((item) => (item['disease_code'] as String? ?? '').toLowerCase() == code).toList();
@@ -35,7 +35,7 @@ class AlertDetailScreen extends ConsumerWidget {
               return const _InfoCard(message: 'La API no ha devuelto un cálculo para esta enfermedad en la parcela seleccionada.');
             }
             final risk = matches.last;
-            final score = ((risk['risk_score'] as num?)?.toDouble() ?? 0).clamp(0.0, 1.0);
+            final score = ((risk['risk_score'] as num?)?.toDouble() ?? 0).clamp(0.0, 1.0).toDouble();
             final level = risk['risk_level'] as String? ?? 'desconocido';
             final status = risk['data_status'] as String? ?? 'insuficiente';
             final variables = (risk['variables_used'] as List<dynamic>? ?? const []);
