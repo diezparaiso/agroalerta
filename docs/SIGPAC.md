@@ -1,28 +1,30 @@
-# SIGPAC: configuración e importación de recintos
+# SIGPAC HubCloud: consulta e importación de recintos
 
-AgroAlerta incorpora un adaptador WFS configurable para consultar recintos SIGPAC reales y devolver sus geometrías en GeoJSON. No contiene geometrías ficticias ni presupone que un endpoint o nombre de capa concreto sea oficial.
+AgroAlerta consulta el servicio público OGC API – Features de SIGPAC HubCloud. La colección por defecto es `recintos`; la geometría GeoJSON y los atributos originales se guardan en SQLite.
 
-## Configuración
+## Proveedor y configuración
 
-Configura en el entorno de despliegue el endpoint WFS oficial que corresponda al servicio SIGPAC validado y su nombre de capa:
+- Base URL predeterminada: `https://sigpac-hubcloud.es/ogcapi`
+- Colección predeterminada: `recintos`
+- `SIGPAC_OGC_API_URL`: opcional, permite cambiar la base URL.
+- `SIGPAC_OGC_COLLECTION`: opcional, por defecto `recintos`.
+- `AGROALERTA_DB_PATH`: ruta de SQLite, por defecto `backend/agroalerta.db`.
 
-- `SIGPAC_WFS_URL`: URL base del endpoint WFS (no una URL de visualización WMS).
-- `SIGPAC_WFS_TYPENAME`: nombre publicado de la capa de recintos.
-- `SIGPAC_WFS_VERSION`: opcional; por defecto `2.0.0`.
+No se requiere API key en las consultas públicas probadas documentalmente; si el proveedor cambia sus condiciones, habrá que adaptar la autenticación. La colección publicada describe los recintos de la campaña en uso, no garantiza un histórico de campañas.
 
-Antes de producción, verifica con el proveedor oficial que el endpoint permite WFS GetFeature, el formato GeoJSON, el CRS solicitado y la cobertura territorial. Si el servicio publica WFS 1.1.0 u otro formato/CRS, adapta la configuración/serialización y añade pruebas contra ese contrato real. No se han incorporado credenciales ni se declara conectividad real hasta configurar y verificar el endpoint.
+## Endpoints internos de AgroAlerta
 
-## API
+- `GET /api/v1/sigpac/health`: comprueba conectividad con la metadata de la colección.
+- `GET /api/v1/sigpac/recintos?bbox=-6.1,37.2,-5.8,37.5&limit=100`: solicita recintos dentro de una extensión geográfica WGS84 y devuelve GeoJSON.
+- `POST /api/v1/sigpac/importar` con JSON `{"bbox":"-6.1,37.2,-5.8,37.5","limit":100}`: consulta el proveedor y persiste los recintos, incluida geometría y atributos. Repetir la importación actualiza por ID de origen en vez de crear duplicados.
+- `GET /api/v1/sigpac/importados?limit=100&offset=0`: devuelve los recintos persistidos como GeoJSON.
 
-- `GET /api/v1/sigpac/health`: informa si el endpoint y la capa están configurados. No prueba por sí solo que el proveedor esté disponible.
-- `GET /api/v1/sigpac/recintos?bbox=-6.1,37.2,-5.8,37.5&limit=100`: consulta por extensión geográfica WGS84 y devuelve GeoJSON FeatureCollection con polígonos y atributos originales.
-- `POST /api/v1/sigpac/importar` con JSON `{"bbox":"-6.1,37.2,-5.8,37.5","limit":100}`: consulta y guarda los recintos en SQLite por usuario, actualizando los ya importados en lugar de duplicarlos.
-- `GET /api/v1/sigpac/importados?limit=100&offset=0`: devuelve los recintos importados como GeoJSON, incluyendo su geometría y propiedades originales.
+La consulta por bbox devuelve una página limitada por `limit`; si el resultado alcanza el límite, el cliente debe reducir el área o implementar paginación para importar zonas extensas. No debe interpretarse una sola petición como descarga completa de una provincia.
 
-Respuestas:
-- `503`: proveedor sin configurar.
-- `422`: bbox inválida.
-- `502`: error del proveedor o respuesta no GeoJSON.
-- `504`: timeout.
+## Verificación
 
-La búsqueda por provincia/municipio/polígono/parcela y la asociación con una explotación/campaña siguen pendientes hasta validar los nombres y formatos de campos del servicio oficial concreto. La importación persistente por bbox está implementada; no se debe considerar verificada en producción hasta probar el endpoint oficial real.
+- Las pruebas automatizadas simulan el contrato OGC y verifican consulta, validación de bbox, persistencia de polígonos y deduplicación.
+- La documentación pública de `/ogcapi/collections?f=json` expone la colección `recintos`.
+- La petición de elementos con bbox debe validarse en el entorno de ejecución/CI con acceso HTTP al proveedor antes de declarar completada una importación real. Si la red del entorno no permite consultar el endpoint, se debe informar como no verificada; los tests con respuestas simuladas no sustituyen una prueba de integración real.
+
+Errores principales: `422` bbox inválida, `502` respuesta/error del proveedor y `504` timeout.
