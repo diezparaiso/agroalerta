@@ -1,0 +1,195 @@
+# AgroAlerta Andalucía — memoria de desarrollo y estado
+
+**Fecha:** 1 de octubre de 2026  
+**Repositorio:** [diezparaiso/agroalerta](https://github.com/diezparaiso/agroalerta)  
+**Rama de trabajo:** `feature/sigpac-map-selection`  
+**PR relacionado:** [#15](https://github.com/diezparaiso/agroalerta/pull/15)  
+**PR SIGPAC:** [#14](https://github.com/diezparaiso/agroalerta/pull/14)
+
+## 1. Quién participa y responsabilidades
+
+- **Responsable del proyecto/producto:** la persona que dirige AgroAlerta Andalucía y solicita los cambios. Su nombre no consta en los datos disponibles, por lo que no se inventa.
+- **Asistencia de desarrollo:** ChatGPT, de OpenAI, ha ayudado a redactar documentación y modificar código a petición del responsable del proyecto. Esta atribución no significa que OpenAI sea propietario del producto ni garantice el código.
+- **Revisión humana independiente:** no consta una revisión formal completada en esta actualización.
+- **Validación agronómica:** pendiente. Los indicadores actuales no son predicciones validadas.
+- **Validación técnica:** solo se considera confirmada cuando existe una ejecución comprobable de pruebas o CI. Guardar un commit no demuestra que compile ni que pase las pruebas.
+
+## 2. Resumen del proyecto
+
+AgroAlerta Andalucía es una aplicación Flutter con backend FastAPI orientada a la gestión de parcelas y avisos de riesgo fitosanitario, inicialmente para repilo en olivar y mildiu en viñedo. El alcance de referencia incluye fuentes meteorológicas y agroclimáticas, SIGPAC, consulta de productos del registro MAPA, notificaciones y reportes de campo.
+
+El repositorio contiene una aplicación navegable, API propia, integración SIGPAC en desarrollo y un motor inicial de indicadores. **No debe considerarse todavía un sistema agronómico validado ni un servicio de producción plenamente verificado.**
+
+## 3. Arquitectura observada
+
+### Cliente
+- Flutter/Dart, Material 3 y tema compartido.
+- Riverpod para estado y carga asíncrona.
+- go_router para navegación.
+- Dio para llamadas HTTP al backend propio.
+- fl_chart para gráficos e histórico.
+- Integración de Firebase presente parcialmente; el funcionamiento debe comprobarse en cada entorno.
+- Navegación adaptable: barra inferior en pantallas estrechas y NavigationRail en pantallas anchas.
+
+El diseño de referencia indica que Flutter no debe llamar directamente a AEMET, RIA/IFAPA, SIGPAC o MAPA; debe hacerlo a través de la API propia.
+
+### Backend
+- FastAPI como API HTTP.
+- Pydantic para esquemas.
+- SQLite en los módulos trabajados.
+- Motor de reglas en `backend/app/domain/disease_rules.py`.
+- Esquemas en `backend/app/schemas.py`.
+- API SIGPAC en `backend/app/api/sigpac.py` y su cliente asociado.
+- Pruebas en `backend/tests/test_api.py`.
+
+La arquitectura de referencia contempla también ingesta horaria, trabajos programados, caché offline avanzada, calibración y otras integraciones. No se consideran completas sin código, configuración y pruebas verificables.
+
+## 4. Trabajo desarrollado
+
+### 4.1 SIGPAC
+- Se documentó el uso de SIGPAC HubCloud mediante OGC API – Features, colección predeterminada `recintos`.
+- Hay endpoints internos para comprobar la integración, consultar recintos por extensión geográfica e importar recintos seleccionados.
+- Se contempla guardar geometría GeoJSON y atributos en SQLite, con deduplicación.
+- La interfaz permite delimitar una extensión y seleccionar identificadores de recintos.
+- El mapa representa anillos exteriores de geometrías Polygon y MultiPolygon.
+
+**Pendiente/limitaciones:** no se ha acreditado aquí conectividad en vivo en todos los entornos; no asumir paginación exhaustiva, tratamiento de huecos interiores o autoencuadre completo; la importación no implica necesariamente crear y vincular una parcela de negocio; tampoco está garantizado el acceso a campañas históricas.
+
+Referencia: [docs/SIGPAC.md](SIGPAC.md), [PR #14](https://github.com/diezparaiso/agroalerta/pull/14).
+
+### 4.2 Interfaz y navegación
+- Ajustes al tema compartido Material 3 y estilos de componentes.
+- Correcciones de textos, acentos y detalles en pantallas de acceso, parcelas, dispositivos e informes.
+- Navegación adaptable por anchura de pantalla.
+- Revisión de algunos textos del inicio para evitar presentar cifras de demostración como si fueran datos operativos.
+
+**Pendiente:** comprobar móvil, tableta y escritorio; accesibilidad; rutas; estados de carga, error y vacío; consistencia visual. La navegación principal no representa necesariamente todas las pantallas previstas en la arquitectura.
+
+### 4.3 Motor inicial de riesgo
+Archivo principal: `backend/app/domain/disease_rules.py`.
+
+La lógica actual:
+- Relaciona repilo con olivar y mildiu con viñedo.
+- Devuelve datos insuficientes cuando falta telemetría utilizable, la lectura tiene más de 24 horas, está fechada en el futuro o no corresponde al cultivo.
+- Marca como `preliminar` los cálculos basados en telemetría reciente.
+- Para repilo, usa como señal preliminar temperatura entre 15 y 20 °C y mojado foliar reportado de al menos 24 horas.
+- Para mildiu, usa como señal provisional temperatura entre 10 y 25 °C, humedad relativa de al menos 85 % y mojado reportado de al menos 6 horas.
+- Devuelve puntuación, nivel, confianza estimada, variables usadas, fecha de cálculo, caducidad y estado de los datos.
+- Explica que el resultado no es una predicción validada y que no se debe tratar el cultivo basándose únicamente en el indicador.
+
+**Precaución agronómica:** los umbrales de mildiu son provisionales. Una lectura aislada no demuestra mojado foliar continuo ni periodo de incubación. Se requiere serie temporal y validación con fuentes técnicas y especialistas; no usar el indicador por sí solo para decidir tratamientos.
+
+### 4.4 Esquema de respuesta
+En `backend/app/schemas.py`, `DiseaseRisk` incluye:
+- `parcel_id`, `disease_code`
+- `risk_score` de 0 a 1 y `risk_level` bajo/medio/alto
+- `confidence_level` alta/estimada
+- `recommendation_text`, `variables_used`
+- `calculated_at`, `valid_until`
+- `data_status`: `insuficiente` o `preliminar`
+
+Se corrigió una duplicación de `data_status`; debe existir una sola definición y los clientes deben manejar ambos estados.
+
+### 4.5 Lista de avisos
+- La lista consume los registros del backend mediante ApiClient.
+- Se eliminó el aviso ficticio de respaldo “Olivar de prueba” que aparecía si fallaba la API; ahora el error se propaga a la interfaz.
+- Se muestra si el resultado es preliminar o si faltan datos.
+- Se añadió un estado vacío explícito cuando la API devuelve cero avisos.
+
+Esto diferencia una respuesta válida sin avisos de un fallo de red/API.
+
+### 4.6 Detalle del aviso
+Archivo: `lib/src/features/alerts/alert_detail_screen.dart`.
+
+Se sustituyeron valores de demostración fijos —como lluvia 12,2 mm, temperatura 18,4 °C e índice 0,58— por la consulta de riesgo a la API. La pantalla:
+- Filtra el resultado por código de enfermedad.
+- Muestra nivel, puntuación, estado de datos, variables y explicación devueltos por el backend.
+- Incluye estados de carga, error y ausencia de resultado.
+- No presenta el gráfico de muestra como histórico real cuando no hay datos.
+- Mantiene un aviso de que el indicador no es diagnóstico ni instrucción de tratamiento.
+
+**Pendiente de comprobación importante:** la ruta debe pasar el ID de parcela del servidor, no su etiqueta visible. Hay que confirmar que los códigos de enfermedad de la ruta coinciden exactamente con `repilo` y `mildiu`, y que la API devuelve el cálculo esperado para esa parcela.
+
+## 5. Registro de los cambios más recientes
+
+| Commit | Cambio |
+|---|---|
+| `9991773` | Reemplaza datos ficticios del detalle por datos de la API. |
+| `77d2ea5` | Ajusta el tipo numérico del indicador y el manejo de errores. |
+| `4aa1025` | Añade estado vacío cuando no existen avisos. |
+
+Estos commits se guardaron en `feature/sigpac-map-selection`. El mensaje de un commit acredita que se registró un cambio, no que haya superado las pruebas. El historial de la rama contiene además cambios previos en SIGPAC, presentación, esquema de riesgo, reglas preliminares y tratamiento de errores.
+
+## 6. Pruebas y validación
+
+**Presente en el repositorio:** pruebas en `backend/tests/test_api.py`, incluyendo flujo de parcela/riesgo, salud de API e integraciones. También se añadieron casos para datos insuficientes, telemetría antigua e indicador preliminar de mildiu.
+
+**No confirmado en esta actualización:**
+- No se ejecutó localmente la suite completa durante esta iteración.
+- No se encontró una ejecución CI asociada al último commit consultado.
+- No se puede afirmar que Flutter compile o que `flutter analyze` y `flutter test` pasen.
+- No se puede afirmar que todos los tests backend pasen.
+- No se ha acreditado una prueba end-to-end en dispositivos ni conectividad estable con fuentes externas en vivo.
+
+**Validación necesaria:**
+1. Ejecutar tests backend en el entorno del proyecto.
+2. Ejecutar `flutter pub get`, `flutter analyze` y `flutter test`.
+3. Probar el flujo lista → detalle con un ID real de parcela y ambos códigos de enfermedad.
+4. Registrar enlaces/resultados CI y corregir fallos antes de declarar terminada la fase.
+
+## 7. Deuda técnica y riesgos pendientes
+
+1. Validar agronómicamente los umbrales por enfermedad, cultivo y zona.
+2. Construir series temporales con fuente, marca temporal, calidad, estación y distancia a parcela.
+3. Verificar contratos, disponibilidad y licencias de AEMET y RIA/IFAPA; no inventar endpoints.
+4. Mostrar procedencia, hora de observación y antigüedad de datos.
+5. Verificar que Flutter pasa el ID de parcela correcto, no el nombre.
+6. Normalizar códigos de enfermedad entre interfaz y API.
+7. Definir persistencia y semántica del histórico, y distinguir ausencia de datos de errores.
+8. Completar paginación y geometrías complejas SIGPAC si lo exige el alcance, y vincular recinto importado con parcela.
+9. Verificar autenticación y aislamiento de datos por propietario en cada entorno.
+10. En productos MAPA, conservar fecha de consulta/versión de la fuente y no presentar dosis o plazos como actuales sin comprobar el registro.
+11. Verificar de forma real el modo offline, caché, antigüedad y sincronización; que figure en la arquitectura no prueba que esté terminado.
+12. Valorar separar la rama actual en PR temáticos: SIGPAC, UI y motor de riesgo, para facilitar revisión y reversión.
+
+## 8. Plan de trabajo propuesto
+
+### Prioridad 1 — Validación técnica
+- Ejecutar tests backend, análisis Flutter y pruebas de interfaz.
+- Corregir fallos y añadir tests para el detalle y los estados vacíos.
+- Confirmar rutas, IDs de parcela y códigos de enfermedad.
+- Obtener CI verificable.
+
+### Prioridad 2 — Datos agroclimáticos
+- Definir esquema de observaciones temporales con procedencia y calidad.
+- Integrar fuentes documentadas y gestionar datos ausentes/obsoletos.
+- Registrar distancia de estación y vigencia de cada observación.
+- No inferir continuidad con una lectura aislada.
+
+### Prioridad 3 — Motor de riesgo
+- Validar umbrales con fuentes técnicas y especialistas.
+- Probar con series históricas verificadas y casos negativos.
+- Separar alerta heurística de modelo de incubación.
+- Mantener recomendaciones no prescriptivas mientras no esté validado.
+
+### Prioridad 4 — Integración del producto
+- Vincular recintos SIGPAC con parcelas.
+- Completar trazabilidad y estado de actualización en la UI.
+- Verificar privacidad, permisos, notificaciones y despliegue.
+- Registrar quién revisa y acepta cada entrega.
+
+## 9. Criterios para considerar una funcionalidad terminada
+
+Una funcionalidad solo se marcará como terminada cuando el código esté guardado, las pruebas pertinentes pasen con evidencia conservada, el flujo de interfaz se haya probado cuando corresponda, los estados de error/sin datos estén cubiertos, las limitaciones estén documentadas y una persona responsable revise y acepte el resultado.
+
+## 10. Referencias
+- [Repositorio](https://github.com/diezparaiso/agroalerta)
+- [PR #14 — SIGPAC](https://github.com/diezparaiso/agroalerta/pull/14)
+- [PR #15 — rama de trabajo](https://github.com/diezparaiso/agroalerta/pull/15)
+- [Documentación SIGPAC](SIGPAC.md)
+- Documento base: `AgroAlerta_Andalucia_Arquitectura_v2.docx`.
+- Guía de desarrollo: `AgroAlerta_Andalucia_MasterPrompt_Desarrollo.docx`.
+
+---
+
+**Mantenimiento de esta memoria:** actualizarla en cada entrega con fecha, responsable, archivos afectados, hash de commit, pruebas ejecutadas, enlace CI, incidencias y decisión de aceptación. No registrar como verificado ningún resultado sin evidencia.
