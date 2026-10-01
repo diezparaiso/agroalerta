@@ -14,7 +14,9 @@ class AlertsScreen extends ConsumerWidget {
     subtitle: 'Señales calculadas con clima y datos agroclimáticos',
     showAds: false,
     child: ref.watch(alertsProvider).when(
-      data: (alerts) => ListView(children: [
+      data: (alerts) => alerts.isEmpty
+        ? const Center(child: Padding(padding: EdgeInsets.all(24), child: Text('Todavía no hay avisos calculados para las parcelas disponibles.')))
+        : ListView(children: [
         for (final alert in alerts)
           _AlertTile(title: alert.title, parcel: alert.parcel, level: alert.level, value: alert.value, dataStatus: alert.dataStatus,
             color: alert.level.toLowerCase() == 'alto' ? Colors.red : alert.level.toLowerCase() == 'medio' ? Colors.amber : Colors.green),
