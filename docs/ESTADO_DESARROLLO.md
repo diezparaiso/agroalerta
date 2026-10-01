@@ -324,3 +324,14 @@ Archivos:
 - `backend/tests/test_async_cache.py`: pruebas de acierto de caché, concurrencia, mutaciones, reintento tras error y validación de parámetros.
 
 **Estado de verificación:** cambios escritos en la rama. La ejecución CI iniciada para la documentación anterior estaba todavía en curso antes de estos cambios; hay que comprobar la ejecución más reciente antes de afirmar que estas pruebas pasan. No se realizó consulta en vivo a Copernicus y `verified` continúa en `false`.
+
+
+## 23. Caché y límites iniciales para RIA/IFAPA y SIAR — 1 de octubre de 2026
+
+Se añadió caché TTL con deduplicación de solicitudes en curso a los endpoints RIA/IFAPA diarios y mensuales y SIAR diario, reutilizando `backend/app/core/async_cache.py`.
+- RIA/IFAPA diario: TTL 1 hora; mensual: TTL 24 horas; hasta 256 entradas por caché.
+- SIAR diario: TTL 1 hora; hasta 256 entradas.
+- Concurrencia máxima por proceso: RIA/IFAPA 3 y SIAR 2 recuperaciones.
+- Las claves se derivan de la fuente/versión y los parámetros de consulta. Las respuestas se mantienen crudas y no verificadas; no conectarlas al motor de riesgo hasta validar contratos y unidades.
+
+**Limitaciones:** límites y caché no se comparten entre workers ni réplicas. Los TTL son iniciales y deben revisarse con datos reales de frecuencia de publicación. La ejecución CI asociada a estos cambios se encuentra en curso; no se declara validación hasta comprobar el resultado final.
