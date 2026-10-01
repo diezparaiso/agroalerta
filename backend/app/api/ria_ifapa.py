@@ -100,5 +100,3 @@ async def get_monthly_observations(
         raise HTTPException(
             status_code=502, detail="No se pudo obtener una respuesta JSON válida de RIA/IFAPA"
         ) from exc
-    finally:
-        await client.aclose()
