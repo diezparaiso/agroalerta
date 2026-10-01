@@ -265,3 +265,12 @@ La API limita cada consulta a un máximo de 100 resultados desde la pantalla act
 - `f39312cea46937f7eb1edd191026b1dd69592ad0` — documentación del contrato conocido y de las limitaciones horarias en [RIA_IFAPA.md](RIA_IFAPA.md).
 
 **No declarar integración completa todavía:** el contrato documentado para agregados diarios/mensuales es el único implementado; no se ha acreditado una consulta real en vivo ni se ha confirmado un endpoint horario para mojado foliar. Las pruebas creadas usan respuestas simuladas y requieren ejecución CI para confirmar que pasan.
+
+
+## 17. Estado explícito de RIA/IFAPA y endpoints de diagnóstico — 1 de octubre de 2026
+
+- `cfc1cafb21e375b01dad846f335e6877b3bded75` — `/health/integrations` deja de etiquetar RIA/IFAPA como `live` por tener una URL configurada. Expone `configured_not_verified` y `live_connection_verified: false`.
+- `d4dc99a4f60e319e985043efd4c60010e6426817` — añade prueba para impedir que el estado de salud afirme una verificación en vivo inexistente.
+- `6a820c9c307d5551a0c8efa931480214a78ce689` — documenta esta distinción en `RIA_IFAPA.md`.
+
+**Pendiente:** no hay resultados CI publicados para el commit más reciente y no se ha verificado una respuesta real del proveedor. Los tests HTTP existentes usan respuestas simuladas. No se deben usar los agregados como observaciones horarias ni alimentar el motor de riesgo hasta validar el esquema, unidades, estaciones y frescura de los datos.
