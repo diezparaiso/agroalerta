@@ -18,6 +18,10 @@ Para agregados mensuales:
 
 No se requiere API key según la especificación del proyecto. La respuesta debe tratarse como dato del proveedor y no se deben asumir campos hasta observar una respuesta real.
 
+## Endpoint de diagnóstico
+
+Se ha añadido `GET /api/v1/ria-ifapa/daily?province=Sevilla&station=CODIGO&year=2026&month_start=9&month_end=9`. Consulta los agregados diarios y devuelve el JSON crudo del proveedor para facilitar la verificación del esquema. Los parámetros se validan y los fallos del proveedor se traducen a errores HTTP 502/504. El endpoint no resuelve automáticamente la estación de una parcela y todavía no alimenta `/api/v1/weather/{parcel_id}` ni el motor de riesgo. Requiere autenticación en producción según la política general de la API.
+
 ## Código
 
 - Cliente: `backend/app/connectors/ria_ifapa_client.py`
