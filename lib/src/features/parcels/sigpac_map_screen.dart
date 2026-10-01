@@ -57,8 +57,8 @@ class _SigpacMapScreenState extends ConsumerState<SigpacMapScreen> {
   Future<void> _importArea() async {
     setState(() { _importing = true; _error = null; _message = null; });
     try {
-      final result = await ref.read(apiClientProvider).importSigpacRecintos(bbox: _bbox, limit: 100);
-      setState(() => _message = 'Importación completada: ${result['imported'] ?? 0} nuevos y ${result['updated'] ?? 0} actualizados. La operación afecta a los resultados del área, no solo al recinto seleccionado.');
+      final result = await ref.read(apiClientProvider).importSigpacRecintos(bbox: _bbox, limit: 100, featureIds: _selectedId == null ? null : [_selectedId!]);
+      setState(() => _message = 'Importación completada: ${result['imported'] ?? 0} nuevos y ${result['updated'] ?? 0} actualizados. Se ha enviado la selección actual cuando existe; si no hay selección, se importa el área consultada.');
     } catch (error) {
       setState(() => _error = 'No se pudo importar el área: $error');
     } finally {
@@ -124,7 +124,7 @@ class _SigpacMapScreenState extends ConsumerState<SigpacMapScreen> {
         const SizedBox(height: 12),
         Wrap(spacing: 8, children: [
           FilledButton.icon(onPressed: _loading ? null : _search, icon: const Icon(Icons.search), label: Text(_loading ? 'Consultando…' : 'Buscar recintos')),
-          FilledButton.tonalIcon(onPressed: _importing ? null : _importArea, icon: const Icon(Icons.download), label: Text(_importing ? 'Importando…' : 'Importar área')),
+          FilledButton.tonalIcon(onPressed: _importing ? null : _importArea, icon: const Icon(Icons.download), label: Text(_importing ? 'Importando…' : (_selectedId == null ? 'Importar área' : 'Importar seleccionado'))),
         ]),
         if (_error != null) ...[const SizedBox(height: 12), Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error))],
         if (_message != null) ...[const SizedBox(height: 12), Text(_message!, style: TextStyle(color: Theme.of(context).colorScheme.primary))],
