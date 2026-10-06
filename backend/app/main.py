@@ -34,9 +34,23 @@ def _cors_origins() -> list[str]:
     return ['http://localhost:3000', 'http://localhost:5000', 'http://localhost:8000']
 
 
+def _cors_origin_regex() -> str | None:
+    """En desarrollo se permite cualquier puerto de localhost.
+
+    El cliente Flutter sirve páginas en puertos variables (`flutter run -d
+    chrome` usa un puerto aleatorio y `python -m http.server` suele usar 8080).
+    En producción solo se aceptan los orígenes configurados en
+    CORS_ALLOWED_ORIGINS.
+    """
+    if os.getenv('ENVIRONMENT', 'development') == 'production':
+        return None
+    return r'^http://localhost(:\d+)?$'
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins(),
+    allow_origin_regex=_cors_origin_regex(),
     allow_credentials=True,
     allow_methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allow_headers=['Authorization', 'Content-Type'],

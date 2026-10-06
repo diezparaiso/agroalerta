@@ -12,7 +12,7 @@ class ProductsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return AppPage(
       title: 'Productos autorizados',
-      subtitle: 'Consulta el catalogo sincronizado del MAPA',
+      subtitle: 'Consulta el catálogo sincronizado del MAPA',
       child: ref.watch(productsProvider).when(
             data: (products) => ListView(
               children: [

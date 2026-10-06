@@ -147,12 +147,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Card(
             child: ListTile(
               leading: const Icon(Icons.logout),
-              title: const Text('Cerrar sesion'),
+              title: const Text('Cerrar sesión'),
               onTap: () async {
                 try {
                   await PushTokenService().unregister();
                 } catch (_) {}
-                await FirebaseAuth.instance.signOut();
+                try {
+                  await FirebaseAuth.instance.signOut();
+                } catch (_) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('No se pudo cerrar la sesión. Inténtalo de nuevo.')),
+                    );
+                  }
+                }
               },
             ),
           ),

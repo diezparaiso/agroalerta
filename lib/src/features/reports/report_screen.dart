@@ -39,9 +39,14 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   /// 2) centro de la parcela,
   /// 3) null → aviso en pantalla. Nunca coordenadas inventadas.
   Future<_Coordinates?> _resolveCoordinates(ParcelSummary parcel) async {
-    final position = await LocationService().currentPosition();
-    if (position != null) {
-      return _Coordinates(position.latitude, position.longitude, 'ubicación del dispositivo');
+    try {
+      final position = await LocationService().currentPosition();
+      if (position != null) {
+        return _Coordinates(position.latitude, position.longitude, 'ubicación del dispositivo');
+      }
+    } catch (_) {
+      // Sin permiso, sin servicio de ubicación o plataforma sin soporte:
+      // se continúa con el centro de la parcela.
     }
     final latitude = parcel.latitude;
     final longitude = parcel.longitude;

@@ -32,8 +32,10 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     try {
       await action();
+    } on AuthCancelledException {
+      // Cancelación del usuario: no es un error y no se avisa.
     } catch (_) {
-      if (mounted) setState(() => error = 'No se pudo completar la operacion. Revisa tus datos.');
+      if (mounted) setState(() => error = 'No se pudo completar la operación. Revisa tus datos.');
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -56,19 +58,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 20),
                   Text('AgroAlerta Andalucia', style: Theme.of(context).textTheme.headlineSmall, textAlign: TextAlign.center),
                   const SizedBox(height: 8),
-                  const Text('Inicia sesion para proteger tus parcelas', textAlign: TextAlign.center),
+                  const Text('Inicia sesión para proteger tus parcelas', textAlign: TextAlign.center),
                   const SizedBox(height: 28),
                   FilledButton.icon(onPressed: enabled ? () => _run(() async { await widget.authService!.signInWithGoogle(); }) : null, icon: const Icon(Icons.account_circle_outlined), label: const Text('Continuar con Google')),
                   const SizedBox(height: 10),
                   OutlinedButton.icon(onPressed: enabled ? () => _run(() async { await widget.authService!.signInWithApple(); }) : null, icon: const Icon(Icons.apple), label: const Text('Continuar con Apple')),
                   const SizedBox(height: 22),
-                  TextField(controller: emailController, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Correo electronico')),
+                  TextField(controller: emailController, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Correo electrónico')),
                   const SizedBox(height: 12),
-                  TextField(controller: passwordController, obscureText: true, decoration: const InputDecoration(labelText: 'Contrasena')),
+                  TextField(controller: passwordController, obscureText: true, decoration: const InputDecoration(labelText: 'Contraseña')),
                   const SizedBox(height: 12),
                   FilledButton(onPressed: enabled ? () => _run(() async { await widget.authService!.signInWithEmail(emailController.text.trim(), passwordController.text); }) : null, child: const Text('Entrar')),
                   OutlinedButton(onPressed: enabled ? () => _run(() async { await widget.authService!.createAccount(emailController.text.trim(), passwordController.text); }) : null, child: const Text('Crear cuenta')),
-                  TextButton(onPressed: enabled ? () => _run(() async { await widget.authService!.sendPasswordReset(emailController.text.trim()); }) : null, child: const Text('He olvidado mi contrasena')),
+                  TextButton(onPressed: enabled ? () => _run(() async { await widget.authService!.sendPasswordReset(emailController.text.trim()); }) : null, child: const Text('He olvidado mi contraseña')),
                   if (error != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(error!, style: TextStyle(color: Theme.of(context).colorScheme.error), textAlign: TextAlign.center)),
                   if (!widget.firebaseAvailable) const Padding(padding: EdgeInsets.only(top: 16), child: Text('Configura Firebase para activar el acceso.', textAlign: TextAlign.center)),
                 ])),
