@@ -41,10 +41,10 @@ class ParcelSummary {
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
         name: json['label'] as String? ?? 'Parcela sin nombre',
-        crop: json['crop_type'] == 'vinedo' ? 'Vinedo' : 'Olivar',
+        crop: json['crop_type'] == 'vinedo' ? 'Viñedo' : 'Olivar',
         place: json['comarca'] as String? ?? 'Andalucia',
         risk: 'Pendiente',
       );
 
-  Map<String, dynamic> toJson() => {'id': id, 'label': name, 'latitude': latitude, 'longitude': longitude, 'crop_type': crop == 'Vinedo' ? 'vinedo' : 'olivar', 'comarca': place};
+  Map<String, dynamic> toJson() => {'id': id, 'label': name, 'latitude': latitude, 'longitude': longitude, 'crop_type': (crop == 'Viñedo' || crop == 'Vinedo') ? 'vinedo' : 'olivar', 'comarca': place};
 }

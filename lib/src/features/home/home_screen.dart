@@ -21,7 +21,7 @@ class HomeScreen extends StatelessWidget {
         crossAxisCount: columns,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
-        childAspectRatio: columns == 1 ? 2.1 : 1.45,
+        childAspectRatio: columns == 1 ? 1.3 : 1.45,
         children: const [_WeatherCard(), _RiskCard(), _ParcelSummaryCard(), _InsightCard(), _MapCard(), _TelemetryCard()],
       );
     }),
@@ -38,7 +38,9 @@ class _WeatherCard extends ConsumerWidget {
       data: (weather) => Row(children: [
         Text('${weather['temperature_c'] ?? '--'}°', style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w700)),
         const SizedBox(width: 18),
-        Text('Humedad ${weather['relative_humidity'] ?? '--'}%\nLluvia ${weather['rainfall_mm_24h'] ?? '--'} mm\nFuente: ${weather['source'] ?? 'estimada'}${weather['cached'] == true ? ' · datos en caché' : ''}', style: const TextStyle(height: 1.6)),
+        Expanded(
+          child: Text('Humedad ${weather['relative_humidity'] ?? '--'}%\nLluvia ${weather['rainfall_mm_24h'] ?? '--'} mm\nFuente: ${weather['source'] ?? 'estimada'}${weather['cached'] == true ? ' · datos en caché' : ''}', style: const TextStyle(height: 1.6), overflow: TextOverflow.ellipsis, maxLines: 4),
+        ),
       ]),
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (_, __) => Row(children: [const Text('Clima no disponible'), TextButton(onPressed: () => ref.invalidate(weatherProvider), child: const Text('Reintentar'))]),
@@ -152,5 +154,5 @@ class _Panel extends StatelessWidget {
   final Widget child;
   final Color? color;
   @override
-  Widget build(BuildContext context) => Card(color: color, child: Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [Icon(icon), const SizedBox(width: 10), Text(title, style: const TextStyle(fontWeight: FontWeight.w700))]), const SizedBox(height: 18), Expanded(child: child)])));
+  Widget build(BuildContext context) => Card(color: color, child: Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Row(children: [Icon(icon), const SizedBox(width: 10), Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.w700), overflow: TextOverflow.ellipsis))]), const SizedBox(height: 18), Expanded(child: child)])));
 }

@@ -44,6 +44,7 @@ class _State extends ConsumerState<AgronomicDecisionScreen> {
               children: [
                 DropdownButton<String>(
                   value: parcelId,
+                  isExpanded: true,
                   hint: const Text('Parcela'),
                   items: [for (final p in items) DropdownMenuItem(value: p.id, child: Text(p.name))],
                   onChanged: (v) => setState(() { parcelId = v; decision = null; }),

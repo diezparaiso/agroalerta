@@ -35,6 +35,7 @@ class CampaignsScreen extends ConsumerWidget {
             children: [
               DropdownButton<String>(
                 value: current?.id,
+                isExpanded: true,
                 hint: const Text('Selecciona una parcela'),
                 items: [
                   for (final parcel in items)
@@ -171,7 +172,7 @@ Future<void> _showCreateCampaign(BuildContext context, WidgetRef ref, String par
             if (season.text.trim().isEmpty) return;
             await ref.read(apiClientProvider).createCampaign(
               parcelId: parcelId,
-              cropType: parcel.crop == 'Vinedo' ? 'vinedo' : 'olivar',
+              cropType: (parcel.crop == 'Viñedo' || parcel.crop == 'Vinedo') ? 'vinedo' : 'olivar',
               seasonLabel: season.text.trim(),
               startedAt: DateTime.now(),
               variety: variety.text.trim().isEmpty ? null : variety.text.trim(),

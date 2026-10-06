@@ -20,6 +20,7 @@ class ActivityTimelineScreen extends ConsumerWidget {
         return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           DropdownButton<String>(
             value: currentId,
+            isExpanded: true,
             hint: const Text('Selecciona una parcela'),
             items: [for (final p in items) DropdownMenuItem(value: p.id, child: Text(p.name))],
             onChanged: (v) => ref.read(selectedTimelineParcelProvider.notifier).state = v,

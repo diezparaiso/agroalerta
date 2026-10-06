@@ -141,6 +141,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
             else ...[
               DropdownButtonFormField<String>(
                 initialValue: parcelKey ?? (items.first.id ?? items.first.name),
+                isExpanded: true,
                 decoration: const InputDecoration(labelText: 'Parcela'),
                 items: [
                   for (final parcel in items)
@@ -156,6 +157,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
             ],
             DropdownButtonFormField<String>(
               initialValue: type,
+              isExpanded: true,
               decoration: const InputDecoration(labelText: 'Tipo de observación'),
               items: const [
                 DropdownMenuItem(value: 'sintoma', child: Text('Síntoma o enfermedad')),

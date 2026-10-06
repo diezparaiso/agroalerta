@@ -40,11 +40,14 @@ class _IrrigationScreenState extends ConsumerState<IrrigationScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
-              DropdownButton<String>(
-                value: parcelId,
-                hint: const Text('Parcela'),
-                items: [for (final p in items) DropdownMenuItem(value: p.id, child: Text(p.name))],
-                onChanged: (v) => setState(() => parcelId = v),
+              Expanded(
+                child: DropdownButton<String>(
+                  value: parcelId,
+                  isExpanded: true,
+                  hint: const Text('Parcela'),
+                  items: [for (final p in items) DropdownMenuItem(value: p.id, child: Text(p.name))],
+                  onChanged: (v) => setState(() => parcelId = v),
+                ),
               ),
               const SizedBox(width: 12),
               FilledButton(onPressed: loading ? null : load, child: const Text('Consultar')),
