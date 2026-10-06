@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../home/home_screen.dart';
+import '../../core/ui/error_view.dart';
 import 'alerts_provider.dart';
 
 class AlertsScreen extends ConsumerWidget {
@@ -17,7 +18,7 @@ class AlertsScreen extends ConsumerWidget {
               ? const Center(child: Text('No hay avisos activos para tus parcelas.'))
               : ListView(children: [for (final alert in alerts) _AlertTile(alert: alert)]),
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stack) => Center(child: Text('No se pudieron cargar los avisos: $error')),
+          error: (error, stack) => ErrorView(message: 'No se pudieron cargar los avisos.', onRetry: () => ref.invalidate(alertsProvider)),
         ),
       );
 }

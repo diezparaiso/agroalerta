@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/ui/error_view.dart';
 import '../home/home_screen.dart';
 import '../parcels/parcel_provider.dart';
 import 'activity_timeline_provider.dart';
@@ -12,7 +13,7 @@ class ActivityTimelineScreen extends ConsumerWidget {
     final selected = ref.watch(selectedTimelineParcelProvider);
     return AppPage(title: 'Línea temporal', subtitle: 'Actividad, telemetría y riesgo de la parcela', child: parcels.when(
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('No se pudieron cargar las parcelas: $e')),
+      error: (e, _) => ErrorView(message: 'No se pudieron cargar las parcelas.', onRetry: () => ref.invalidate(parcelsProvider)),
       data: (items) {
         final current = items.where((p) => p.id == selected).firstOrNull;
             final currentId = current?.id;
@@ -38,7 +39,7 @@ class ActivityTimelineScreen extends ConsumerWidget {
           const SizedBox(height: 12),
           Expanded(child: ref.watch(activityTimelineProvider).when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('No se pudo cargar la línea temporal: $e')),
+            error: (e, _) => ErrorView(message: 'No se pudo cargar la línea temporal.', onRetry: () => ref.invalidate(activityTimelineProvider)),
             data: (events) => events.isEmpty ? const Center(child: Text('No hay actividad registrada.')) : ListView.separated(
               itemCount: events.length,
               separatorBuilder: (_, __) => const Divider(height: 1),

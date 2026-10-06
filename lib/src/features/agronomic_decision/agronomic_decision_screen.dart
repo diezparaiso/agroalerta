@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/ui/error_view.dart';
 import '../home/home_screen.dart';
 import '../parcels/parcel_provider.dart';
 
@@ -35,7 +36,7 @@ class _State extends ConsumerState<AgronomicDecisionScreen> {
       subtitle: 'Interpretación explicable de las señales disponibles',
       child: parcels.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: \$e')),
+        error: (e, _) => ErrorView(message: 'No se pudieron cargar las parcelas.', onRetry: () => ref.invalidate(parcelsProvider)),
         data: (items) => Column(
           children: [
             Wrap(
@@ -60,7 +61,14 @@ class _State extends ConsumerState<AgronomicDecisionScreen> {
               ],
             ),
             if (loading) const LinearProgressIndicator(),
-            if (error != null) Text('No se pudo calcular: \$error'),
+            if (error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  'No se pudo calcular la decisión. Revisa la conexión y vuelve a intentarlo.',
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
             if (decision != null) Expanded(child: _Decision(decision!)),
           ],
         ),

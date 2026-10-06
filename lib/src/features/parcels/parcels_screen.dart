@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/location/location_service.dart';
+import '../../core/ui/error_view.dart';
 import '../home/home_screen.dart';
 import 'parcel_provider.dart';
 
@@ -47,8 +48,9 @@ class ParcelsScreen extends ConsumerWidget {
               },
             ),
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => Center(
-              child: Text('No se pudieron cargar las parcelas: $error'),
+            error: (error, _) => ErrorView(
+              message: 'No se pudieron cargar las parcelas.',
+              onRetry: () => ref.invalidate(parcelsProvider),
             ),
           ),
     );
@@ -58,131 +60,159 @@ class ParcelsScreen extends ConsumerWidget {
 Future<void> _showCreateDialog(BuildContext context, WidgetRef ref) async {
   final labelController = TextEditingController();
   final comarcaController = TextEditingController();
-  final latitudeController = TextEditingController(text: '37.39');
-  final longitudeController = TextEditingController(text: '-5.99');
+  final latitudeController = TextEditingController();
+  final longitudeController = TextEditingController();
   var cropType = 'olivar';
 
   await showDialog<void>(
     context: context,
     builder: (dialogContext) => StatefulBuilder(
-      builder: (context, setState) => AlertDialog(
-        title: const Text('Nueva parcela'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: labelController,
-                decoration: const InputDecoration(labelText: 'Nombre'),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: cropType,
-                decoration: const InputDecoration(labelText: 'Cultivo'),
-                items: const [
-                  DropdownMenuItem(value: 'olivar', child: Text('Olivar')),
-                  DropdownMenuItem(value: 'vinedo', child: Text('Vinedo')),
-                ],
-                onChanged: (value) =>
-                    setState(() => cropType = value ?? 'olivar'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: comarcaController,
-                decoration: const InputDecoration(labelText: 'Comarca'),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () async {
-                  final position = await LocationService().currentPosition();
-                  if (position != null) {
-                    setState(() {
-                      latitudeController.text =
-                          position.latitude.toStringAsFixed(6);
-                      longitudeController.text =
-                          position.longitude.toStringAsFixed(6);
-                    });
-                  }
-                },
-                icon: const Icon(Icons.my_location),
-                label: const Text('Usar mi ubicacion actual'),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: latitudeController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                        signed: true,
+      builder: (context, setState) {
+        String? errorText;
+
+        void setError(String message) => setState(() => errorText = message);
+
+        return AlertDialog(
+          title: const Text('Nueva parcela'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: labelController,
+                  decoration: const InputDecoration(labelText: 'Nombre'),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: cropType,
+                  decoration: const InputDecoration(labelText: 'Cultivo'),
+                  items: const [
+                    DropdownMenuItem(value: 'olivar', child: Text('Olivar')),
+                    DropdownMenuItem(value: 'vinedo', child: Text('Viñedo')),
+                  ],
+                  onChanged: (value) =>
+                      setState(() => cropType = value ?? 'olivar'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: comarcaController,
+                  decoration: const InputDecoration(labelText: 'Comarca'),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final position = await LocationService().currentPosition();
+                    if (position != null) {
+                      setState(() {
+                        latitudeController.text =
+                            position.latitude.toStringAsFixed(6);
+                        longitudeController.text =
+                            position.longitude.toStringAsFixed(6);
+                        errorText = null;
+                      });
+                    } else {
+                      setError(
+                          'No se pudo obtener tu ubicación. Revisa el permiso de localización o introduce las coordenadas manualmente.');
+                    }
+                  },
+                  icon: const Icon(Icons.my_location),
+                  label: const Text('Usar mi ubicación actual'),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: latitudeController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                          signed: true,
+                        ),
+                        decoration: const InputDecoration(labelText: 'Latitud'),
                       ),
-                      decoration: const InputDecoration(labelText: 'Latitud'),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: longitudeController,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                          signed: true,
+                        ),
+                        decoration:
+                            const InputDecoration(labelText: 'Longitud'),
+                      ),
+                    ),
+                  ],
+                ),
+                if (errorText != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(
+                      errorText!,
+                      style: TextStyle(
+                          color: Theme.of(context).colorScheme.error),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: longitudeController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                        signed: true,
-                      ),
-                      decoration: const InputDecoration(labelText: 'Longitud'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              if (labelController.text.trim().isEmpty ||
-                  comarcaController.text.trim().isEmpty) {
-                return;
-              }
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                if (labelController.text.trim().isEmpty ||
+                    comarcaController.text.trim().isEmpty) {
+                  setError('El nombre y la comarca son obligatorios.');
+                  return;
+                }
+                final latitude = double.tryParse(latitudeController.text);
+                final longitude = double.tryParse(longitudeController.text);
+                if (latitude == null || longitude == null) {
+                  setError(
+                      'Introduce latitud y longitud válidas o usa tu ubicación actual: no se guardan coordenadas inventadas.');
+                  return;
+                }
 
-              final parcel = ParcelSummary(
-                name: labelController.text.trim(),
-                crop: cropType == 'vinedo' ? 'Vinedo' : 'Olivar',
-                place: comarcaController.text.trim(),
-                risk: 'Pendiente',
-              );
-              final userId =
-                  FirebaseAuth.instance.currentUser?.uid ?? 'offline-user';
-              final userParcels =
-                  await ref.read(localParcelStoreProvider).read(userId);
-              await ref
-                  .read(localParcelStoreProvider)
-                  .write(userId, [...userParcels, parcel]);
+                final parcel = ParcelSummary(
+                  latitude: latitude,
+                  longitude: longitude,
+                  name: labelController.text.trim(),
+                  crop: cropType == 'vinedo' ? 'Viñedo' : 'Olivar',
+                  place: comarcaController.text.trim(),
+                  risk: 'Pendiente',
+                );
+                final userId =
+                    FirebaseAuth.instance.currentUser?.uid ?? 'offline-user';
+                final userParcels =
+                    await ref.read(localParcelStoreProvider).read(userId);
+                await ref
+                    .read(localParcelStoreProvider)
+                    .write(userId, [...userParcels, parcel]);
 
-              try {
-                await ref.read(apiClientProvider).createParcel(
-                      label: labelController.text.trim(),
-                      latitude:
-                          double.tryParse(latitudeController.text) ?? 37.39,
-                      longitude:
-                          double.tryParse(longitudeController.text) ?? -5.99,
-                      cropType: cropType,
-                      comarca: comarcaController.text.trim(),
-                    );
-              } catch (_) {}
+                try {
+                  await ref.read(apiClientProvider).createParcel(
+                        label: labelController.text.trim(),
+                        latitude: latitude,
+                        longitude: longitude,
+                        cropType: cropType,
+                        comarca: comarcaController.text.trim(),
+                      );
+                } catch (_) {}
 
-              ref.invalidate(parcelsProvider);
-              if (dialogContext.mounted) {
-                Navigator.pop(dialogContext);
-              }
-            },
-            child: const Text('Guardar'),
-          ),
-        ],
-      ),
+                ref.invalidate(parcelsProvider);
+                if (dialogContext.mounted) {
+                  Navigator.pop(dialogContext);
+                }
+              },
+              child: const Text('Guardar'),
+            ),
+          ],
+        );
+      },
     ),
   );
 }

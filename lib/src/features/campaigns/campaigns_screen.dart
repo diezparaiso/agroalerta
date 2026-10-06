@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/ui/error_view.dart';
 import '../home/home_screen.dart';
 import '../parcels/parcel_provider.dart';
 import 'campaigns_provider.dart';
@@ -26,7 +27,7 @@ class CampaignsScreen extends ConsumerWidget {
       ],
       child: parcels.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('No se pudieron cargar las parcelas: $error')),
+        error: (error, _) => ErrorView(message: 'No se pudieron cargar las parcelas.', onRetry: () => ref.invalidate(parcelsProvider)),
         data: (items) {
           final current = items.where((item) => item.id == selected).firstOrNull;
           return Column(
@@ -44,7 +45,7 @@ class CampaignsScreen extends ConsumerWidget {
               const SizedBox(height: 12),
               Expanded(child: ref.watch(campaignsProvider).when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, _) => Center(child: Text('No se pudieron cargar las campañas: $error')),
+                error: (error, _) => ErrorView(message: 'No se pudieron cargar las campañas.', onRetry: () => ref.invalidate(campaignsProvider)),
                 data: (campaigns) => campaigns.isEmpty
                     ? const Center(child: Text('No hay campañas para esta parcela.'))
                     : ListView.separated(

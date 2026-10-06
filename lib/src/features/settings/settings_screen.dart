@@ -106,7 +106,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ],
                   ),
                   loading: () => const ListTile(title: Text('Consultando...')),
-                  error: (_, __) => const ListTile(title: Text('Estado no disponible')),
+                  error: (_, __) => ListTile(
+                    title: const Text('Estado no disponible'),
+                    trailing: TextButton(
+                      onPressed: () => ref.invalidate(integrationsHealthProvider),
+                      child: const Text('Reintentar'),
+                    ),
+                  ),
                 ),
               ],
             ),

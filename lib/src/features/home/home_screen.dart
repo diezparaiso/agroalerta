@@ -38,10 +38,10 @@ class _WeatherCard extends ConsumerWidget {
       data: (weather) => Row(children: [
         Text('${weather['temperature_c'] ?? '--'}°', style: const TextStyle(fontSize: 42, fontWeight: FontWeight.w700)),
         const SizedBox(width: 18),
-        Text('Humedad ${weather['relative_humidity'] ?? '--'}%\nLluvia ${weather['rainfall_mm_24h'] ?? '--'} mm\nFuente: ${weather['source'] ?? 'estimada'}', style: const TextStyle(height: 1.6)),
+        Text('Humedad ${weather['relative_humidity'] ?? '--'}%\nLluvia ${weather['rainfall_mm_24h'] ?? '--'} mm\nFuente: ${weather['source'] ?? 'estimada'}${weather['cached'] == true ? ' · datos en caché' : ''}', style: const TextStyle(height: 1.6)),
       ]),
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) => const Text('Clima no disponible'),
+      error: (_, __) => Row(children: [const Text('Clima no disponible'), TextButton(onPressed: () => ref.invalidate(weatherProvider), child: const Text('Reintentar'))]),
     ),
   );
 }
@@ -66,7 +66,7 @@ class _RiskCard extends ConsumerWidget {
         ]);
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) => const Text('Avisos no disponibles'),
+      error: (_, __) => Row(children: [const Text('Avisos no disponibles'), TextButton(onPressed: () => ref.invalidate(alertsProvider), child: const Text('Reintentar'))]),
     ),
   );
 }
@@ -85,7 +85,7 @@ class _ParcelSummaryCard extends ConsumerWidget {
         Text('${parcels.where((parcel) => parcel.risk.toLowerCase() != 'bajo').length} con seguimiento de riesgo'),
       ]),
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) => const Text('Parcelas no disponibles'),
+      error: (_, __) => Row(children: [const Text('Parcelas no disponibles'), TextButton(onPressed: () => ref.invalidate(parcelsProvider), child: const Text('Reintentar'))]),
     ),
   );
 }
@@ -121,7 +121,7 @@ class _TelemetryCard extends ConsumerWidget {
         ]);
       },
       loading: () => const Center(child: CircularProgressIndicator()),
-      error: (_, __) => const Text('Telemetría no disponible'),
+      error: (_, __) => Row(children: [const Text('Telemetría no disponible'), TextButton(onPressed: () => ref.invalidate(telemetryProvider), child: const Text('Reintentar'))]),
     ),
   );
 }

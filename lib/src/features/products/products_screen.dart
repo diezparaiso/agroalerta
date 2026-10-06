@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/ui/error_view.dart';
 import '../home/home_screen.dart';
 import 'products_provider.dart';
 
@@ -24,8 +25,9 @@ class ProductsScreen extends ConsumerWidget {
               ],
             ),
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) => Center(
-              child: Text('No se pudo cargar el catalogo: $error'),
+            error: (error, _) => ErrorView(
+              message: 'No se pudo cargar el catálogo de productos.',
+              onRetry: () => ref.invalidate(productsProvider),
             ),
           ),
     );

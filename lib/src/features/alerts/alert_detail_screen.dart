@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 
+import '../../core/ui/error_view.dart';
 import '../home/home_screen.dart';
 import 'risk_history_chart.dart';
 import 'risk_history_provider.dart';
@@ -37,7 +38,12 @@ class AlertDetailScreen extends ConsumerWidget {
       showAds: false,
       child: ListView(children: [
         Card(child: Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          if (risk == null)
+          if (riskAsync != null && riskAsync.hasError)
+            ErrorView(
+              message: 'No se pudo cargar el riesgo de la parcela.',
+              onRetry: () => ref.invalidate(alertRiskProvider((parcelId: parcelId!, disease: disease))),
+            )
+          else if (risk == null)
             const Text('Sin datos de riesgo para esta parcela. El riesgo se calcula con datos reales de la parcela y sus sensores.')
           else ...[
             Row(children: [Icon(Icons.warning_amber_rounded, color: Colors.amber.shade800, size: 32), const SizedBox(width: 12), Text('Riesgo $level', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700))]),
@@ -66,7 +72,10 @@ class AlertDetailScreen extends ConsumerWidget {
               : ref.watch(riskHistoryProvider(parcelId!)).when(
                   data: (history) => history.isEmpty ? const Text('Aún no hay historial suficiente.') : RiskHistoryChart(spots: [for (var index = 0; index < history.length; index++) FlSpot(index.toDouble(), history[index].score)]),
                   loading: () => const SizedBox(height: 190, child: Center(child: CircularProgressIndicator())),
-                  error: (_, __) => const Text('No se pudo cargar el historial de riesgo.'),
+                  error: (_, __) => ErrorView(
+                    message: 'No se pudo cargar el historial de riesgo.',
+                    onRetry: () => ref.invalidate(riskHistoryProvider(parcelId!)),
+                  ),
                 ),
         ]))),
         const SizedBox(height: 16),

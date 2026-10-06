@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/ui/error_view.dart';
 import '../home/home_screen.dart';
 import '../parcels/parcel_provider.dart';
 
@@ -11,7 +12,7 @@ class DevicesScreen extends ConsumerWidget {
   final String parcelId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => AppPage(title: 'Sensores IoT', subtitle: 'Parcela $parcelId', child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [Align(alignment: Alignment.centerRight, child: FilledButton.icon(onPressed: () => _register(context, ref), icon: const Icon(Icons.add), label: const Text('Registrar sensor'))), const SizedBox(height: 16), Expanded(child: ref.watch(devicesProvider(parcelId)).when(data: (devices) => devices.isEmpty ? const Center(child: Text('No hay sensores registrados')) : ListView(children: [for (final device in devices) Card(child: ListTile(leading: const Icon(Icons.sensors_outlined), title: Text(device['name'] as String? ?? 'Sensor'), subtitle: Text('${device['device_type']} · ${device['device_id']}'), trailing: const Icon(Icons.circle, size: 12, color: Colors.green)))]), loading: () => const Center(child: CircularProgressIndicator()), error: (error, stack) => Center(child: Text('No se pudieron cargar los sensores: $error'))))]));
+  Widget build(BuildContext context, WidgetRef ref) => AppPage(title: 'Sensores IoT', subtitle: 'Parcela $parcelId', child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [Align(alignment: Alignment.centerRight, child: FilledButton.icon(onPressed: () => _register(context, ref), icon: const Icon(Icons.add), label: const Text('Registrar sensor'))), const SizedBox(height: 16), Expanded(child: ref.watch(devicesProvider(parcelId)).when(data: (devices) => devices.isEmpty ? const Center(child: Text('No hay sensores registrados')) : ListView(children: [for (final device in devices) Card(child: ListTile(leading: const Icon(Icons.sensors_outlined), title: Text(device['name'] as String? ?? 'Sensor'), subtitle: Text('${device['device_type']} · ${device['device_id']}'), trailing: const Icon(Icons.circle, size: 12, color: Colors.green)))]), loading: () => const Center(child: CircularProgressIndicator()), error: (error, stack) => ErrorView(message: 'No se pudieron cargar los sensores.', onRetry: () => ref.invalidate(devicesProvider(parcelId)))))]));
 
   Future<void> _register(BuildContext context, WidgetRef ref) async {
     final id = TextEditingController();

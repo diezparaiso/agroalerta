@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/ui/error_view.dart';
 import '../home/home_screen.dart';
 import '../parcels/parcel_provider.dart';
 
@@ -10,14 +11,17 @@ class IrrigationScreen extends ConsumerStatefulWidget {
 class _IrrigationScreenState extends ConsumerState<IrrigationScreen> {
   String? parcelId;
   Map<String, dynamic>? data;
+  Object? error;
   bool loading = false;
 
   Future<void> load() async {
     if (parcelId == null) return;
-    setState(() => loading = true);
+    setState(() { loading = true; error = null; });
     try {
       final value = await ref.read(apiClientProvider).getIrrigationIntelligence(parcelId!);
       if (mounted) setState(() => data = value);
+    } catch (e) {
+      if (mounted) setState(() { error = e; data = null; });
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -31,7 +35,7 @@ class _IrrigationScreenState extends ConsumerState<IrrigationScreen> {
       subtitle: 'Histórico de riego y estado de humedad',
       child: parcels.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error: $e')),
+        error: (e, _) => ErrorView(message: 'No se pudieron cargar las parcelas.', onRetry: () => ref.invalidate(parcelsProvider)),
         data: (items) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -46,6 +50,15 @@ class _IrrigationScreenState extends ConsumerState<IrrigationScreen> {
               FilledButton(onPressed: loading ? null : load, child: const Text('Consultar')),
             ]),
             if (loading) const LinearProgressIndicator(),
+            if (error != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('No se pudo consultar la inteligencia hídrica.', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                  const SizedBox(height: 8),
+                  OutlinedButton.icon(onPressed: load, icon: const Icon(Icons.refresh), label: const Text('Reintentar')),
+                ]),
+              ),
             if (data != null)
               Expanded(
                 child: ListView(children: [
