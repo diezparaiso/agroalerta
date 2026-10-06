@@ -207,7 +207,7 @@ def create_irrigation_event(parcel_id: str, payload: IrrigationEventCreate, _tok
     get_parcel(parcel_id, owner_id)
     if payload.parcel_id != parcel_id:
         raise HTTPException(status_code=400, detail='El riego no pertenece a la parcela indicada')
-    event = {'id': str(uuid4()), **payload.model_dump(), 'owner_id': owner_id}
+    event = {'id': str(uuid4()), **payload.model_dump(mode='json'), 'owner_id': owner_id}
     storage.create_irrigation_event(event)
     return event
 

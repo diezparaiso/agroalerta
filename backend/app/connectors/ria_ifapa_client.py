@@ -3,6 +3,7 @@ from typing import Any
 
 import httpx
 
+from app.connectors.http_retry import get_with_retries
 from app.core.config import settings
 
 
@@ -19,8 +20,7 @@ class RiaIfapaClient:
         self.client = client or httpx.AsyncClient(timeout=15)
 
     async def list_stations(self) -> list[Any]:
-        response = await self.client.get(f'{settings.ria_base_url}/estaciones')
-        response.raise_for_status()
+        response = await get_with_retries(self.client, f'{settings.ria_base_url}/estaciones')
         return response.json()
 
     async def get_daily_data(
@@ -34,8 +34,7 @@ class RiaIfapaClient:
             f'{settings.ria_base_url}/datosdiarios/forceEt0/{province}/{station}'
             f'/{date_from.isoformat()}/{date_to.isoformat()}'
         )
-        response = await self.client.get(url)
-        response.raise_for_status()
+        response = await get_with_retries(self.client, url)
         return response.json()
 
     async def aclose(self) -> None:

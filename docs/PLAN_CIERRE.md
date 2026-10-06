@@ -2,6 +2,8 @@
 
 > **MODIFICADO POR OPENCODE** — Documento creado en la Fase 0 (diagnóstico) el 2026-10-05 sobre la rama `feature/complete-agronomic-workflows`. Todo lo que sigue son resultados **ejecutados y observados** en esta máquina; nada está marcado como hecho sin haberse ejecutado.
 
+> **MODIFICADO POR OPENCODE** — 2026-10-06: Fase 2 verificada y documentada (ver §3). Aviso de disco: la partición `C:` bajó a **2,23 GB libres** y un `flutter test` falló por falta de espacio; se limpiaron cachés derivadas de Gradle (`~/.gradle/caches/9.3.1`, `9.5.0`) y temporales antiguos, recuperándose **3,52 GB libres**. El build de APK de la Fase 4 se lanza solo con ≥3 GB (decisión del usuario).
+
 ---
 
 ## 1. Diagnóstico Fase 0a (resultados reales)
@@ -135,19 +137,19 @@ Leyenda de estado: **Funciona** = implementado y conectado a backend real · **P
 ## 6. Tareas priorizadas y orden propuesto
 
 ### Crítico
-1. **F1.1** Generar plataformas `web/` e `ios/` (`flutter create --platforms=web,ios`) sin tocar `lib/`, `android/` ni `pubspec.yaml`; verificar con `git status`.
-2. **F1.2** Configurar `web/index.html` y `web/manifest.json` (español, lang `es`) y proteger la app en Web para que arranque sin excepciones.
-3. **F1.3** `flutter build web --release` en verde.
-4. **F2.1** Arrancar uvicorn y verificar los 35 endpoints reales contra `API_CONTRACTS.md` (códigos, forma, errores sin trazas/secretos, CORS).
-5. **F2.2** Verificar AEMET y RIA/IFAPA en vivo con llamadas mínimas (sin exponer la clave) y su comportamiento con la API caída.
+1. ✅ **F1.1** Generar plataformas `web/` e `ios/` (`flutter create --platforms=web,ios`) sin tocar `lib/`, `android/` ni `pubspec.yaml`; verificar con `git status`. *(Commiteado en `12fbc25`.)*
+2. ✅ **F1.2** Configurar `web/index.html` y `web/manifest.json` (español, lang `es`) y proteger la app en Web para que arranque sin excepciones. *(13 rutas recorridas en Chrome, 0 errores/0 avisos.)*
+3. ✅ **F1.3** `flutter build web --release` en verde.
+4. ✅ **F2.1** Arrancar uvicorn y verificar los 35 endpoints reales contra `API_CONTRACTS.md` (códigos, forma, errores sin trazas/secretos, CORS). *(2026-10-06: `verify_api.py` → 77 comprobaciones, 0 fallos.)*
+5. ✅ **F2.2** Verificar AEMET y RIA/IFAPA en vivo con llamadas mínimas (sin exponer la clave) y su comportamiento con la API caída. *(RIA 0,98 s / AEMET 0,78 s / municipio inválido 0,09 s sin reintentos; clave nunca impresa.)*
 
 ### Alto
-6. **F1.4** `Info.plist` de iOS con textos de permisos en español + `docs/IOS_BUILD.md` (declarando que iOS no se compila en Windows).
-7. **F2.3** Completar `API_CONTRACTS.md` con actividades, riego (incluidos `POST/GET .../irrigation/events`) y decisión agronómica.
-8. **F2.4** Tests de conectores con respuestas de ejemplo guardadas; pytest en verde.
-9. **F2.5** **Verificación de autenticación/autorización** (decisión del usuario 2026-10-05): para cada endpoint probar sin token, con token inválido y con token de otro usuario; comprobar si un usuario puede leer/modificar parcelas de otro. Documentar resultado y riesgos en la documentación; **no cambiar el modelo de auth sin preguntar**.
-10. **F2.6** **Reintentos y caché en conectores** (decisión del usuario 2026-10-05): 2-3 reintentos con espera creciente **solo** ante timeout/5xx/429, más caché razonable para respetar la cuota de AEMET.
-11. **F2.7** Comprobar si la interfaz cita AEMET/RIA como fuente; si el nivel de detalle no basta, anotarlo y preguntar al usuario.
+6. ✅ **F1.4** `Info.plist` de iOS con textos de permisos en español + `docs/IOS_BUILD.md` (declarando que iOS no se compila en Windows).
+7. ✅ **F2.3** Completar `API_CONTRACTS.md` con actividades, riego (incluidos `POST/GET .../irrigation/events`) y decisión agronómica. *(Hecho 2026-10-06, con payloads verificados contra `schemas.py`.)*
+8. ✅ **F2.4** Tests de conectores con respuestas de ejemplo guardadas; pytest en verde. *(50 passed.)*
+9. ✅ **F2.5** **Verificación de autenticación/autorización** (decisión del usuario 2026-10-05): para cada endpoint probar sin token, con token inválido y con token de otro usuario; comprobar si un usuario puede leer/modificar parcelas de otro. Documentar resultado y riesgos en la documentación; **no cambiar el modelo de auth sin preguntar**. *(Aislamiento A/B verificado en vivo; matriz y riesgos en `API_CONTRACTS.md` §Autenticación; modelo de auth SIN cambios.)*
+10. ✅ **F2.6** **Reintentos y caché en conectores** (decisión del usuario 2026-10-05): 2-3 reintentos con espera creciente **solo** ante timeout/5xx/429, más caché razonable para respetar la cuota de AEMET. *(`http_retry.py`, caché AEMET 6 h por municipio; 2ª consulta 0,0001 s.)*
+11. ✅ **F2.7** Comprobar si la interfaz cita AEMET/RIA como fuente; si el nivel de detalle no basta, anotarlo y preguntar al usuario. *(Cita `Fuente: ria-ifapa|aemet` en `home_screen.dart:41`; **pregunta abierta**: ¿ampliar a nombre institucional? — ver F3.10.)*
 12. **F3.1** `flutter analyze --no-pub` sin incidencias durante toda la fase.
 13. **F3.2** Widget tests responsive (360×640, 768×1024, 1280×800) que detecten desbordamientos.
 14. **F3.3** Ampliar tests Flutter: modelos/serialización, providers con repositorios simulados, reglas de riesgo (sin red real).
@@ -174,13 +176,13 @@ Leyenda de estado: **Funciona** = implementado y conectado a backend real · **P
 - **Despliegue del backend** (decisión del usuario 2026-10-05): hosting, base de datos de producción (sustituto de SQLite) y cron/planificación de los jobs de ingesta y recálculo.
 
 ### Orden de ejecución propuesto
-`Fase 0 (completada)` → **Fase 1 (plataformas)** → **Fase 2 (backend/APIs)** → **Fase 3 (calidad Flutter/UI)** → **Fase 4 (cierre y construcción)**. Cada fase termina con resumen y commits convencionales.
+`Fase 0 (completada)` → **Fase 1 (completada, `12fbc25`)** → **Fase 2 (completada 2026-10-06)** → **Fase 3 (calidad Flutter/UI)** → **Fase 4 (cierre y construcción)**. Cada fase termina con resumen y commits convencionales.
 
 ---
 
 ## 7. Criterios de verificación mínimos por fase
 
-- **Fase 1:** `git status` sin cambios inesperados en `lib/`, `android/` o `pubspec.yaml` · app arranca en Chrome sin excepciones · `flutter build web --release` OK · `docs/IOS_BUILD.md` creado.
-- **Fase 2:** tabla endpoint-a-endpoint con código HTTP real · verificación en vivo de AEMET/RIA sin volcar la clave · pytest en verde.
+- **Fase 1:** `git status` sin cambios inesperados en `lib/`, `android/` o `pubspec.yaml` · app arranca en Chrome sin excepciones · `flutter build web --release` OK · `docs/IOS_BUILD.md` creado. ✅ **Cumplido** (commit `12fbc25`).
+- **Fase 2:** tabla endpoint-a-endpoint con código HTTP real · verificación en vivo de AEMET/RIA sin volcar la clave · pytest en verde. ✅ **Cumplido** (77/77 comprobaciones · conectores en vivo · `50 passed`; 2026-10-06).
 - **Fase 3:** `flutter analyze --no-pub` a 0 · tests responsive en verde · tests de modelos/providers añadidos.
-- **Fase 4:** `flutter analyze --no-pub` + `flutter test` + `flutter build web --release` + `flutter build apk --debug` + `pytest` — todos anotados con su resultado real.
+- **Fase 4:** `flutter analyze --no-pub` + `flutter test` + `flutter build web --release` + `flutter build apk --debug` + `pytest` — todos anotados con su resultado real. *(APK solo con ≥3 GB libres.)*

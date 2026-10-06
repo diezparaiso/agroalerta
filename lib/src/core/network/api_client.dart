@@ -10,8 +10,16 @@ class ApiClient {
           headers: {'Accept': 'application/json'},
         )) {
     _dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) async {
-      final token = await FirebaseAuth.instance.currentUser?.getIdToken();
-      if (token != null) options.headers['Authorization'] = 'Bearer $token';
+      // Sin Firebase configurado (web/android sin google-services.json),
+      // FirebaseAuth.instance lanza excepción: se envía la petición sin
+      // cabecera Authorization y el backend decide (anonimo en desarrollo,
+      // 401 en producción). Nunca se aborta la llamada por esto.
+      try {
+        final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+        if (token != null) options.headers['Authorization'] = 'Bearer $token';
+      } catch (_) {
+        // Firebase no disponible: petición sin token.
+      }
       handler.next(options);
     }));
   }

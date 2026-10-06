@@ -28,11 +28,13 @@ logger = logging.getLogger(__name__)
 
 _STATIONS_TTL_SECONDS = 24 * 3600.0
 _WEATHER_TTL_SECONDS = 10 * 60.0
+_AEMET_TTL_SECONDS = 6 * 3600.0
 _RIA_HISTORY_DAYS = 4
 _MAX_CACHED_LOCATIONS = 256
 
 _stations_cache: tuple[float, list[Any]] | None = None
 _weather_cache: dict[str, tuple[float, dict[str, Any]]] = {}
+_aemet_cache: dict[str, tuple[float, Any]] = {}
 
 # Codigos INE de las capitales andaluzas: con AEMET la parcela se resuelve
 # al municipio de la capital mas cercana (aproximacion por coordenadas).
@@ -258,17 +260,36 @@ def _parse_aemet_forecast(payload: Any) -> dict[str, Any] | None:
     }
 
 
+async def _aemet_forecast(municipality: str) -> Any:
+    """Prediccion diaria de AEMET con caché por municipio.
+
+    La predicción municipal cambia como mucho dos veces al día: cachearla
+    6 horas por municipio limita el consumo de cuota de AEMET OpenData sin
+    perder vigencia (decisión de 2026-10-05).
+    """
+    now = time.monotonic()
+    cached = _aemet_cache.get(municipality)
+    if cached is not None and now - cached[0] <= _AEMET_TTL_SECONDS:
+        return cached[1]
+    client = AemetClient()
+    try:
+        payload = await client.get_daily_forecast(municipality)
+    finally:
+        await client.aclose()
+    if len(_aemet_cache) >= _MAX_CACHED_LOCATIONS:
+        _aemet_cache.clear()
+    _aemet_cache[municipality] = (now, payload)
+    return payload
+
+
 async def _aemet_weather(latitude: float, longitude: float) -> dict[str, Any]:
     if not settings.aemet_api_key:
         raise WeatherUnavailable('AEMET_API_KEY no configurada')
     municipality, capital = _nearest_capital(latitude, longitude)
-    client = AemetClient()
     try:
-        payload = await client.get_daily_forecast(municipality)
+        payload = await _aemet_forecast(municipality)
     except Exception as exc:
         raise WeatherUnavailable(f'AEMET inaccesible para {capital}: {exc}') from exc
-    finally:
-        await client.aclose()
     reading = _parse_aemet_forecast(payload)
     if reading is None:
         raise WeatherUnavailable(f'AEMET devolvio un formato sin datos utilizables para {capital}')

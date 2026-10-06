@@ -280,3 +280,23 @@ Esta etapa se considera **documentalmente cerrada** cuando:
 - no se presenta como integrado aquello que GitHub aún no haya fusionado.
 
 La siguiente ampliación funcional natural, si se decide continuar, es separar la trazabilidad de tratamientos de la actividad genérica y añadir costes/ingresos para completar el resultado económico de campaña.
+
+---
+
+## 12. MODIFICADO POR OPENCODE — cierre técnico (2026-10-05/06)
+
+> Entrada añadida por OpenCode durante el plan `docs/PLAN_CIERRE.md` (rama `feature/complete-agronomic-workflows`).
+
+**Fase 1 — plataformas (commit `12fbc25`):** añadidas `web/` e `ios/` con `flutter create --platforms=web,ios --project-name agroalerta_andalucia --org com.example .`, sin tocar `lib/`, `android/` ni `pubspec.yaml` (solo `.metadata` y parches transitivos de `pubspec.lock`). `web/index.html` y `web/manifest.json` en español (`lang="es"`, verde `#2E7D32`). `ios/Runner/Info.plist` con `NSLocationWhenInUseUsageDescription`, `NSCameraUsageDescription` y `NSPhotoLibraryUsageDescription` en español; Push y Apple Sign In quedan documentados en `docs/IOS_BUILD.md` (iOS no compilable desde Windows). Verificado: `flutter build web --release` OK y 13 rutas recorridas en Chrome sin errores ni avisos.
+
+**Fase 2 — backend y APIs (2026-10-06):**
+
+- Corregidos tres fallos reales: la tabla `irrigation_events` no existía en `Storage` (los endpoints de riego devolvían `500`), `campaign_results` no persistía `yield_kg_ha`/`target_yield_kg_ha`/`target_deviation_pct` (incluido `ALTER` para BDs ya creadas) y `agronomic_decision` se endureció ante campos `null`.
+- Reintentos compartidos para AEMET y RIA/IFAPA (`app/connectors/http_retry.py`): 3 intentos como máximo, espera creciente (o cabecera `Retry-After`), **solo** ante timeout/5xx/429; caché AEMET de 6 h por municipio en `weather_service.py`.
+- `ApiClient` (Flutter) tolera la ausencia de Firebase: el interceptor ya no aborta la petición si no hay token.
+- Verificación en vivo: **77 comprobaciones, 0 fallos** (contratos, CORS, 404/422/409 y aislamiento de usuarios A/B). Conectores reales: RIA 0,98 s (estación *La Rinconada*, 9,4 km), AEMET 0,78 s, segunda consulta AEMET 0,0001 s desde caché.
+- Estado verificado: `pytest` → **50 passed** (eran 33); `flutter analyze --no-pub` → 0 incidencias; `flutter test` → **3 passed** (era 1).
+- Contratos completados en `API_CONTRACTS.md`, incluida la matriz de autenticación/autorización con sus riesgos y **sin cambiar el modelo de autenticación**.
+- Incidencia de disco: `C:` bajó a 2,23 GB y un `flutter test` falló por espacio; tras limpiar cachés derivadas de Gradle quedan 3,52 GB libres. El APK de la Fase 4 solo se lanza con ≥3 GB.
+
+Preguntas abiertas para el usuario: atribución institucional de AEMET en la interfaz, despliegue del backend (hosting, BD de producción, cron de jobs) y configuración de Firebase/AdMob/OAuth.

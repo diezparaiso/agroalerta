@@ -156,3 +156,12 @@ En la máquina de desarrollo (2026-09-30) el backend se ejecuta con el entorno v
 ```powershell
 $env:PYTHONPATH='backend'; & "backend\.venv\Scripts\python.exe" -m pytest backend/tests -q
 ```
+
+## MODIFICADO POR OPENCODE — 2026-10-05/06 (plan de cierre)
+
+- **Fase 1:** plataformas `web/` e `ios/` añadidas sin tocar `lib/`, `android/` ni `pubspec.yaml`; `flutter build web --release` OK y 13 rutas verificadas en Chrome (commit `12fbc25`).
+- **Fase 2:** corregidos `irrigation_events` (tabla inexistente → `500`), persistencia de columnas de `campaign_results` (`yield_kg_ha`, `target_yield_kg_ha`, `target_deviation_pct`) y tolerancia a `null` en `agronomic_decision`.
+- Reintentos de conectores en `app/connectors/http_retry.py` (timeout/5xx/429, espera creciente, 3 intentos máx.) y caché AEMET de 6 h por municipio en `weather_service.py`.
+- `ApiClient` envía peticiones aunque no haya Firebase (interceptor con `try/catch`), cubierto por `test/api_client_test.dart`.
+- Estado verificado 2026-10-06: `pytest` **50 passed**, `flutter analyze --no-pub` **0 issues**, `flutter test` **3 passed**, verificación en vivo **77 comprobaciones / 0 fallos**.
+- Aviso de disco: `C:` llegó a 2,23 GB (un `flutter test` falló por espacio); tras limpiar cachés de Gradle quedan 3,52 GB. Umbral: no construir el APK con menos de 3 GB.

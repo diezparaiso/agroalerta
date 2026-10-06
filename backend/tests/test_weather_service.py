@@ -95,10 +95,12 @@ class _FakeRiaClient:
 def clean_state():
     weather_service._weather_cache.clear()
     weather_service._stations_cache = None
+    weather_service._aemet_cache.clear()
     _FakeRiaClient.daily_calls = []
     yield
     weather_service._weather_cache.clear()
     weather_service._stations_cache = None
+    weather_service._aemet_cache.clear()
     with storage._connect() as connection:
         connection.execute('DELETE FROM parcels')
 

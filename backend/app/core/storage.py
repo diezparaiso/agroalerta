@@ -118,7 +118,10 @@ class Storage:
                     quality_grade TEXT,
                     destination TEXT,
                     notes TEXT,
-                    created_at TEXT NOT NULL
+                    created_at TEXT NOT NULL,
+                    yield_kg_ha REAL NOT NULL DEFAULT 0,
+                    target_yield_kg_ha REAL,
+                    target_deviation_pct REAL
                 );
                 CREATE TABLE IF NOT EXISTS push_tokens (
                     token TEXT PRIMARY KEY,
@@ -126,12 +129,32 @@ class Storage:
                     platform TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS irrigation_events (
+                    id TEXT PRIMARY KEY,
+                    parcel_id TEXT NOT NULL,
+                    campaign_id TEXT,
+                    owner_id TEXT NOT NULL,
+                    started_at TEXT NOT NULL,
+                    duration_minutes INTEGER NOT NULL,
+                    water_liters REAL,
+                    method TEXT NOT NULL,
+                    notes TEXT
+                );
                 '''
             )
             for table in ('field_reports', 'telemetry', 'devices'):
                 columns = {row['name'] for row in connection.execute(f'PRAGMA table_info({table})')}
                 if 'owner_id' not in columns:
                     connection.execute(f"ALTER TABLE {table} ADD COLUMN owner_id TEXT NOT NULL DEFAULT 'anonymous'")
+            # Migración de resultados de campaña: el modelo CampaignResult exige
+            # yield_kg_ha y las bases existentes se crearon sin estas columnas.
+            result_columns = {row['name'] for row in connection.execute('PRAGMA table_info(campaign_results)')}
+            if 'yield_kg_ha' not in result_columns:
+                connection.execute('ALTER TABLE campaign_results ADD COLUMN yield_kg_ha REAL NOT NULL DEFAULT 0')
+            if 'target_yield_kg_ha' not in result_columns:
+                connection.execute('ALTER TABLE campaign_results ADD COLUMN target_yield_kg_ha REAL')
+            if 'target_deviation_pct' not in result_columns:
+                connection.execute('ALTER TABLE campaign_results ADD COLUMN target_deviation_pct REAL')
 
     def create_irrigation_event(self, event: dict[str, object]) -> dict[str, object]:
         with self._connect() as connection:
@@ -293,8 +316,8 @@ class Storage:
     def create_campaign_result(self, result_id: str, campaign_id: str, owner_id: str, payload: dict) -> dict:
         with self._connect() as connection:
             connection.execute(
-                'INSERT INTO campaign_results (id, campaign_id, owner_id, harvested_at, harvested_quantity_kg, productive_area_ha, marketable_quantity_kg, quality_grade, destination, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                (result_id, campaign_id, owner_id, payload['harvested_at'].isoformat(), payload['harvested_quantity_kg'], payload['productive_area_ha'], payload.get('marketable_quantity_kg'), payload.get('quality_grade'), payload.get('destination'), payload.get('notes'), payload['created_at'].isoformat()),
+                'INSERT INTO campaign_results (id, campaign_id, owner_id, harvested_at, harvested_quantity_kg, productive_area_ha, marketable_quantity_kg, quality_grade, destination, notes, created_at, yield_kg_ha, target_yield_kg_ha, target_deviation_pct) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                (result_id, campaign_id, owner_id, payload['harvested_at'].isoformat(), payload['harvested_quantity_kg'], payload['productive_area_ha'], payload.get('marketable_quantity_kg'), payload.get('quality_grade'), payload.get('destination'), payload.get('notes'), payload['created_at'].isoformat(), payload.get('yield_kg_ha'), payload.get('target_yield_kg_ha'), payload.get('target_deviation_pct')),
             )
         return {'id': result_id, 'owner_id': owner_id, **payload}
 

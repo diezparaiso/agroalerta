@@ -24,3 +24,15 @@ def test_decision_stays_informative_with_low_signal() -> None:
     )
     assert result["priority"] == "informativa"
     assert result["confidence"] == "baja"
+
+
+def test_decision_tolerates_weather_without_data() -> None:
+    """AEMET puede devolver rainfall/humedad a null (verificado en vivo 2026-10-05)."""
+    result = make_agronomic_decision(
+        "p1",
+        "repilo",
+        {"risk_score": 0.5, "confidence_level": "estimada"},
+        weather={"rainfall_mm_24h": None, "relative_humidity": None},
+    )
+    assert result["priority"] in {"informativa", "vigilar", "revisar"}
+    assert all(isinstance(item["weight"], float) for item in result["evidence"])
