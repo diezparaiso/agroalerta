@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "218305321136",
+    "project_id": "agroalerta-840ff",
+    "storage_bucket": "agroalerta-840ff.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:218305321136:android:cf54e28bea5c2f5b8b0375",
+        "android_client_info": {
+          "package_name": "com.example.agroalerta_andalucia"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAPxFnLPbrxnYDaZxu9Zk0QuO_vvik0kLQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
