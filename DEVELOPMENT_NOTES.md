@@ -94,6 +94,10 @@ AgroAlerta Andalucia es una aplicación Flutter responsive con backend FastAPI p
 9. Configurar permisos nativos de cámara, ubicación, notificaciones y AdMob.
 10. Ejecutar `flutter analyze`, `flutter test`, pruebas backend y pruebas en Android, iOS y Web.
 
+## Registro de cambios automatizados
+
+- 2026-10-08: ChatGPT corrigió el aislamiento del estado Riverpod por sesión Firebase y mejoró el diagnóstico de errores de autenticación. El detalle completo está en `docs/AI_CHANGELOG.md`.
+
 ## Última validación
 
 - Backend: `6 tests passed` en `backend/tests/test_api.py` tras añadir historial y aislamiento.

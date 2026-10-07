@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'auth_service.dart';
 
@@ -32,11 +33,38 @@ class _LoginScreenState extends State<LoginScreen> {
     });
     try {
       await action();
-    } catch (_) {
-      if (mounted) setState(() => error = 'No se pudo completar la operacion. Revisa tus datos.');
+    } catch (exception) {
+      if (!mounted) return;
+      setState(() => error = _authErrorMessage(exception));
     } finally {
       if (mounted) setState(() => loading = false);
     }
+  }
+
+  String _authErrorMessage(Object exception) {
+    if (exception is FirebaseAuthException) {
+      switch (exception.code) {
+        case 'invalid-credential':
+        case 'wrong-password':
+        case 'user-not-found':
+          return 'Correo o contrasena incorrectos.';
+        case 'email-already-in-use':
+          return 'Ese correo ya tiene una cuenta.';
+        case 'weak-password':
+          return 'La contrasena es demasiado debil.';
+        case 'invalid-email':
+          return 'El correo electronico no es valido.';
+        case 'operation-not-allowed':
+          return 'Este metodo de acceso no esta habilitado en Firebase.';
+        case 'network-request-failed':
+          return 'No hay conexion con Firebase.';
+        case 'account-exists-with-different-credential':
+          return 'El correo ya esta vinculado a otro metodo de acceso.';
+        default:
+          return 'Firebase: ${exception.code}.';
+      }
+    }
+    return 'No se pudo completar la operacion. ${exception.runtimeType}.';
   }
 
   @override
