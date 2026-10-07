@@ -20,8 +20,7 @@ class ParcelMapPreview extends ConsumerWidget {
             ),
             MarkerLayer(markers: [
               for (final parcel in ref.watch(parcelsProvider).value ?? const <ParcelSummary>[])
-                if (parcel.latitude != null && parcel.longitude != null)
-                  Marker(point: LatLng(parcel.latitude!, parcel.longitude!), width: 44, height: 44, child: const Icon(Icons.location_pin, color: Colors.red, size: 40)),
+                Marker(point: LatLng(parcel.latitude, parcel.longitude), width: 44, height: 44, child: const Icon(Icons.location_pin, color: Colors.red, size: 40)),
             ]),
           ],
         ),
