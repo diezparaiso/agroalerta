@@ -18,14 +18,16 @@ final alertsProvider = FutureProvider<List<AlertSummary>>((ref) async {
 });
 
 class AlertSummary {
-  const AlertSummary({required this.title, required this.parcel, required this.level, required this.value});
+  const AlertSummary({this.parcelId, required this.title, required this.parcel, required this.level, required this.value});
 
+  final String? parcelId;
   final String title;
   final String parcel;
   final String level;
   final double value;
 
   factory AlertSummary.fromJson(Map<String, dynamic> json) => AlertSummary(
+        parcelId: json['parcel_id'] as String?,
         title: json['disease_code'] as String? ?? 'Riesgo',
         parcel: json['parcel_id'] as String? ?? 'Parcela',
         level: json['risk_level'] as String? ?? 'Bajo',
