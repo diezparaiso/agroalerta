@@ -42,3 +42,13 @@ Estos cambios fueron realizados por ChatGPT directamente sobre la rama `fix/user
 Conclusión del diagnóstico: el backend ya filtra las parcelas por `owner_id` y el cliente ya guarda la caché por UID; el defecto principal estaba en el estado cacheado de los proveedores Riverpod, que no dependían de los cambios de sesión.
 
 > Nota: la configuración Firebase generada localmente por FlutterFire no está actualmente en este repositorio. No se ha inventado ni sustituido ese archivo; la configuración existente en el entorno local debe mantenerse o incorporarse de forma explícita.
+
+
+## 2026-10-08 — Corrección tras `flutter analyze`
+
+Estos cambios fueron realizados por ChatGPT directamente sobre la rama `feature/complete-agronomic-workflows`.
+
+- `lib/src/features/alerts/alerts_provider.dart`: añadido `parcelId` opcional a `AlertSummary` y conservado desde `parcel_id` en `fromJson`. Esto corrige los errores de `alerts_screen.dart` y del test responsive.
+- `lib/src/features/parcels/parcel_map_preview.dart`: eliminadas comprobaciones/aserciones de nulabilidad imposibles sobre coordenadas `double` no nulas.
+- `lib/src/features/reports/report_screen.dart`: eliminada la comprobación imposible de nulabilidad de las coordenadas de la parcela.
+
