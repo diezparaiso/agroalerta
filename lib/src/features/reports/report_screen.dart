@@ -48,12 +48,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
       // Sin permiso, sin servicio de ubicación o plataforma sin soporte:
       // se continúa con el centro de la parcela.
     }
-    final latitude = parcel.latitude;
-    final longitude = parcel.longitude;
-    if (latitude != null && longitude != null) {
-      return _Coordinates(latitude, longitude, 'centro de la parcela');
-    }
-    return null;
+    return _Coordinates(parcel.latitude, parcel.longitude, 'centro de la parcela');
   }
 
   Future<void> submit() async {
