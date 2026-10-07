@@ -12,18 +12,17 @@ Estos cambios fueron realizados por ChatGPT directamente sobre la rama `fix/user
   - Al cerrar sesión no reutiliza la caché de `offline-user` ni la del usuario anterior.
   - La caché local continúa estando separada por UID.
 
-- `lib/src/features/home/weather_provider.dart`
-  - El clima sigue dependiendo de la primera parcela del proveedor ahora ligado a la sesión.
-
-- `lib/src/features/home/telemetry_provider.dart`
-  - La telemetría sigue la parcela del usuario autenticado a través del proveedor de sesión.
-
 - `lib/src/features/alerts/alerts_provider.dart`
   - Se fuerza dependencia de la sesión Firebase para que las alertas no queden cacheadas entre cuentas.
 
 - `lib/src/features/auth/login_screen.dart`
   - Las excepciones de Firebase Auth dejan de ocultarse detrás de un mensaje genérico.
   - Se muestran mensajes accionables para credenciales incorrectas, correo ya usado, contraseña débil, proveedor deshabilitado, red y otros códigos de Firebase.
+
+### Otros archivos modificados
+
+- `DEVELOPMENT_NOTES.md`
+  - Añadido el enlace al registro de cambios realizado por ChatGPT.
 
 ### Archivos revisados pero no modificados
 
