@@ -7,14 +7,28 @@ import 'local_parcel_store.dart';
 final apiClientProvider = Provider<ApiClient>((ref) => ApiClient());
 final localParcelStoreProvider = Provider<LocalParcelStore>((ref) => LocalParcelStore());
 
+/// Single reactive source of truth for the Firebase session.
+///
+/// Any provider that watches this provider is recomputed when the user logs
+/// in or out, preventing cached data from one account leaking into another.
+final authUserProvider = StreamProvider<User?>((ref) {
+  return FirebaseAuth.instance.authStateChanges();
+});
+
 final parcelsProvider = FutureProvider<List<ParcelSummary>>((ref) async {
-  final userId = FirebaseAuth.instance.currentUser?.uid ?? 'offline-user';
+  final authState = ref.watch(authUserProvider);
+  final user = authState.value;
+
+  // Never expose the previous user's cache while Firebase is transitioning
+  // through the signed-out state.
+  if (user == null) return const <ParcelSummary>[];
+
   final localStore = ref.read(localParcelStoreProvider);
-  final localParcels = await localStore.read(userId);
+  final localParcels = await localStore.read(user.uid);
   try {
     final records = await ref.read(apiClientProvider).getParcels();
     final parcels = records.map(ParcelSummary.fromJson).toList();
-    await localStore.write(userId, parcels);
+    await localStore.write(user.uid, parcels);
     return parcels.isEmpty ? localParcels : parcels;
   } catch (_) {
     return localParcels.isEmpty ? ParcelSummary.demo : localParcels;
@@ -39,9 +53,9 @@ class ParcelSummary {
       ];
 
   factory ParcelSummary.fromJson(Map<String, dynamic> json) => ParcelSummary(
-      id: json['id'] as String?,
-      latitude: (json['latitude'] as num?)?.toDouble() ?? 37.39,
-      longitude: (json['longitude'] as num?)?.toDouble() ?? -5.99,
+        id: json['id'] as String?,
+        latitude: (json['latitude'] as num?)?.toDouble() ?? 37.39,
+        longitude: (json['longitude'] as num?)?.toDouble() ?? -5.99,
         name: json['label'] as String? ?? 'Parcela sin nombre',
         crop: json['crop_type'] == 'vinedo' ? 'Vinedo' : 'Olivar',
         place: json['comarca'] as String? ?? 'Andalucia',
