@@ -60,3 +60,10 @@ Estos cambios fueron realizados por ChatGPT directamente sobre la rama `feature/
 - `lib/src/features/parcels/parcel_provider.dart`: las coordenadas de `ParcelSummary` vuelven a ser opcionales; `fromJson` ya no inventa coordenadas cuando el backend no las proporciona. Los datos demo mantienen coordenadas explícitas.
 - `lib/src/features/parcels/parcel_map_preview.dart`: el mapa solo crea marcadores para parcelas que tienen latitud y longitud reales.
 - `lib/src/features/auth/login_screen.dart`: el formulario de acceso se coloca dentro de un `SingleChildScrollView` para evitar overflow vertical en pantallas pequeñas y pruebas de widgets.
+
+## 2026-10-08 — Corrección final tras `flutter analyze` y `flutter test`
+
+Estos cambios fueron realizados por ChatGPT directamente sobre la rama `feature/complete-agronomic-workflows`.
+
+- `lib/src/features/reports/report_screen.dart`: el centro de la parcela solo se usa como fallback cuando ambas coordenadas existen; si faltan, el flujo devuelve `null` y muestra el aviso previsto.
+- `lib/src/features/parcels/parcel_provider.dart`: restaurada la etiqueta española `Viñedo` para `crop_type: vinedo`, manteniendo `vinedo` en la serialización hacia el backend.
