@@ -4,6 +4,7 @@ import '../parcels/parcel_provider.dart';
 import 'alert_monitor.dart';
 
 final alertsProvider = FutureProvider<List<AlertSummary>>((ref) async {
+  ref.watch(authUserProvider);
   try {
     final records = await ref.read(apiClientProvider).getAlerts();
     final alerts = records.map(AlertSummary.fromJson).toList();
