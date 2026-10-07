@@ -12,16 +12,33 @@ class ParcelMapPreview extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) => ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: FlutterMap(
-          options: const MapOptions(initialCenter: LatLng(37.39, -5.99), initialZoom: 8.5),
+          options: const MapOptions(
+            initialCenter: LatLng(37.39, -5.99),
+            initialZoom: 8.5,
+          ),
           children: [
             TileLayer(
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'com.agrotech.agroalerta',
             ),
-            MarkerLayer(markers: [
-              for (final parcel in ref.watch(parcelsProvider).value ?? const <ParcelSummary>[])
-                Marker(point: LatLng(parcel.latitude, parcel.longitude), width: 44, height: 44, child: const Icon(Icons.location_pin, color: Colors.red, size: 40)),
-            ]),
+            MarkerLayer(
+              markers: [
+                for (final parcel
+                    in ref.watch(parcelsProvider).value ??
+                        const <ParcelSummary>[])
+                  if (parcel.latitude != null && parcel.longitude != null)
+                    Marker(
+                      point: LatLng(parcel.latitude!, parcel.longitude!),
+                      width: 44,
+                      height: 44,
+                      child: const Icon(
+                        Icons.location_pin,
+                        color: Colors.red,
+                        size: 40,
+                      ),
+                    ),
+              ],
+            ),
           ],
         ),
       );
