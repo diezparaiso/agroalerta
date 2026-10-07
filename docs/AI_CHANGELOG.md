@@ -12,12 +12,6 @@ Estos cambios fueron realizados por ChatGPT directamente sobre la rama `fix/user
   - Al cerrar sesión no reutiliza la caché de `offline-user` ni la del usuario anterior.
   - La caché local continúa estando separada por UID.
 
-- `lib/src/features/parcels/parcels_screen.dart`
-  - Conservada la creación de parcelas y actualizada la invalidación para el proveedor reactivo.
-
-- `lib/src/features/parcels/parcel_map_preview.dart`
-  - El mapa consume el proveedor de parcelas dependiente de la sesión, evitando reutilizar marcadores de otra cuenta.
-
 - `lib/src/features/home/weather_provider.dart`
   - El clima sigue dependiendo de la primera parcela del proveedor ahora ligado a la sesión.
 
@@ -32,6 +26,12 @@ Estos cambios fueron realizados por ChatGPT directamente sobre la rama `fix/user
   - Se muestran mensajes accionables para credenciales incorrectas, correo ya usado, contraseña débil, proveedor deshabilitado, red y otros códigos de Firebase.
 
 ### Archivos revisados pero no modificados
+
+- `lib/src/features/parcels/parcels_screen.dart`
+- `lib/src/features/parcels/parcel_map_preview.dart`
+- `lib/src/features/home/weather_provider.dart`
+- `lib/src/features/home/telemetry_provider.dart`
+- `lib/src/features/reports/report_screen.dart`
 
 - `backend/app/main.py`
 - `backend/app/core/security.py`
