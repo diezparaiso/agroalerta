@@ -18,7 +18,17 @@ class ParcelMapPreview extends ConsumerWidget {
               urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'com.agrotech.agroalerta',
             ),
-            MarkerLayer(markers: [for (final parcel in ref.watch(parcelsProvider).value ?? const <ParcelSummary>[]) Marker(point: LatLng(parcel.latitude, parcel.longitude), width: 44, height: 44, child: const Icon(Icons.location_pin, color: Colors.red, size: 40))]),
+            MarkerLayer(
+              markers: [
+                for (final parcel in ref.watch(parcelsProvider).value ?? const <ParcelSummary>[])
+                  Marker(
+                    point: LatLng(parcel.latitude, parcel.longitude),
+                    width: 44,
+                    height: 44,
+                    child: const Icon(Icons.location_pin, color: Colors.red, size: 40),
+                  ),
+              ],
+            ),
           ],
         ),
       );
