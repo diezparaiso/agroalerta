@@ -67,3 +67,26 @@ Estos cambios fueron realizados por ChatGPT directamente sobre la rama `feature/
 
 - `lib/src/features/reports/report_screen.dart`: el centro de la parcela solo se usa como fallback cuando ambas coordenadas existen; si faltan, el flujo devuelve `null` y muestra el aviso previsto.
 - `lib/src/features/parcels/parcel_provider.dart`: restaurada la etiqueta española `Viñedo` para `crop_type: vinedo`, manteniendo `vinedo` en la serialización hacia el backend.
+
+
+## 2026-10-08 — Rediseño de la pantalla de inicio AgroAlerta
+
+Se adapta la pantalla principal de Flutter a la referencia visual aprobada, manteniendo los proveedores y rutas existentes.
+
+### Archivos modificados
+
+- `lib/src/features/home/home_screen.dart`
+  - Sustituido el dashboard anterior en cuadrícula por una composición vertical responsive.
+  - Nuevo encabezado de marca con saludo personalizado y acceso a ajustes.
+  - Tarjeta de meteorología con datos actuales y fuente RIA/IFAPA o AEMET.
+  - Banner de alertas con navegación al centro de avisos.
+  - Cuatro accesos rápidos: parcelas, meteorología, alertas y actividad.
+  - Sección "Mis parcelas" con estado de riesgo.
+  - Accesos a inteligencia hídrica y sensores/IoT.
+  - Pull-to-refresh de clima, alertas y parcelas.
+
+- `lib/src/app.dart`
+  - La navegación móvil pasa de cuatro a cinco destinos: Inicio, Parcelas, Alertas, Actividad y Más.
+  - La navegación de escritorio/tablet mantiene los módulos completos mediante `NavigationRail`.
+
+No se han añadido imágenes externas ni datos agronómicos inventados al nuevo dashboard; la información se obtiene de los proveedores existentes.
