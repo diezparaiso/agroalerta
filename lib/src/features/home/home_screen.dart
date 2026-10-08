@@ -191,7 +191,7 @@ class _WeatherCard extends StatelessWidget {
                     color: scheme.primaryContainer,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: Icon(Icons.partly_cloudy_day, size: 38, color: scheme.primary),
+                  child: Icon(Icons.wb_cloudy_outlined, size: 38, color: scheme.primary),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
