@@ -4,6 +4,8 @@
 .packages
 .pub-cache/
 build/
+android/.gradle/
+android/.kotlin/
 coverage/
 *.iml
 .idea/

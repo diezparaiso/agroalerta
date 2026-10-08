@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/ui/error_view.dart';
 import '../home/home_screen.dart';
 import 'operation_center_provider.dart';
 
@@ -14,7 +15,7 @@ class OperationCenterScreen extends ConsumerWidget {
       subtitle: 'Estado operativo de tus parcelas',
       child: ref.watch(operationCenterProvider).when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('No se pudo cargar el centro: $error')),
+        error: (error, _) => ErrorView(message: 'No se pudo cargar el centro de explotación.', onRetry: () => ref.invalidate(operationCenterProvider)),
         data: (center) => _CenterContent(center: center),
       ),
     );

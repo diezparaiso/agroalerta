@@ -8,6 +8,10 @@ class RiskHistoryChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resolved = spots ?? const <FlSpot>[];
+    if (resolved.isEmpty) {
+      return const SizedBox(height: 190, child: Center(child: Text('Sin historial de riesgo')));
+    }
     final color = Theme.of(context).colorScheme.primary;
     return SizedBox(
       height: 190,
@@ -18,7 +22,7 @@ class RiskHistoryChart extends StatelessWidget {
           gridData: const FlGridData(show: true),
           titlesData: const FlTitlesData(show: false),
           borderData: FlBorderData(show: false),
-          lineBarsData: [LineChartBarData(isCurved: true, color: color, barWidth: 3, dotData: const FlDotData(show: true), spots: spots ?? const [FlSpot(0, .18), FlSpot(1, .26), FlSpot(2, .31), FlSpot(3, .48), FlSpot(4, .58)])],
+          lineBarsData: [LineChartBarData(isCurved: true, color: color, barWidth: 3, dotData: const FlDotData(show: true), spots: resolved)],
         ),
       ),
     );

@@ -14,6 +14,9 @@ import 'features/devices/devices_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'features/operation_center/operation_center_screen.dart';
 import 'features/campaigns/campaigns_screen.dart';
+import 'features/activity_timeline/activity_timeline_screen.dart';
+import 'features/agronomic_decision/agronomic_decision_screen.dart';
+import 'features/irrigation/irrigation_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final firebaseAvailable = ref.watch(firebaseAvailableProvider);
@@ -33,6 +36,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
           GoRoute(path: '/operation-center', builder: (_, __) => const OperationCenterScreen()),
           GoRoute(path: '/campaigns', builder: (_, __) => const CampaignsScreen()),
+          GoRoute(path: '/timeline', builder: (_, __) => const ActivityTimelineScreen()),
+          GoRoute(path: '/agronomic-decision', builder: (_, __) => const AgronomicDecisionScreen()),
+          GoRoute(path: '/irrigation', builder: (_, __) => const IrrigationScreen()),
         ],
       ),
     ],
@@ -68,12 +74,24 @@ class AppShell extends StatelessWidget {
     (label: 'Ajustes', icon: Icons.settings_outlined, path: '/settings'),
     (label: 'Explotación', icon: Icons.agriculture_outlined, path: '/operation-center'),
     (label: 'Campañas', icon: Icons.event_note_outlined, path: '/campaigns'),
+    (label: 'Línea temporal', icon: Icons.timeline, path: '/timeline'),
+    (label: 'Decisión', icon: Icons.psychology_outlined, path: '/agronomic-decision'),
+    (label: 'Riego', icon: Icons.water_drop_outlined, path: '/irrigation'),
+  ];
+
+  static const mobileDestinations = [
+    (label: 'Inicio', icon: Icons.home_outlined, path: '/home'),
+    (label: 'Parcelas', icon: Icons.map_outlined, path: '/parcels'),
+    (label: 'Alertas', icon: Icons.notifications_none_outlined, path: '/alerts'),
+    (label: 'Actividad', icon: Icons.calendar_month_outlined, path: '/timeline'),
+    (label: 'Más', icon: Icons.menu_outlined, path: '/settings'),
   ];
 
   @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
     final selected = destinations.indexWhere((item) => location.startsWith(item.path));
+    final mobileSelected = mobileDestinations.indexWhere((item) => location.startsWith(item.path));
     final width = MediaQuery.sizeOf(context).width;
     final compact = width < 700;
     final rail = width >= 700;
@@ -102,10 +120,10 @@ class AppShell extends StatelessWidget {
       ),
       bottomNavigationBar: compact
           ? NavigationBar(
-              selectedIndex: selected < 0 ? 0 : selected,
-              onDestinationSelected: (index) => context.go(destinations[index].path),
+              selectedIndex: mobileSelected < 0 ? 0 : mobileSelected,
+              onDestinationSelected: (index) => context.go(mobileDestinations[index].path),
               destinations: [
-                for (final item in destinations.take(4))
+                for (final item in mobileDestinations)
                   NavigationDestination(icon: Icon(item.icon), label: item.label),
               ],
             )

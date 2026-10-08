@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/ui/error_view.dart';
 import '../home/home_screen.dart';
 import '../parcels/parcel_provider.dart';
-import '../../core/network/api_client.dart';
 import 'campaigns_provider.dart';
+import '../campaign_results/campaign_result_form.dart';
 
 class CampaignsScreen extends ConsumerWidget {
   const CampaignsScreen({super.key});
@@ -26,7 +27,7 @@ class CampaignsScreen extends ConsumerWidget {
       ],
       child: parcels.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('No se pudieron cargar las parcelas: $error')),
+        error: (error, _) => ErrorView(message: 'No se pudieron cargar las parcelas.', onRetry: () => ref.invalidate(parcelsProvider)),
         data: (items) {
           final current = items.where((item) => item.id == selected).firstOrNull;
           return Column(
@@ -34,6 +35,7 @@ class CampaignsScreen extends ConsumerWidget {
             children: [
               DropdownButton<String>(
                 value: current?.id,
+                isExpanded: true,
                 hint: const Text('Selecciona una parcela'),
                 items: [
                   for (final parcel in items)
@@ -44,7 +46,7 @@ class CampaignsScreen extends ConsumerWidget {
               const SizedBox(height: 12),
               Expanded(child: ref.watch(campaignsProvider).when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, _) => Center(child: Text('No se pudieron cargar las campañas: $error')),
+                error: (error, _) => ErrorView(message: 'No se pudieron cargar las campañas.', onRetry: () => ref.invalidate(campaignsProvider)),
                 data: (campaigns) => campaigns.isEmpty
                     ? const Center(child: Text('No hay campañas para esta parcela.'))
                     : ListView.separated(
@@ -83,10 +85,16 @@ class _CampaignCard extends ConsumerWidget {
         isThreeLine: true,
         trailing: Wrap(spacing: 4, children: [
           IconButton(
+            tooltip: 'Decisiones',
+            onPressed: () => _showDecisions(context, ref, '${campaign['id']}', '${campaign['season_label'] ?? 'Campaña'}'),
+            icon: const Icon(Icons.psychology_outlined),
+          ),
+          IconButton(
             tooltip: 'Resultados',
             onPressed: () => _showResults(context, ref, '${campaign['id']}', '${campaign['season_label'] ?? 'Campaña'}'),
             icon: const Icon(Icons.analytics_outlined),
           ),
+          IconButton(tooltip: 'Registrar resultado', onPressed: () => showCampaignResultForm(context, ref, '${campaign['id']}'), icon: const Icon(Icons.add_chart_outlined)),
           PopupMenuButton<String>(
           onSelected: (value) async {
             await ref.read(apiClientProvider).updateCampaignStatus(
@@ -107,6 +115,15 @@ class _CampaignCard extends ConsumerWidget {
   }
 }
 
+Future<void> _showDecisions(BuildContext context, WidgetRef ref, String campaignId, String seasonLabel) async {
+  final decisions = await ref.read(apiClientProvider).getCampaignDecisions(campaignId);
+  if (!context.mounted) return;
+  await showDialog<void>(context: context, builder: (dialogContext) => AlertDialog(
+    title: Text('Decisiones · $seasonLabel'),
+    content: SizedBox(width: 520, child: decisions.isEmpty ? const Text('No hay decisiones registradas para esta campaña.') : ListView.separated(shrinkWrap: true, itemCount: decisions.length, separatorBuilder: (_, __) => const Divider(), itemBuilder: (_, index) { final decision = decisions[index]; return ListTile(leading: Icon(decision['priority'] == 'revisar' ? Icons.warning_amber_rounded : decision['priority'] == 'vigilar' ? Icons.visibility_outlined : Icons.info_outline), title: Text('${decision['disease_code'] ?? ''} · ${decision['priority'] ?? ''}'), subtitle: Text('${decision['headline'] ?? ''}\nPuntuación: ${decision['decision_score'] ?? '--'}\n${decision['created_at'] ?? ''}'), isThreeLine: true); })),
+    actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cerrar'))],
+  ));
+}
 Future<void> _showResults(BuildContext context, WidgetRef ref, String campaignId, String seasonLabel) async {
   final summary = await ref.read(apiClientProvider).getCampaignResultsSummary(campaignId);
   if (!context.mounted) return;
@@ -155,7 +172,7 @@ Future<void> _showCreateCampaign(BuildContext context, WidgetRef ref, String par
             if (season.text.trim().isEmpty) return;
             await ref.read(apiClientProvider).createCampaign(
               parcelId: parcelId,
-              cropType: parcel.crop == 'Vinedo' ? 'vinedo' : 'olivar',
+              cropType: (parcel.crop == 'Viñedo' || parcel.crop == 'Vinedo') ? 'vinedo' : 'olivar',
               seasonLabel: season.text.trim(),
               startedAt: DateTime.now(),
               variety: variety.text.trim().isEmpty ? null : variety.text.trim(),

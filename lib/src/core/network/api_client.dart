@@ -10,8 +10,16 @@ class ApiClient {
           headers: {'Accept': 'application/json'},
         )) {
     _dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) async {
-      final token = await FirebaseAuth.instance.currentUser?.getIdToken();
-      if (token != null) options.headers['Authorization'] = 'Bearer $token';
+      // Sin Firebase configurado (web/android sin google-services.json),
+      // FirebaseAuth.instance lanza excepción: se envía la petición sin
+      // cabecera Authorization y el backend decide (anonimo en desarrollo,
+      // 401 en producción). Nunca se aborta la llamada por esto.
+      try {
+        final token = await FirebaseAuth.instance.currentUser?.getIdToken();
+        if (token != null) options.headers['Authorization'] = 'Bearer $token';
+      } catch (_) {
+        // Firebase no disponible: petición sin token.
+      }
       handler.next(options);
     }));
   }
@@ -96,6 +104,80 @@ class ApiClient {
   Future<List<Map<String, dynamic>>> getRiskHistory(String parcelId, {int limit = 100, int offset = 0}) async {
     final response = await _dio.get<List<dynamic>>('/api/v1/risk-history/$parcelId', queryParameters: {'limit': limit, 'offset': offset});
     return response.data!.cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> createActivity({
+    required String parcelId,
+    required String activityType,
+    required String title,
+    String? detail,
+    required DateTime occurredAt,
+    double? quantity,
+    String? unit,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/parcels/$parcelId/activities',
+      data: {
+        'parcel_id': parcelId,
+        'activity_type': activityType,
+        'title': title,
+        'detail': detail,
+        'occurred_at': occurredAt.toUtc().toIso8601String(),
+        'quantity': quantity,
+        'unit': unit,
+      },
+    );
+    return response.data!;
+  }
+
+  Future<List<Map<String, dynamic>>> getActivityTimeline(String parcelId, {int limit = 100}) async {
+    final response = await _dio.get<List<dynamic>>(
+      '/api/v1/parcels/$parcelId/activity-timeline',
+      queryParameters: {'limit': limit},
+    );
+    return response.data!.cast<Map<String, dynamic>>();
+  }
+
+  Future<List<Map<String, dynamic>>> getDecisions(String parcelId, String diseaseCode, {String? campaignId}) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/v1/agronomic-decision/$parcelId/$diseaseCode',
+      queryParameters: campaignId == null ? null : {'campaign_id': campaignId},
+    );
+    return [response.data!];
+  }
+
+  Future<Map<String, dynamic>> getIrrigationIntelligence(String parcelId, {int windowDays = 7}) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/v1/parcels/$parcelId/irrigation/intelligence',
+      queryParameters: {'window_days': windowDays},
+    );
+    return response.data!;
+  }
+
+  Future<Map<String, dynamic>> createCampaignResult({
+    required String campaignId,
+    required DateTime harvestedAt,
+    required double harvestedQuantityKg,
+    required double productiveAreaHa,
+    double? marketableQuantityKg,
+    String? qualityGrade,
+    String? destination,
+    String? notes,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/api/v1/campaigns/$campaignId/results',
+      data: {
+        'campaign_id': campaignId,
+        'harvested_at': harvestedAt.toUtc().toIso8601String(),
+        'harvested_quantity_kg': harvestedQuantityKg,
+        'productive_area_ha': productiveAreaHa,
+        'marketable_quantity_kg': marketableQuantityKg,
+        'quality_grade': qualityGrade,
+        'destination': destination,
+        'notes': notes,
+      },
+    );
+    return response.data!;
   }
 
   Future<Map<String, dynamic>> getFarmCenter() async {
