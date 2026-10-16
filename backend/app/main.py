@@ -12,9 +12,11 @@ from app.core.storage import Storage
 from app.schemas import Device, DeviceCreate, DiseaseRisk, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
 from app.core.security import optional_bearer_token
 from app.schemas_push import PushTokenCreate
+from app.api.sigpac import router as sigpac_router
 
 
 app = FastAPI(title="AgroAlerta Andalucia API", version="1.0.0")
+app.include_router(sigpac_router)
 logger = logging.getLogger('agroalerta.api')
 request_metrics_data: dict[str, dict[str, float]] = {}
 app.add_middleware(
