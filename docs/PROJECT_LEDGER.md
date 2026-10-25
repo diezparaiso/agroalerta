@@ -77,6 +77,19 @@ La persistencia de desarrollo continúa siendo SQLite y los contratos HTTP está
 - La decisión conserva código de enfermedad, puntuación, prioridad y titular.
 - La integración permite que la campaña sea el contexto longitudinal de las decisiones.
 
+### PR #14 — completar inteligencia hídrica
+- Se recupera e integra el módulo de inteligencia hídrica ya definido en PR #4.
+- Se añade persistencia de eventos de riego y contratos HTTP para registrarlos y consultarlos.
+- Se expone la inteligencia hídrica en Flutter.
+- Los umbrales siguen siendo de monitorización; no se convierte el módulo en prescripción de riego.
+
+### PR #13 — completar flujos agronómicos Flutter
+- Se completa la exposición Flutter de la línea temporal agronómica.
+- Se añade interfaz para calcular y consultar la decisión agronómica explicable.
+- Se conecta el registro de resultados productivos a las campañas desde Flutter.
+- Se amplía `ApiClient` con timeline, decisión, inteligencia hídrica y alta de resultados.
+- No se introducen nuevas entidades ni reglas de dominio.
+
 ### PR #12 — módulos Flutter de explotación y campañas
 - Se completa la exposición en Flutter del centro de explotación ya existente en backend.
 - Se añade gestión de campañas por parcela usando los contratos ya definidos.
@@ -95,6 +108,27 @@ La persistencia de desarrollo continúa siendo SQLite y los contratos HTTP está
   - `POST /api/v1/campaigns/{campaign_id}/results`
   - `GET /api/v1/campaigns/{campaign_id}/results`
   - `GET /api/v1/campaigns/{campaign_id}/results/summary`
+
+### Cambio local 2026-09-30 — meteorología real y retirada de datos ficticios
+
+Este cambio se realizó en la rama `feature/complete-agronomic-workflows` sin abrir PR en el momento de documentarlo:
+
+- Nuevo orquestador `backend/app/core/weather_service.py` que alimenta `GET /api/v1/weather/{parcel_id}`: RIA/IFAPA como fuente primaria (sin credenciales), AEMET como respaldo si existe `AEMET_API_KEY` y error HTTP 503 explícito si ninguna fuente está disponible.
+- Cliente `ria_ifapa_client.py` reescrito sobre los endpoints oficiales verificados en vivo (`/estaciones` y `/datosdiarios/forceEt0/...`); el formato anterior de URL estaba roto.
+- Contratos ampliados con `station_name` y `source` (`ria-ifapa` o `aemet`); detalle en `API_CONTRACTS.md` y en el ADR-007 de `docs/DECISIONS.md`.
+- Flutter: eliminados los fallbacks demo de clima, alertas, detalle de alerta, gráfico de historial y el getter de parcelas demo; la app muestra ahora estados de error explícitos en lugar de datos inventados.
+- Correcciones incluidas: bug de desempaquetado de tupla en la selección de estación (detectado por las nuevas pruebas), desbordamiento de `login_screen.dart` y `test/widget_test.dart` sin `ProviderScope`.
+- Validación: 31/31 pruebas backend, `flutter test` en verde, `flutter analyze` sin incidencias en los archivos tocados y prueba en vivo con datos reales de RIA/IFAPA.
+- Corrección posterior del mismo día: resueltas las 24 incidencias de `flutter analyze` (imports sin usar, `value` deprecated y concatenaciones con `+`) en 10 pantallas, dejando el análisis de CI en verde.
+
+### Cambio local 2026-10-01 — AEMET verificado en vivo
+
+Desbloqueo de la `AEMET_API_KEY` (pendiente 11 de `DEVELOPMENT_NOTES.md` en su momento), también en `feature/complete-agronomic-workflows` sin abrir PR:
+
+- `backend/app/core/config.py` migrado a `pydantic-settings` con `env_file` en la raíz del proyecto: `.env.example` existía pero nada cargaba `.env`. La clave real se guarda en `.env` (gitignored).
+- `backend/app/connectors/aemet_client.py` decodifica el charset que declara AEMET (`ISO-8859-15`, no UTF-8); antes el cuerpo con acentos fallaba al parsearse como JSON.
+- `backend/app/core/weather_service.py` entiende la estructura real del diario (`prediccion.dia` con `{'maxima', 'minima', 'dato'}`) además de la forma plana; `rainfall_mm_24h` queda `null` porque el diario no publica milímetros.
+- Validación: 33/33 pruebas backend (2 nuevas), prueba en vivo con predicción de Sevilla, fallback completo con RIA caída (`source: aemet`) y `GET /health/integrations` con `ria_ifapa: live` y `aemet: live`.
 
 ## 3. Modelo funcional consolidado
 
@@ -177,7 +211,10 @@ Esto permite pasar de un sistema de avisos aislados a un historial de explotaci�
 | Resultado | POST | `/api/v1/campaigns/{campaign_id}/results` |
 | Resultados | GET | `/api/v1/campaigns/{campaign_id}/results` |
 | Resumen resultados | GET | `/api/v1/campaigns/{campaign_id}/results/summary` |
+| Riego | POST | `/api/v1/parcels/{parcel_id}/irrigation/events` |
+| Riegos | GET | `/api/v1/parcels/{parcel_id}/irrigation/events` |
 | Inteligencia hídrica | GET | `/api/v1/parcels/{parcel_id}/irrigation/intelligence?window_days=7` |
+| Clima | GET | `/api/v1/weather/{parcel_id}` |
 
 ## 8. Calidad y pruebas
 
@@ -188,7 +225,8 @@ Se han añadido pruebas específicas para:
 - timeline de actividad;
 - gestión de campañas;
 - conexión campaña/decisión;
-- cálculo y agregación de resultados productivos.
+- cálculo y agregación de resultados productivos;
+- servicio meteorológico y conectores RIA/IFAPA y AEMET (9 pruebas en `backend/tests/test_weather_service.py`).
 
 Los comandos documentados para ejecutar la suite backend son:
 
@@ -196,11 +234,11 @@ Los comandos documentados para ejecutar la suite backend son:
 PYTHONPATH=backend python -m pytest backend/tests -q
 ```
 
-**Estado de verificación:** esta documentación registra los tests implementados, pero no afirma una ejecución de CI en este cierre porque no se ha verificado aquí el resultado de GitHub Actions.
+**Estado de verificación (2026-09-30):** la suite backend se ejecutó en local con Python 3.13.15 y terminó con `31 passed`. `flutter test` también pasó en local. Las 24 incidencias preexistentes de `flutter analyze` (imports sin usar, `value` deprecated y concatenaciones con `+`) se corrigieron el mismo día, de modo que los tres pasos de CI (`.github/workflows/ci.yml`) pasan en local; el resultado de GitHub Actions en la nube no se ha verificado desde aquí.
 
 ## 9. Estado de integración
 
-La línea actual es `feature/campaign-results`, basada en `feature/campaign-decision-flow`.
+La última línea documentada al cierre del PR #10 fue `feature/campaign-results`, basada en `feature/campaign-decision-flow`. El 2026-09-30 el repositorio trabajaba en `feature/complete-agronomic-workflows`, donde se realizó el cambio de meteorología real descrito en la sección 2 sin abrir PR.
 
 PR asociado:
 - PR #10 — Cerrar ciclo de resultados productivos de campañas.
@@ -217,13 +255,15 @@ La serie anterior permanece como historial de desarrollo:
 - PR #9 — decisiones en campañas.
 - PR #10 — resultados productivos.
 - PR #12 — módulos Flutter de explotación y campañas.
+- PR #13 — completar flujos agronómicos Flutter.
+- PR #14 — completar inteligencia hídrica.
 
 No se debe interpretar que un PR abierto está integrado en `main` hasta que GitHub confirme su merge.
 
 ## 10. Límites conocidos
 
 - SQLite sigue siendo el almacenamiento de desarrollo.
-- Los conectores externos agronómicos/metereológicos requieren configuración y validación productiva.
+- Conectores externos: RIA/IFAPA y AEMET verificados en vivo (2026-09-30 y 2026-10-01); la clave `AEMET_API_KEY` vive en `.env` (gitignored, caduca el 2027-01-09) y el catálogo MAPA continúa siendo importación CSV versionada.
 - Los resultados productivos son datos introducidos por el operador; el sistema no inventa kilos ni superficie.
 - Las decisiones agronómicas son de apoyo y trazabilidad, no sustituyen etiqueta oficial ni asesoramiento técnico.
 - El registro de tratamiento actualmente aprovecha la actividad agronómica; una trazabilidad normativa completa de producto, materia activa, dosis y plazo de seguridad requiere un módulo específico de tratamientos.
@@ -240,3 +280,34 @@ Esta etapa se considera **documentalmente cerrada** cuando:
 - no se presenta como integrado aquello que GitHub aún no haya fusionado.
 
 La siguiente ampliación funcional natural, si se decide continuar, es separar la trazabilidad de tratamientos de la actividad genérica y añadir costes/ingresos para completar el resultado económico de campaña.
+
+---
+
+## 12. MODIFICADO POR OPENCODE — cierre técnico (2026-10-05/06)
+
+> Entrada añadida por OpenCode durante el plan `docs/PLAN_CIERRE.md` (rama `feature/complete-agronomic-workflows`).
+
+**Fase 1 — plataformas (commit `12fbc25`):** añadidas `web/` e `ios/` con `flutter create --platforms=web,ios --project-name agroalerta_andalucia --org com.example .`, sin tocar `lib/`, `android/` ni `pubspec.yaml` (solo `.metadata` y parches transitivos de `pubspec.lock`). `web/index.html` y `web/manifest.json` en español (`lang="es"`, verde `#2E7D32`). `ios/Runner/Info.plist` con `NSLocationWhenInUseUsageDescription`, `NSCameraUsageDescription` y `NSPhotoLibraryUsageDescription` en español; Push y Apple Sign In quedan documentados en `docs/IOS_BUILD.md` (iOS no compilable desde Windows). Verificado: `flutter build web --release` OK y 13 rutas recorridas en Chrome sin errores ni avisos.
+
+**Fase 2 — backend y APIs (2026-10-06):**
+
+- Corregidos tres fallos reales: la tabla `irrigation_events` no existía en `Storage` (los endpoints de riego devolvían `500`), `campaign_results` no persistía `yield_kg_ha`/`target_yield_kg_ha`/`target_deviation_pct` (incluido `ALTER` para BDs ya creadas) y `agronomic_decision` se endureció ante campos `null`.
+- Reintentos compartidos para AEMET y RIA/IFAPA (`app/connectors/http_retry.py`): 3 intentos como máximo, espera creciente (o cabecera `Retry-After`), **solo** ante timeout/5xx/429; caché AEMET de 6 h por municipio en `weather_service.py`.
+- `ApiClient` (Flutter) tolera la ausencia de Firebase: el interceptor ya no aborta la petición si no hay token.
+- Verificación en vivo: **77 comprobaciones, 0 fallos** (contratos, CORS, 404/422/409 y aislamiento de usuarios A/B). Conectores reales: RIA 0,98 s (estación *La Rinconada*, 9,4 km), AEMET 0,78 s, segunda consulta AEMET 0,0001 s desde caché.
+- Estado verificado: `pytest` → **50 passed** (eran 33); `flutter analyze --no-pub` → 0 incidencias; `flutter test` → **3 passed** (era 1).
+- Contratos completados en `API_CONTRACTS.md`, incluida la matriz de autenticación/autorización con sus riesgos y **sin cambiar el modelo de autenticación**.
+- Incidencia de disco: `C:` bajó a 2,23 GB y un `flutter test` falló por espacio; tras limpiar cachés derivadas de Gradle quedan 3,52 GB libres. El APK de la Fase 4 solo se lanza con ≥3 GB.
+
+**Fase 3 — calidad Flutter/UI (2026-10-06, commits `4680623`, `88e1901`, `d6db6e3`):**
+
+- **Coordenadas (F3.5 / R6):** `ParcelSummary.latitude/longitude` pasan a ser anulables (eliminado el 37.39/-5.99 por defecto); el formulario de observación resuelve GPS con permiso → centro de la parcela → aviso en pantalla y solo encola reportes offline con coordenadas reales. `Geolocator` envuelto en `try/catch` para plataformas sin soporte.
+- **Errores con reintento (F3.4 / R12):** widget compartido `lib/src/core/ui/error_view.dart` con botón «Reintentar», aplicado en 14 puntos (avisos, parcelas, campañas, sensores, productos, centro de explotación, línea temporal, decisión, riesgo e historial, ajustes y las 4 tarjetas del inicio); eliminados textos literales `'Error: $e'`.
+- **Riego conectado (F3.8 / R11):** `irrigation_screen.dart` consume `GET/POST /api/v1/parcels/{id}/irrigation/events` con captura de errores y reintento (pantalla ya existente y contrato simple, según la decisión del usuario).
+- **Caché de clima (F3.6):** `weatherProvider` guarda en `OfflineCache` y devuelve los datos marcados `cached: true` si falla, respetando la preferencia `agroalerta.offline` (activada por defecto).
+- **Tests (F3.1–F3.3):** `flutter analyze --no-pub` → **0 issues**; `flutter test` → **3 → 29 tests** (`responsive_layout_test` con 5 pantallas × 3 tamaños, `parcel_model_test`, `weather_cache_test`, `parcel_map_preview_test`, `risk_history_chart_test`); `pytest` → **50 passed**. Los tests responsive destaparon desbordamientos reales que se corrigieron (fila de clima con `Expanded`, cabeceras de panel con elipsis, tarjetas del inicio más altas en móvil y desplegables con `isExpanded`).
+- **Web (F3.7):** `flutter build web --release` OK y arranque en Chrome sin errores de consola; CORS de desarrollo corregido (`allow_origin_regex` para cualquier puerto de localhost fuera de producción): el preflight desde `localhost:8080` pasó de **400 a 200** con `access-control-allow-origin`. Queda la comprobación visual en navegador con sesión abierta (teselas y permiso de geolocalización), bloqueada hasta `flutterfire configure`.
+- **Auth (F3.9):** revisados flujo, errores y configuración por plataforma **sin cambiar el modelo de autenticación**; cancelar el acceso con Google ya no muestra error genérico, el cierre de sesión avisa si falla y se corrigieron acentos en login, ajustes, dispositivos y productos.
+- **Sin datos inventados:** se creó una parcela de prueba local (SQLite, gitignored) con coordenadas reales de Sevilla para verificar la API en vivo; no hay datos ficticios en la interfaz.
+
+Preguntas abiertas para el usuario: atribución institucional de AEMET en la interfaz, despliegue del backend (hosting, BD de producción, cron de jobs) y configuración de Firebase/AdMob/OAuth.

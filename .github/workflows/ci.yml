@@ -27,3 +27,6 @@ jobs:
       - run: flutter pub get
       - run: flutter analyze
       - run: flutter test
+      # Pasos de build alineados con la secuencia real de cierre (Fase 4)
+      - run: flutter build web --release
+      - run: flutter build apk --debug

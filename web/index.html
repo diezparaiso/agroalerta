@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <!--
+    Si la app se sirve en una ruta distinta de la raíz, cambia el valor de
+    href siguiente para que coincida con la ruta base.
+
+    La ruta indicada debe empezar y terminar con una barra "/" para que
+    funcione correctamente.
+
+    Para más detalles:
+    * https://developer.mozilla.org/es/docs/Web/HTML/Element/base
+
+    Es un marcador de base href que sustituye el valor del argumento
+    `--base-href` que se pasa a `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Avisos fitosanitarios y alertas agronómicas para agricultores de Andalucía.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Etiquetas e iconos para apps web móviles -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="AgroAlerta Andalucía">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>AgroAlerta Andalucía</title>
+  <link rel="manifest" href="manifest.json">
+</head>
+<body>
+  <!--
+    Puedes personalizar el script "flutter_bootstrap.js".
+    Esto permite ofrecer una configuración propia al cargador de Flutter
+    o dar información al usuario durante la inicialización.
+
+    Para más detalles:
+    * https://docs.flutter.dev/platform-integration/web/initialization
+  -->
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

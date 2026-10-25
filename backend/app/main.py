@@ -10,13 +10,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.security import optional_bearer_token
 from app.core.storage import Storage
+from app.core.weather_service import WeatherUnavailable, get_parcel_weather
 from app.domain.disease_rules import evaluate_risk
 from app.domain.agronomic_decision import make_agronomic_decision
 from app.domain.farm_operation_center import build_farm_center
 from app.domain.activity_timeline import build_activity_timeline
 from app.domain.campaign_management import build_campaign_summary
 from app.domain.campaign_results import build_campaign_result, build_results_summary
-from app.schemas import AgronomicActivity, AgronomicActivityCreate, CampaignDecisionLink, CampaignResult, CampaignResultCreate, CampaignResultsSummary, CampaignStatusUpdate, CropCampaign, CropCampaignCreate, CampaignSummary, AgronomicDecision, Device, DeviceCreate, DiseaseRisk, FarmOperationCenter, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
+from app.domain.irrigation_intelligence import build_irrigation_intelligence
+from app.schemas import AgronomicActivity, IrrigationEventCreate, IrrigationIntelligence, AgronomicActivityCreate, CampaignDecisionLink, CampaignResult, CampaignResultCreate, CampaignResultsSummary, CampaignStatusUpdate, CropCampaign, CropCampaignCreate, CampaignSummary, AgronomicDecision, Device, DeviceCreate, DiseaseRisk, FarmOperationCenter, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
 from app.schemas_push import PushTokenCreate
 
 
@@ -32,9 +34,23 @@ def _cors_origins() -> list[str]:
     return ['http://localhost:3000', 'http://localhost:5000', 'http://localhost:8000']
 
 
+def _cors_origin_regex() -> str | None:
+    """En desarrollo se permite cualquier puerto de localhost.
+
+    El cliente Flutter sirve páginas en puertos variables (`flutter run -d
+    chrome` usa un puerto aleatorio y `python -m http.server` suele usar 8080).
+    En producción solo se aceptan los orígenes configurados en
+    CORS_ALLOWED_ORIGINS.
+    """
+    if os.getenv('ENVIRONMENT', 'development') == 'production':
+        return None
+    return r'^http://localhost(:\d+)?$'
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins(),
+    allow_origin_regex=_cors_origin_regex(),
     allow_credentials=True,
     allow_methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allow_headers=['Authorization', 'Content-Type'],
@@ -199,6 +215,29 @@ def activity_timeline(parcel_id: str, limit: int = Query(default=100, ge=1, le=3
     )
 
 
+@app.post('/api/v1/parcels/{parcel_id}/irrigation/events', status_code=status.HTTP_201_CREATED)
+def create_irrigation_event(parcel_id: str, payload: IrrigationEventCreate, _token: str | None = Depends(optional_bearer_token)) -> dict:
+    owner_id = _token or 'anonymous'
+    get_parcel(parcel_id, owner_id)
+    if payload.parcel_id != parcel_id:
+        raise HTTPException(status_code=400, detail='El riego no pertenece a la parcela indicada')
+    event = {'id': str(uuid4()), **payload.model_dump(mode='json'), 'owner_id': owner_id}
+    storage.create_irrigation_event(event)
+    return event
+
+@app.get('/api/v1/parcels/{parcel_id}/irrigation/events')
+def list_irrigation_events(parcel_id: str, limit: int = Query(default=100, ge=1, le=200), _token: str | None = Depends(optional_bearer_token)) -> list[dict]:
+    owner_id = _token or 'anonymous'
+    get_parcel(parcel_id, owner_id)
+    return storage.list_irrigation_events(parcel_id, owner_id, limit)
+
+@app.get('/api/v1/parcels/{parcel_id}/irrigation/intelligence', response_model=IrrigationIntelligence)
+def irrigation_intelligence(parcel_id: str, window_days: int = Query(default=7, ge=1, le=90), _token: str | None = Depends(optional_bearer_token)) -> IrrigationIntelligence:
+    owner_id = _token or 'anonymous'
+    get_parcel(parcel_id, owner_id)
+    telemetry = storage.latest_telemetry(parcel_id, owner_id)
+    return IrrigationIntelligence(**build_irrigation_intelligence(parcel_id, storage.list_irrigation_events(parcel_id, owner_id, 200), telemetry.model_dump(mode='json') if telemetry else None, window_days))
+
 @app.get('/api/v1/parcels/{parcel_id}', response_model=Parcel)
 def get_parcel(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> Parcel:
     parcel = storage.get_parcel(parcel_id, _token or 'anonymous')
@@ -222,17 +261,12 @@ def delete_parcel(parcel_id: str, _token: str | None = Depends(optional_bearer_t
 
 
 @app.get('/api/v1/weather/{parcel_id}')
-def get_weather(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> dict:
-    get_parcel(parcel_id, _token)
-    return {
-        'parcel_id': parcel_id,
-        'temperature_c': 18.4,
-        'relative_humidity': 87,
-        'rainfall_mm_24h': 12.2,
-        'station_distance_km': 6.4,
-        'observed_at': datetime.now(timezone.utc),
-        'source': 'demo-ria-aemet',
-    }
+async def get_weather(parcel_id: str, _token: str | None = Depends(optional_bearer_token)) -> dict:
+    parcel = get_parcel(parcel_id, _token)
+    try:
+        return await get_parcel_weather(parcel)
+    except WeatherUnavailable as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
 
 
 @app.get('/api/v1/disease-risk/{parcel_id}', response_model=list[DiseaseRisk])

@@ -43,8 +43,10 @@ def make_agronomic_decision(
             evidence.append({"source": "telemetry", "key": "leaf_wetness_hours", "value": f"{wetness:.1f} h", "weight": 0.08})
 
     if weather:
-        rain = float(weather.get("rainfall_mm_24h", 0))
-        humidity = float(weather.get("relative_humidity", 0))
+        # AEMET devuelve null en lluvia/humedad cuando no tiene dato (verificado
+        # en vivo el 2026-10-05): se trata como ausencia de señal, nunca como 0 real.
+        rain = float(weather.get("rainfall_mm_24h") or 0)
+        humidity = float(weather.get("relative_humidity") or 0)
         if rain >= 5:
             score += 0.08
             evidence.append({"source": "weather", "key": "rainfall_mm_24h", "value": f"{rain:.1f} mm", "weight": 0.08})

@@ -7,14 +7,28 @@ import 'local_parcel_store.dart';
 final apiClientProvider = Provider<ApiClient>((ref) => ApiClient());
 final localParcelStoreProvider = Provider<LocalParcelStore>((ref) => LocalParcelStore());
 
+/// Single reactive source of truth for the Firebase session.
+///
+/// Any provider that watches this provider is recomputed when the user logs
+/// in or out, preventing cached data from one account leaking into another.
+final authUserProvider = StreamProvider<User?>((ref) {
+  return FirebaseAuth.instance.authStateChanges();
+});
+
 final parcelsProvider = FutureProvider<List<ParcelSummary>>((ref) async {
-  final userId = FirebaseAuth.instance.currentUser?.uid ?? 'offline-user';
+  final authState = ref.watch(authUserProvider);
+  final user = authState.value;
+
+  // Never expose the previous user's cache while Firebase is transitioning
+  // through the signed-out state.
+  if (user == null) return const <ParcelSummary>[];
+
   final localStore = ref.read(localParcelStoreProvider);
-  final localParcels = await localStore.read(userId);
+  final localParcels = await localStore.read(user.uid);
   try {
     final records = await ref.read(apiClientProvider).getParcels();
     final parcels = records.map(ParcelSummary.fromJson).toList();
-    await localStore.write(userId, parcels);
+    await localStore.write(user.uid, parcels);
     return parcels.isEmpty ? localParcels : parcels;
   } catch (_) {
     return localParcels.isEmpty ? ParcelSummary.demo : localParcels;
@@ -22,31 +36,67 @@ final parcelsProvider = FutureProvider<List<ParcelSummary>>((ref) async {
 });
 
 class ParcelSummary {
-  const ParcelSummary({this.id, this.latitude = 37.39, this.longitude = -5.99, required this.name, required this.crop, required this.place, required this.risk});
+  const ParcelSummary({
+    this.id,
+    this.latitude,
+    this.longitude,
+    required this.name,
+    required this.crop,
+    required this.place,
+    required this.risk,
+  });
 
   final String? id;
-  final double latitude;
-  final double longitude;
+  final double? latitude;
+  final double? longitude;
   final String name;
   final String crop;
   final String place;
   final String risk;
 
   static List<ParcelSummary> get demo => const [
-        ParcelSummary(name: 'Olivar de prueba', crop: 'Olivar', place: 'Campina de Sevilla', risk: 'Medio'),
-        ParcelSummary(name: 'Vinedo norte', crop: 'Vinedo', place: 'Montilla-Moriles', risk: 'Bajo'),
-        ParcelSummary(name: 'Huerta familiar', crop: 'Olivar', place: 'Sierra de Cordoba', risk: 'Bajo'),
+        ParcelSummary(
+          name: 'Olivar de prueba',
+          crop: 'Olivar',
+          place: 'Campina de Sevilla',
+          risk: 'Medio',
+          latitude: 37.39,
+          longitude: -5.99,
+        ),
+        ParcelSummary(
+          name: 'Vinedo norte',
+          crop: 'Vinedo',
+          place: 'Montilla-Moriles',
+          risk: 'Bajo',
+          latitude: 37.59,
+          longitude: -4.64,
+        ),
+        ParcelSummary(
+          name: 'Huerta familiar',
+          crop: 'Olivar',
+          place: 'Sierra de Cordoba',
+          risk: 'Bajo',
+          latitude: 37.90,
+          longitude: -4.78,
+        ),
       ];
 
   factory ParcelSummary.fromJson(Map<String, dynamic> json) => ParcelSummary(
-      id: json['id'] as String?,
-      latitude: (json['latitude'] as num?)?.toDouble() ?? 37.39,
-      longitude: (json['longitude'] as num?)?.toDouble() ?? -5.99,
+        id: json['id'] as String?,
+        latitude: (json['latitude'] as num?)?.toDouble(),
+        longitude: (json['longitude'] as num?)?.toDouble(),
         name: json['label'] as String? ?? 'Parcela sin nombre',
-        crop: json['crop_type'] == 'vinedo' ? 'Vinedo' : 'Olivar',
+        crop: json['crop_type'] == 'vinedo' ? 'Viñedo' : 'Olivar',
         place: json['comarca'] as String? ?? 'Andalucia',
         risk: 'Pendiente',
       );
 
-  Map<String, dynamic> toJson() => {'id': id, 'label': name, 'latitude': latitude, 'longitude': longitude, 'crop_type': crop == 'Vinedo' ? 'vinedo' : 'olivar', 'comarca': place};
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'label': name,
+        'latitude': latitude,
+        'longitude': longitude,
+        'crop_type': crop == 'Viñedo' ? 'vinedo' : 'olivar',
+        'comarca': place,
+      };
 }
