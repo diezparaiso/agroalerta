@@ -90,3 +90,12 @@ Se adapta la pantalla principal de Flutter a la referencia visual aprobada, mant
   - La navegación de escritorio/tablet mantiene los módulos completos mediante `NavigationRail`.
 
 No se han añadido imágenes externas ni datos agronómicos inventados al nuevo dashboard; la información se obtiene de los proveedores existentes.
+
+
+## 2026-10-25 — Landing pública de presentación de AgroAlerta
+
+- Añadida `landing/index.html`: página responsive, sin dependencias, para presentar AgroAlerta como proyecto en desarrollo.
+- Incluye maquetas de interfaz construidas con HTML/CSS, capacidades previstas, arquitectura y fuentes de datos.
+- Los datos de las maquetas se marcan explícitamente como ilustrativos; no se presentan como mediciones reales.
+- Añadida `landing/README.md` con instrucciones de vista previa e integración.
+- No se modifica la aplicación Flutter ni el despliegue existente de 10P Software, porque el repositorio conectado `diezparaiso/website` es un fork de la web de Flutter y no corresponde al sitio publicado en `10psoftware.web.app`.
