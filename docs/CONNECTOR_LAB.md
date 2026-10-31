@@ -1,6 +1,6 @@
 # Laboratorio temporal de conectores
 
-Pantalla Flutter provisional para comprobar las respuestas reales de RIA-IFAPA y AEMET, identificar los campos originales y exportar los registros recibidos a CSV compatible con Excel (UTF-8 con BOM y separador punto y coma).
+Pantalla Flutter provisional para comprobar las respuestas reales de RIA-IFAPA y AEMET, identificar los campos originales y exportar un libro XLSX con tres hojas: datos originales, datos interpretados y metadatos de consulta.
 
 ## Estado conocido en feature/complete-agronomic-workflows
 
@@ -11,7 +11,7 @@ Pantalla Flutter provisional para comprobar las respuestas reales de RIA-IFAPA y
 
 ## Uso
 
-Desde Ajustes, abrir Laboratorio de conectores y pulsar Probar. La respuesta JSON original se conserva en pantalla; se muestran los nombres de campos de los primeros registros y se exportan todos los registros disponibles a CSV. El botón superior copia las respuestas completas en JSON.
+Desde Ajustes, abrir Laboratorio de conectores y pulsar Probar. La respuesta JSON original se conserva en pantalla; se muestran los nombres de campos de los primeros registros y se exportan todos los registros disponibles al libro Excel. El botón superior copia las respuestas completas en JSON.
 
 No se deben interpretar los estados de configuración como prueba de conectividad. Solo `connected` significa que la consulta devolvió datos en esa ejecución. No se guardan claves ni cabeceras de autenticación en las respuestas.
 
