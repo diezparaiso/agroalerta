@@ -26,6 +26,12 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter analyze
-      - run: flutter test
+      - name: Run Flutter tests when a test suite exists
+        run: |
+          if [ -d test ] && find test -name '*_test.dart' -print -quit | grep -q .; then
+            flutter test
+          else
+            echo 'No Flutter test suite is present; analyzer and platform builds remain mandatory.'
+          fi
       - run: flutter build web --release
       - run: flutter build apk --debug
