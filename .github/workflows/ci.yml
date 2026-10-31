@@ -33,5 +33,24 @@ jobs:
           else
             echo 'No Flutter test suite is present; analyzer and platform builds remain mandatory.'
           fi
-      - run: flutter build web --release
-      - run: flutter build apk --debug
+      - name: Build Flutter Web release
+        run: flutter build web --release
+      - name: Build Android APK debug
+        if: always()
+        run: flutter build apk --debug
+      - name: Upload Android APK
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agroalerta-android-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload Flutter Web build
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agroalerta-web-release
+          path: build/web/
+          if-no-files-found: ignore
+          retention-days: 14
