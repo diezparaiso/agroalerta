@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:excel/excel.dart';
 
 import '../../core/network/api_client.dart';
 
@@ -97,6 +98,12 @@ class _ConnectorLabScreenState extends State<ConnectorLabScreen> {
     return rows;
   }
 
+  String _excelText(dynamic value) {
+    if (value == null) return '';
+    if (value is Map || value is List) return jsonEncode(value);
+    return value.toString();
+  }
+
   Future<void> _export(String id) async {
     final result = _results[id];
     if (result == null) return;
@@ -106,26 +113,67 @@ class _ConnectorLabScreenState extends State<ConnectorLabScreen> {
         : raw is Map
             ? [Map<String, dynamic>.from(raw)]
             : <Map<String, dynamic>>[];
-    final keys = <String>{};
+
+    final originalKeys = <String>{};
+    final interpretedRecords = <Map<String, dynamic>>[];
     for (final record in records) {
-      keys.addAll(record.keys);
+      originalKeys.addAll(record.keys);
+      final flattened = <String, dynamic>{};
+      for (final entry in _flatten(record)) {
+        flattened[entry.key] = entry.value;
+      }
+      interpretedRecords.add(flattened);
     }
-    final columns = keys.toList();
-    final rows = <List<String>>[
-      columns,
-      ...records.map((record) => columns.map((key) {
-            final value = record[key];
-            return value == null ? '' : value is Map || value is List ? jsonEncode(value) : value.toString();
-          }).toList()),
-    ];
-    String csvCell(String value) => '"${value.replaceAll('"', '""')}"';
-    final csv = rows.map((row) => row.map(csvCell).join(';')).join('\r\n');
-    final bytes = Uint8List.fromList([0xEF, 0xBB, 0xBF, ...utf8.encode(csv)]);
+
+    final workbook = Excel.createExcel();
+    workbook.rename('Sheet1', 'Datos originales');
+    final originalSheet = workbook['Datos originales'];
+    final originalColumns = originalKeys.toList();
+    if (originalColumns.isNotEmpty) {
+      originalSheet.appendRow(originalColumns.map((key) => TextCellValue(key)).toList());
+      for (final record in records) {
+        originalSheet.appendRow(originalColumns
+            .map((key) => TextCellValue(_excelText(record[key])))
+            .toList());
+      }
+    } else {
+      originalSheet.appendRow([TextCellValue('Sin registros')]);
+    }
+
+    final interpretedSheet = workbook['Datos interpretados'];
+    final interpretedColumns = <String>{};
+    for (final record in interpretedRecords) {
+      interpretedColumns.addAll(record.keys);
+    }
+    final interpretedKeys = interpretedColumns.toList();
+    interpretedSheet.appendRow([
+      TextCellValue('N.º registro'),
+      ...interpretedKeys.map((key) => TextCellValue(key)),
+    ]);
+    for (var index = 0; index < interpretedRecords.length; index++) {
+      final record = interpretedRecords[index];
+      interpretedSheet.appendRow([
+        IntCellValue(index + 1),
+        ...interpretedKeys.map((key) => TextCellValue(_excelText(record[key]))),
+      ]);
+    }
+
+    final metadataSheet = workbook['Información de consulta'];
+    metadataSheet.appendRow([TextCellValue('Campo'), TextCellValue('Valor')]);
+    for (final entry in result.entries.where((entry) => entry.key != 'raw_data')) {
+      metadataSheet.appendRow([
+        TextCellValue(entry.key),
+        TextCellValue(_excelText(entry.value)),
+      ]);
+    }
+
+    final encoded = workbook.encode();
+    if (encoded == null) throw StateError('No se pudo generar el archivo XLSX.');
     await FileSaver.instance.saveFile(
       name: 'agroalerta_${id}_${DateTime.now().toIso8601String().substring(0, 10)}',
-      bytes: bytes,
-      ext: 'csv',
-      mimeType: MimeType.csv,
+      bytes: Uint8List.fromList(encoded),
+      fileExtension: 'xlsx',
+      mimeType: MimeType.microsoftExcel,
     );
   }
 
@@ -218,7 +266,7 @@ class _ConnectorLabScreenState extends State<ConnectorLabScreen> {
               const SizedBox(width: 8),
               Expanded(child: Text(_statusLabel(status), style: const TextStyle(fontWeight: FontWeight.w600))),
               IconButton(
-                tooltip: 'Exportar CSV para Excel',
+                tooltip: 'Exportar libro Excel (3 hojas)',
                 onPressed: raw == null ? null : () => _export(id),
                 icon: const Icon(Icons.file_download_outlined),
               ),
