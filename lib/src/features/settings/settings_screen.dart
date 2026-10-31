@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../home/home_screen.dart';
+
 import 'preferences_store.dart';
 import '../../core/ads/ad_consent_store.dart';
 import '../../core/privacy/local_data_manager.dart';
