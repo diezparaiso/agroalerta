@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../home/home_screen.dart';
 import 'preferences_store.dart';
@@ -75,6 +76,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   },
                 ),
               ],
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.science_outlined),
+              title: const Text('Laboratorio de conectores'),
+              subtitle: const Text('Pruebas reales y exportación de datos'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.go('/connector-lab'),
             ),
           ),
           Card(
