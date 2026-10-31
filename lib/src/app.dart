@@ -12,6 +12,7 @@ import 'features/products/products_screen.dart';
 import 'features/reports/report_screen.dart';
 import 'features/devices/devices_screen.dart';
 import 'features/settings/settings_screen.dart';
+import 'features/settings/connector_lab_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final firebaseAvailable = ref.watch(firebaseAvailableProvider);
@@ -29,6 +30,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/reports/new', builder: (_, __) => const ReportScreen()),
           GoRoute(path: '/devices/:parcelId', builder: (_, state) => DevicesScreen(parcelId: state.pathParameters['parcelId'] ?? '')),
           GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
+          GoRoute(path: '/connector-lab', builder: (_, __) => const ConnectorLabScreen()),
         ],
       ),
     ],
