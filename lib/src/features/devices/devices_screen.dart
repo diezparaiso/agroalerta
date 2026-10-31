@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/network/api_client.dart';
 import '../home/home_screen.dart';
 import '../parcels/parcel_provider.dart';
 
@@ -18,6 +17,6 @@ class DevicesScreen extends ConsumerWidget {
     final id = TextEditingController();
     final name = TextEditingController();
     var type = 'weather_station';
-    await showDialog<void>(context: context, builder: (dialogContext) => StatefulBuilder(builder: (context, setState) => AlertDialog(title: const Text('Registrar sensor'), content: Column(mainAxisSize: MainAxisSize.min, children: [TextField(controller: id, decoration: const InputDecoration(labelText: 'Identificador')), TextField(controller: name, decoration: const InputDecoration(labelText: 'Nombre')), DropdownButtonFormField<String>(value: type, items: const [DropdownMenuItem(value: 'weather_station', child: Text('Estacion meteorologica')), DropdownMenuItem(value: 'leaf_sensor', child: Text('Sensor de hoja')), DropdownMenuItem(value: 'soil_sensor', child: Text('Sensor de suelo'))], onChanged: (value) => setState(() => type = value ?? type))]), actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancelar')), FilledButton(onPressed: () async { await ref.read(apiClientProvider).registerDevice(parcelId: parcelId, deviceId: id.text, name: name.text, deviceType: type); ref.invalidate(devicesProvider(parcelId)); if (dialogContext.mounted) Navigator.pop(dialogContext); }, child: const Text('Guardar'))])));
+    await showDialog<void>(context: context, builder: (dialogContext) => StatefulBuilder(builder: (context, setState) => AlertDialog(title: const Text('Registrar sensor'), content: Column(mainAxisSize: MainAxisSize.min, children: [TextField(controller: id, decoration: const InputDecoration(labelText: 'Identificador')), TextField(controller: name, decoration: const InputDecoration(labelText: 'Nombre')), DropdownButtonFormField<String>(initialValue: type, items: const [DropdownMenuItem(value: 'weather_station', child: Text('Estacion meteorologica')), DropdownMenuItem(value: 'leaf_sensor', child: Text('Sensor de hoja')), DropdownMenuItem(value: 'soil_sensor', child: Text('Sensor de suelo'))], onChanged: (value) => setState(() => type = value ?? type))]), actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancelar')), FilledButton(onPressed: () async { await ref.read(apiClientProvider).registerDevice(parcelId: parcelId, deviceId: id.text, name: name.text, deviceType: type); ref.invalidate(devicesProvider(parcelId)); if (dialogContext.mounted) Navigator.pop(dialogContext); }, child: const Text('Guardar'))])));
   }
 }
