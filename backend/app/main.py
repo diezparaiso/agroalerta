@@ -8,6 +8,7 @@ from typing import Literal
 from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.connector_lab import router as connector_lab_router
 from app.core.security import optional_bearer_token
 from app.core.storage import Storage
 from app.core.weather_service import WeatherUnavailable, get_parcel_weather
@@ -23,6 +24,7 @@ from app.schemas_push import PushTokenCreate
 
 
 app = FastAPI(title="AgroAlerta Andalucia API", version="1.1.0")
+app.include_router(connector_lab_router)
 logger = logging.getLogger('agroalerta.api')
 request_metrics_data: dict[str, dict[str, float]] = {}
 
