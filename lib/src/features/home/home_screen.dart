@@ -29,7 +29,7 @@ class HomeScreen extends StatelessWidget {
               _ParcelSummaryCard(),
               _InsightCard(),
               _MapCard(),
-              const _TelemetryCard(),
+              _TelemetryCard(),
             ],
           );
         },
