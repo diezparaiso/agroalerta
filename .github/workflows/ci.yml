@@ -33,10 +33,5 @@ jobs:
           else
             echo 'No Flutter test suite is present; analyzer and platform builds remain mandatory.'
           fi
-      - name: Generate missing Flutter web scaffold
-        run: |
-          if [ ! -d web ]; then
-            flutter create . --platforms web
-          fi
       - run: flutter build web --release
       - run: flutter build apk --debug
