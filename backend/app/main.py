@@ -12,6 +12,7 @@ from app.core.storage import Storage
 from app.schemas import Device, DeviceCreate, DiseaseRisk, FieldReportCreate, Parcel, ParcelCreate, Product, RiskSnapshot, TelemetryCreate
 from app.core.security import optional_bearer_token
 from app.schemas_push import PushTokenCreate
+from app.api.connector_lab import router as connector_lab_router
 
 
 app = FastAPI(title="AgroAlerta Andalucia API", version="1.0.0")
@@ -214,3 +215,7 @@ def register_push_token(payload: PushTokenCreate, _token: str | None = Depends(o
 @app.delete("/api/v1/push-tokens/{token}", status_code=status.HTTP_204_NO_CONTENT)
 def unregister_push_token(token: str, _token: str | None = Depends(optional_bearer_token)) -> None:
     storage.delete_push_token(token, _token or 'anonymous')
+
+
+# Laboratorio temporal para verificar respuestas originales de fuentes externas.
+app.include_router(connector_lab_router)

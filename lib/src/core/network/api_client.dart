@@ -98,6 +98,14 @@ class ApiClient {
     return response.data!.cast<Map<String, dynamic>>();
   }
 
+  Future<Map<String, dynamic>> testConnector(String connector, {String municipalityCode = '41091'}) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/api/v1/connector-lab/$connector',
+      queryParameters: {'municipality_code': municipalityCode},
+    );
+    return response.data!;
+  }
+
   Future<Map<String, dynamic>> getIntegrationsHealth() async {
     final response = await _dio.get<Map<String, dynamic>>('/health/integrations');
     return response.data!;

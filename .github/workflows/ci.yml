@@ -26,4 +26,63 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter analyze
-      - run: flutter test
+      - name: Run Flutter tests when a test suite exists
+        run: |
+          if [ -d test ] && find test -name '*_test.dart' -print -quit | grep -q .; then
+            flutter test
+          else
+            echo 'No Flutter test suite is present; analyzer and platform builds remain mandatory.'
+          fi
+      - name: Build Flutter Web release
+        run: flutter build web --release
+      - name: Generate Android platform scaffold when missing
+        if: always()
+        run: |
+          if [ ! -d android ]; then
+            flutter create . --platforms android
+          fi
+      - name: Enable Android core library desugaring
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          candidates = [Path("android/app/build.gradle.kts"), Path("android/app/build.gradle")]
+          gradle_file = next((path for path in candidates if path.exists()), None)
+          if gradle_file is None:
+              raise SystemExit("Android app Gradle file was not generated")
+
+          source = gradle_file.read_text()
+          newline = chr(10)
+          if gradle_file.suffix == ".kts":
+              if "isCoreLibraryDesugaringEnabled" not in source:
+                  source = source.replace("compileOptions {", "compileOptions {" + newline + "        isCoreLibraryDesugaringEnabled = true", 1)
+              if "coreLibraryDesugaring(" not in source:
+                  source = source.replace("dependencies {", "dependencies {" + newline + '    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")', 1)
+          else:
+              if "coreLibraryDesugaringEnabled" not in source:
+                  source = source.replace("compileOptions {", "compileOptions {" + newline + "        coreLibraryDesugaringEnabled true", 1)
+              if "coreLibraryDesugaring " not in source:
+                  source = source.replace("dependencies {", "dependencies {" + newline + "    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'", 1)
+          gradle_file.write_text(source)
+          print(f"Enabled core library desugaring in {gradle_file}")
+          PY
+      - name: Build Android APK debug
+        id: apk_build
+        if: always()
+        run: flutter build apk --debug
+      - name: Upload Android APK
+        if: steps.apk_build.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: agroalerta-android-debug-apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload Flutter Web build
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agroalerta-web-release
+          path: build/web/
+          if-no-files-found: ignore
+          retention-days: 14

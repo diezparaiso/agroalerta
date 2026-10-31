@@ -1,0 +1,9 @@
+{
+  "name": "AgroAlerta",
+  "short_name": "AgroAlerta",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2E7D32",
+  "description": "Información y alertas agroclimáticas para el campo."
+}
