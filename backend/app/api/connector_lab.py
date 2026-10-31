@@ -1,5 +1,5 @@
 """Diagnóstico temporal y transparente de conectores externos."""
-from datetime import date, timedelta
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Query
@@ -17,9 +17,7 @@ def _result(connector: str, status: str, configured: bool, data: Any = None,
         "connector": connector,
         "status": status,
         "configured": configured,
-        "tested_at": __import__("datetime").datetime.now(
-            __import__("datetime").timezone.utc
-        ).isoformat(),
+        "tested_at": datetime.now(timezone.utc).isoformat(),
         "endpoint": endpoint,
         "record_count": len(data) if isinstance(data, list) else (1 if data is not None else 0),
         "message": message,
