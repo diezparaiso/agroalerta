@@ -52,32 +52,17 @@ jobs:
               raise SystemExit("Android app Gradle file was not generated")
 
           source = gradle_file.read_text()
+          newline = chr(10)
           if gradle_file.suffix == ".kts":
               if "isCoreLibraryDesugaringEnabled" not in source:
-                  source = source.replace(
-                      "compileOptions {",
-                      "compileOptions {\\n        isCoreLibraryDesugaringEnabled = true",
-                      1,
-                  )
+                  source = source.replace("compileOptions {", "compileOptions {" + newline + "        isCoreLibraryDesugaringEnabled = true", 1)
               if "coreLibraryDesugaring(" not in source:
-                  source = source.replace(
-                      "dependencies {",
-                      'dependencies {\\n    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")',
-                      1,
-                  )
+                  source = source.replace("dependencies {", "dependencies {" + newline + '    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")', 1)
           else:
               if "coreLibraryDesugaringEnabled" not in source:
-                  source = source.replace(
-                      "compileOptions {",
-                      "compileOptions {\\n        coreLibraryDesugaringEnabled true",
-                      1,
-                  )
+                  source = source.replace("compileOptions {", "compileOptions {" + newline + "        coreLibraryDesugaringEnabled true", 1)
               if "coreLibraryDesugaring " not in source:
-                  source = source.replace(
-                      "dependencies {",
-                      "dependencies {\\n    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'",
-                      1,
-                  )
+                  source = source.replace("dependencies {", "dependencies {" + newline + "    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'", 1)
           gradle_file.write_text(source)
           print(f"Enabled core library desugaring in {gradle_file}")
           PY
