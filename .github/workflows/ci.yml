@@ -35,11 +35,18 @@ jobs:
           fi
       - name: Build Flutter Web release
         run: flutter build web --release
+      - name: Generate Android platform scaffold when missing
+        if: always()
+        run: |
+          if [ ! -d android ]; then
+            flutter create . --platforms android
+          fi
       - name: Build Android APK debug
+        id: apk_build
         if: always()
         run: flutter build apk --debug
       - name: Upload Android APK
-        if: success()
+        if: steps.apk_build.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: agroalerta-android-debug-apk
