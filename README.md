@@ -20,6 +20,10 @@ Incluye un vertical slice funcional:
 - Modo demo en la interfaz para revisar la experiencia sin credenciales ni backend.
 - Configuracion de VS Code, Docker Compose y pruebas del backend.
 
+## Documentación de continuidad
+
+El estado técnico detallado, las incidencias abiertas y el orden recomendado para continuar están en [docs/PROJECT_STATUS_AND_NEXT_STEPS.md](docs/PROJECT_STATUS_AND_NEXT_STEPS.md). La guía específica del laboratorio está en [docs/CONNECTOR_LAB.md](docs/CONNECTOR_LAB.md).
+
 ## Ejecutar el backend
 
 ```bash
